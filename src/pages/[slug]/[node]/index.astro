@@ -1,70 +1,62 @@
 ---
-import Layout from '@layouts/Layout.astro';
-import { turso } from '@src/turso';
-import { type Node, type Option } from '@types';
+import Layout from "@layouts/Layout.astro";
+import { turso } from "@src/turso";
+import { type Node, type Option } from "@types";
 export const prerender = false;
 
 const { slug, node: nodeParam } = Astro.params;
 const parentSlug = slug as string;
 
-let node:  Node | object = {};
-if(!node){
+if (!nodeParam) {
   return new Response(null, {
     status: 404,
-    statusText: 'Not found'
+    statusText: "Not found",
   });
 }
 
-try {
-  const nodeResponse = await turso.execute({
-    sql: 'SELECT * FROM nodes WHERE slug = ? AND parent_slug = ?;',
-    args: [nodeParam as string, parentSlug],
+const nodeResponse = await turso.execute({
+  sql: "SELECT * FROM nodes WHERE slug = ? AND parent_slug = ?;",
+  args: [nodeParam as string, parentSlug],
+});
+
+if (!nodeResponse.rows.length) {
+  return new Response(null, {
+    status: 404,
+    statusText: "Not found",
   });
-
-  if(!nodeResponse.rows.length){
-    return new Response(null, {
-      status: 404,
-      statusText: 'Not found'
-    });
-  }
-  const nodeData = nodeResponse.rows[0] as any;
-  if(!nodeData){
-    return new Response(null, {
-      status: 404,
-      statusText: 'Not found'
-    });
-  }
-
-
-  node = {
-    id: nodeData.id,
-    slug: nodeData.slug,
-    text: nodeData.text,
-    options:  JSON.parse(nodeData.options),
-    title: nodeData.title,
-    description: nodeData.description,
-    parentSlug: nodeData.parent_slug,
-    backSlug: nodeData.back_slug,
-  };
-} catch (error) {
-  // TODO: Handle error and notify user
+}
+const nodeData = nodeResponse.rows[0] as any;
+if (!nodeData) {
+  return new Response(null, {
+    status: 404,
+    statusText: "Not found",
+  });
 }
 
-console.log(node)
+const node = {
+  id: nodeData.id,
+  slug: nodeData.slug,
+  text: nodeData.text,
+  options: JSON.parse(nodeData.options),
+  title: nodeData.title,
+  description: nodeData.description,
+  parentSlug: nodeData.parent_slug,
+  backSlug: nodeData.back_slug,
+} as Node;
 
-const backUrl = node.backSlug === node.parentSlug ? `/${node.parentSlug}` : `/${node.parentSlug}/${node.backSlug}`;
+console.log(node);
+
+const backUrl =
+  node.backSlug === node.parentSlug
+    ? `/${node.parentSlug}`
+    : `/${node.parentSlug}/${node.backSlug}`;
 ---
 
-<Layout
-	title={node.id}
-	description={node.id}
->
+<Layout title={node.title} description={node.description}>
   <a href={`${backUrl}`}>Atrás</a>
   <div set:html={node.text} />
-  
-  {
-    node?.options?.length > 0 && <h3>¿Qué quieres hacer?</h3>
-  }
+
+  {node?.options?.length > 0 && <h3>¿Qué quieres hacer?</h3>}
   {
     (node?.options || []).map((option: Option) => (
       <a href={`/${node.parentSlug}/${option.next}`}>{option.text}</a>

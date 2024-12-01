@@ -1,51 +1,44 @@
 ---
-
-import Layout from '@layouts/Layout.astro';
-import { turso } from '@src/turso';
-import { type Story, type Option } from '@types';
+import Layout from "@layouts/Layout.astro";
+import { turso } from "@src/turso";
+import { type Story, type Option } from "@types";
 export const prerender = false;
 
 const { slug } = Astro.params;
-let story:  Story | object = {};
-if(!slug){
+if (!slug) {
   return new Response(null, {
     status: 404,
-    statusText: 'Not found'
+    statusText: "Not found",
   });
 }
 
-try {
-  const storyResponse = await turso.execute({
-    sql: 'SELECT * FROM stories WHERE slug = ?;',
-    args: [slug as string],
+const storyResponse = await turso.execute({
+  sql: "SELECT * FROM stories WHERE slug = ?;",
+  args: [slug as string],
+});
+
+if (!storyResponse.rows.length) {
+  return new Response(null, {
+    status: 404,
+    statusText: "Not found",
   });
-
-  if(!storyResponse.rows.length){
-    return new Response(null, {
-      status: 404,
-      statusText: 'Not found'
-    });
-  }
-  const storyData = storyResponse.rows[0] as any;
-  if(!storyData){
-    return new Response(null, {
-      status: 404,
-      statusText: 'Not found'
-    });
-  }
-
-  story = {
-    id: storyData.id,
-    slug: storyData.slug,
-    text: storyData.text,
-    options:  JSON.parse(storyData.options),
-    title: storyData.title,
-    description: storyData.description,
-  };
-} catch (error) {
-  // TODO: Handle error and notify user
+}
+const storyData = storyResponse.rows[0] as any;
+if (!storyData) {
+  return new Response(null, {
+    status: 404,
+    statusText: "Not found",
+  });
 }
 
+const story = {
+  id: storyData.id,
+  slug: storyData.slug,
+  text: storyData.text,
+  options: JSON.parse(storyData.options),
+  title: storyData.title,
+  description: storyData.description,
+} as Story;
 ---
 
 <Layout title={story.title} description={story.description}>

@@ -4,7 +4,6 @@ import { generateObject } from "ai";
 import { fullSchema } from "@src/schemas";
 import { generateStorySetup, truncateString } from "@src/utils/characters";
 import OpenAI from "openai";
-import axios from "axios";
 import { v2 as cloudinary } from 'cloudinary'
 import.meta.env.TURSO_DATABASE_URL;
 
@@ -50,9 +49,9 @@ try {
    // return new Response(imageUrl, {
    //    status: 200,
    // });
-} catch (error: Error) {
+} catch (error) {
    console.log(`---------------------------------------------------${error}`);
-   return new Response(`Webhook error: ${error.message}`, {
+   return new Response(`Webhook error: ${(error as Error).message}`, {
       status: 400,
    });
 }

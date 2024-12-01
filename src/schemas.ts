@@ -126,7 +126,7 @@ function generateStorySetup() {
   }
 
   // Seleccionar entre 2 y 3 personajes compatibles
-  const characters = categories[category]
+  const characters = (categories as { [key: string]: string[] })[category]
     .sort(() => 0.5 - Math.random())
     .slice(0, Math.random() < 0.5 ? 2 : 3);
 

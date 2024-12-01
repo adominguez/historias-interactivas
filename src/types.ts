@@ -12,6 +12,8 @@ export interface Story {
 
 export interface Node {
   id: number; // ID único del nodo
+  title: string; // Título del nodo
+  description: string; // Descripción para SEO
   slug: string; // Slug único del nodo
   parentSlug: string; // Slug del cuento principal
   backSlug?: string; // Slug del nodo anterior
