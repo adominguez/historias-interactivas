@@ -3,6 +3,7 @@
 import { defineConfig } from 'astro/config';
 import mdx from '@astrojs/mdx';
 import sitemap from '@astrojs/sitemap';
+import vercel from '@astrojs/vercel/serverless';
 
 import tailwind from '@astrojs/tailwind';
 
@@ -10,4 +11,7 @@ import tailwind from '@astrojs/tailwind';
 export default defineConfig({
     site: 'https://example.com',
     integrations: [mdx(), sitemap(), tailwind()],
+    adapter: vercel({
+        edgeMiddleware: true,
+    }),
 });
