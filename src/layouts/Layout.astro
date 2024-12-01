@@ -1,0 +1,51 @@
+---
+import { ClientRouter } from 'astro:transitions';
+import Header from '@components/Header.astro';
+import BaseHead from '@components/BaseHead.astro';
+import Footer from '@components/Footer.astro';
+
+interface Props {
+	title: string;
+	description: string;
+  transition?: 'slide' | 'fade' | 'none';
+}
+
+const { title, description, transition = 'fade' } = Astro.props;
+---
+
+<!doctype html>
+<html lang="es">
+  <head>
+    <BaseHead title={title} description={description} />
+    <ClientRouter />
+	</head>
+	<body>
+    <Header />
+    <main transition:animate={transition}>
+      <slot />
+    </main>
+	</body>
+  <Footer />
+</html>
+<style is:global>
+	:root {
+		--accent: 136, 58, 234;
+		--accent-light: 224, 204, 250;
+		--accent-dark: 49, 10, 101;
+		--accent-gradient: linear-gradient(
+			45deg,
+			rgb(var(--accent)),
+			rgb(var(--accent-light)) 30%,
+			white 60%
+		);
+	}
+
+	html.dark {
+		background-color: #0d0950;
+		color: #fff;
+	}
+
+	.dark .nav-links a {
+		color: #fff;
+	}
+</style>

@@ -1,0 +1,60 @@
+---
+
+import Layout from '@layouts/Layout.astro';
+import { turso } from '@src/turso';
+import { type Story, type Option } from '@types';
+export const prerender = false;
+
+const { slug } = Astro.params;
+let story:  Story | object = {};
+if(!slug){
+  return new Response(null, {
+    status: 404,
+    statusText: 'Not found'
+  });
+}
+
+try {
+  const storyResponse = await turso.execute({
+    sql: 'SELECT * FROM stories WHERE slug = ?;',
+    args: [slug as string],
+  });
+
+  if(!storyResponse.rows.length){
+    return new Response(null, {
+      status: 404,
+      statusText: 'Not found'
+    });
+  }
+  const storyData = storyResponse.rows[0] as any;
+  if(!storyData){
+    return new Response(null, {
+      status: 404,
+      statusText: 'Not found'
+    });
+  }
+
+  story = {
+    id: storyData.id,
+    slug: storyData.slug,
+    text: storyData.text,
+    options:  JSON.parse(storyData.options),
+    title: storyData.title,
+    description: storyData.description,
+  };
+} catch (error) {
+  // TODO: Handle error and notify user
+}
+
+---
+
+<Layout title={story.title} description={story.description}>
+  <div set:html={story.text} />
+
+  <h3>¿Qué quieres hacer?</h3>
+  {
+    (story?.options || []).map((option: Option) => (
+      <a href={`${story.slug}/${option.next}`}>{option.text}</a>
+    ))
+  }
+</Layout>

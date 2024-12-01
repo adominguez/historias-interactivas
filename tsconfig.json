@@ -8,6 +8,32 @@
     "dist"
   ],
   "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@components/*": [
+        "src/components/*"
+      ],
+      "@layouts/*": [
+        "src/layouts/*"
+      ],
+      "@icons/*": [
+        "src/components/Icons/*"
+      ],
+      "@lib/*": [
+        "src/lib/*"
+      ],
+      "@data/*": [
+        "src/data/*"
+      ],
+      "@types": [
+        "src/types.ts"
+      ],
+      "@src/*": [
+        "src/*"
+      ]
+    },
+    "jsx": "react-jsx",
+    "jsxImportSource": "react",
     "strictNullChecks": true
   }
 }
