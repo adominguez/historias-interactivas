@@ -13,13 +13,12 @@ interface Props {
 	description: string;
   transition?: 'slide' | 'fade' | 'none';
   slug: string;
-  resume?: string;
   options: Option[];
   optionSlug: string;
   backUrl?: string;
 }
 
-const { description, transition = 'fade', title, slug, resume, options = [], optionSlug, backUrl } = Astro.props;
+const { description, transition = 'fade', title, slug, options = [], optionSlug, backUrl } = Astro.props;
 ---
 
 <!doctype html>
@@ -55,11 +54,6 @@ const { description, transition = 'fade', title, slug, resume, options = [], opt
           )
         }
         <h1 class="mb-8 leading-tight text-balance">{title}</h1>
-          {
-            resume && (
-              <p>{resume}</p>
-            )
-          }
           <slot />
           <Options options={options} slug={optionSlug} />
       </section>

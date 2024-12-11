@@ -48,3 +48,21 @@ export const getNodesByParentSlug = async (slug: string) => {
 
   return result.rows;
 }
+
+export const getStoriesList = async () => {
+  const result = await turso.execute({
+    sql: `
+      SELECT * FROM stories;
+    `,
+    args: [],
+  });
+  return result.rows;
+}
+
+export const getLittleStoriesList = async () => {
+  const result = await turso.execute({
+    sql: 'SELECT id, slug, title, description, created_at, resume FROM stories;',
+    args: [],
+  });
+  return result.rows;
+}

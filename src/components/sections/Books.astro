@@ -1,6 +1,10 @@
 ---
 import CardBookList from "@components/CardBookList.astro";
+import { type LittleStory } from "@types";
 
+interface Props {
+  bookList: LittleStory[];
+}
 const { bookList } = Astro.props;
 ---
 

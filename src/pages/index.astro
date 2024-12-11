@@ -1,12 +1,12 @@
 ---
 import Layout from "@layouts/Layout.astro"
-import { turso } from '../turso'
 import HeroSection from '@components/sections/Hero.astro'
 import CategoriesSection from '@components/sections/Categories.astro'
 import BooksSection from '@components/sections/Books.astro'
+import { getLittleStoriesList } from '@src/turso'
+import { type LittleStory } from "@types"
 
-const { rows } = await turso.execute('SELECT id, slug, title, description, keywords, created_at FROM stories;')
-const bookList = rows
+const bookList = await getLittleStoriesList() as unknown as LittleStory[]
 ---
 
 <Layout title="título" description="super descripción">

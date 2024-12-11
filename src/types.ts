@@ -36,3 +36,12 @@ export interface BreadCrumbProps {
   slug: string;
   current?: boolean;
 }
+
+export interface LittleStory {
+  id: number,
+  slug: string,
+  title: string,
+  description: string,
+  created_at: string,
+  resume: string,
+}

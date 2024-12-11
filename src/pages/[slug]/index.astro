@@ -41,6 +41,6 @@ const story = {
 } as Story;
 ---
 
-<Layout title={story.title} description={story.description} slug={story.slug} resume={story.resume} options={story.options} optionSlug={story.slug} >
+<Layout title={story.title} description={story.description} slug={story.slug} options={story.options} optionSlug={story.slug} >
   <div set:html={story.text} />
 </Layout>
