@@ -30,3 +30,9 @@ export interface Category {
   id: number;
   name: string;
 }
+
+export interface BreadCrumbProps {
+  title: string;
+  slug: string;
+  current?: boolean;
+}
