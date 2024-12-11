@@ -1,4 +1,4 @@
-import { type Node } from "@types"
+import { type Node, type Option } from "@types"
 
 // Función para verificar integridad del JSON
 function validateStoryIntegrity(nodes: Node[]) {
@@ -48,7 +48,7 @@ function truncateString(input: string | any[], maxLength = 800) {
   return truncated + "..."; // Añadir "..." para indicar que el texto fue truncado
 }
 
-function findExtraNodes(storySlug, nodes) {
+function findExtraNodes(storySlug: string, nodes: any[]) {
   // Crear un Set para almacenar slugs válidos (incluyendo el nodo raíz)
   const validSlugs = new Set();
   validSlugs.add(storySlug); // Nodo raíz del cuento
@@ -60,10 +60,10 @@ function findExtraNodes(storySlug, nodes) {
   });
 
   // Función para recorrer los nodos y agregar slugs válidos
-  function traverseNodes(slug) {
+  function traverseNodes(slug: string) {
     if (slugToOptions.has(slug)) {
       const options = slugToOptions.get(slug);
-      options.forEach(option => {
+      options.forEach((option: Option) => {
         if (!validSlugs.has(option.next)) {
           validSlugs.add(option.next);
           traverseNodes(option.next); // Recursión
