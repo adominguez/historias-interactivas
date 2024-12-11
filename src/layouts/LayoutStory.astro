@@ -1,0 +1,95 @@
+---
+import { ClientRouter } from 'astro:transitions';
+import Header from '@components/Header.astro';
+import BaseHead from '@components/BaseHead.astro';
+import Footer from '@components/Footer.astro';
+import { CldImage } from 'astro-cloudinary';
+import Breadcrumb from '@components/Breadcrumb.astro';
+import Options from '@components/Options.astro';
+import { type Option } from "@types";
+
+interface Props {
+	title: string;
+	description: string;
+  transition?: 'slide' | 'fade' | 'none';
+  slug: string;
+  resume?: string;
+  options: Option[];
+  optionSlug: string;
+  backUrl?: string;
+}
+
+const { description, transition = 'fade', title, slug, resume, options = [], optionSlug, backUrl } = Astro.props;
+---
+
+<!doctype html>
+<html lang="es">
+  <head>
+    <BaseHead title={title} description={description} />
+    <ClientRouter />
+	</head>
+	<body>
+    <Header />
+    <main class="flex pt-24 flex-col gap-8 mx-auto max-w-5xl" transition:animate={transition}>
+      <CldImage
+        transition:name={slug}
+        src={`cuentos-interactivos/${slug}/${slug}`}
+        width={1024}
+        height={512}
+        alt={title}
+        sizes="100vw"
+      />
+      <Breadcrumb breadcrumb={[{
+        title: 'Cuentos interactivos',
+        slug: '/#cuentos',
+        current: false,
+      }, {
+        title,
+        slug: `/cuentos-interactivos/${slug}`,
+        current: true,
+      }]} />
+      <section id="contenido" class="px-4 py-8 pb-20">
+        {
+          backUrl && (
+            <a href={`${backUrl}#contenido`}>Atrás</a>
+          )
+        }
+        <h1 class="mb-8 leading-tight text-balance">{title}</h1>
+          {
+            resume && (
+              <p>{resume}</p>
+            )
+          }
+          <slot />
+          <Options options={options} slug={optionSlug} />
+      </section>
+    </main>
+	</body>
+  <Footer />
+</html>
+<style is:global>
+	:root {
+		--accent: 136, 58, 234;
+		--accent-light: 224, 204, 250;
+		--accent-dark: 49, 10, 101;
+		--accent-gradient: linear-gradient(
+			45deg,
+			rgb(var(--accent)),
+			rgb(var(--accent-light)) 30%,
+			white 60%
+		);
+	}
+
+	html.dark {
+		background-color: #0d0950;
+		color: #fff;
+	}
+
+	.dark .nav-links a {
+		color: #fff;
+	}
+
+  h1 {
+    font-size: clamp(2em,4vw + .5em,3em);
+  }
+</style>

@@ -1,21 +1,18 @@
 ---
 import Layout from "@layouts/Layout.astro"
 import { turso } from '../turso'
+import HeroSection from '@components/sections/Hero.astro'
+import CategoriesSection from '@components/sections/Categories.astro'
+import BooksSection from '@components/sections/Books.astro'
 
 const { rows } = await turso.execute('SELECT id, slug, title, description, keywords, created_at FROM stories;')
+const bookList = rows
 ---
 
 <Layout title="título" description="super descripción">
-	<h1>🧑‍🚀 Hello, Astronaut!</h1>
-	{
-		rows.map(row => (
-			<article>
-				<a href={`/${row.slug}`}>{row.title}</a>
-				<p>{row.description}</p>
-				<p>{row.created_at}</p>
-			</article>
-		))
-	}
+	<HeroSection />
+	<CategoriesSection />
+	<BooksSection bookList={bookList} />
 
 	<a href="/create-story">Crear historia</a>
 </Layout>

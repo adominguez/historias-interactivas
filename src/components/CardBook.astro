@@ -1,0 +1,28 @@
+---
+import { CldImage } from 'astro-cloudinary';
+const { slug, title, description, created_at } = Astro.props;
+---
+
+<article class="aspect-[300/420] shadow-md flex flex-col p-4 relative group">
+  <!-- <a href={`/${slug}`}> -->
+    <div class="border-2 border-slate-800 overflow-hidden">
+      <CldImage
+        transition:name={slug}
+        src={`cuentos-interactivos/${slug}/${slug}`}
+        width={600}
+        height={700}
+        alt={title}
+        sizes="100vw"
+        class="group-hover:scale-110 transition-transform"
+      />
+    </div>
+    <a href={`/${slug}`} class="absolute flex flex-col justify-end left-0 top-0 w-full h-full" title={title}>
+      <h3 class="text-xl line-clamp-1 m-0 px-4 mb-2">{title}</h3>
+      <p class="text-sm line-clamp-2 m-0 mx-4 mb-4">{description}</p>
+    </a>
+  <!-- </a> -->
+</article>
+
+<style>
+  
+</style>

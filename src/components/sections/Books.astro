@@ -1,0 +1,12 @@
+---
+import CardBookList from "@components/CardBookList.astro";
+
+const { bookList } = Astro.props;
+---
+
+<section class="px-4 py-20 relative" id="cuentos">
+  <div class="flex flex-col gap-8 mx-auto max-w-7xl">
+    <h2 class="text-balance">¿Qué cuento quieres leer?</h2>
+    <CardBookList bookList={bookList} />
+  </div>
+</section>

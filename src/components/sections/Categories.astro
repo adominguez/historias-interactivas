@@ -1,0 +1,129 @@
+---
+import { CldImage } from 'astro-cloudinary';
+
+const categories = [{
+  title: 'Cuentos Medievales',
+  publicId: 'medieval',
+  slug: 'cuentos/medievales',
+}, {
+  title: 'Cuentos de Fantasía',
+  publicId: 'fantasy',
+  slug: 'cuentos/fantasia',
+}, {
+  title: 'Cuentos futuristas',
+  publicId: 'futurist',
+  slug: 'cuentos/futuristas',
+}, {
+  title: 'Cuentos de mitología',
+  publicId: 'mythologycal',
+  slug: 'cuentos/mitologia',
+}, {
+  title: 'Cuentos de terror',
+  publicId: 'terror',
+  slug: 'cuentos/terror',
+}, {
+  title: 'Cuentos de animales',
+  publicId: 'animals',
+  slug: 'cuentos/animales',
+}, {
+  title: 'Cuentos de Halloween',
+  publicId: 'halloween',
+  slug: 'cuentos/halloween',
+}, {
+  title: 'Cuentos de Navidad',
+  publicId: 'christmas',
+  slug: 'cuentos/navidad',
+}, {
+  title: 'Cuentos de piratas',
+  publicId: 'pirates',
+  slug: 'cuentos/piratas',
+}, {
+  title: 'Cuentos de San Valentín',
+  publicId: 'valentin',
+  slug: 'cuentos/san-valentín',
+}, {
+  title: 'Cuentos de verano',
+  publicId: 'summer',
+  slug: 'cuentos/verano',
+}, {
+  title: 'Cuentos divertidos',
+  publicId: 'comedy',
+  slug: 'cuentos/divertidos',
+}]
+---
+
+<section class="px-4 py-20 relative">
+  <div class="flex flex-col gap-8 mx-auto max-w-7xl">
+    <h2 class="text-white text-balance">¿Qué categoría quieres?</h2>
+    <div class="wrapper-grid grid gap-4 z-20">
+      {
+        categories.map(row => (
+          <article class="relative overflow-hidden rounded-lg aspect-[300/400]">
+            <a href={`/${row.slug}`} class="link peer absolute bottom-0 px-2 py-4 text-white border-transparent hover:border-red text-center top-0 left-0 right-0 flex flex-col justify-end items-center text-balance z-20 leading-6 hover:text-white">{row.title}</a>
+            <CldImage
+              src={`cuentos-interactivos/categories/${row.publicId}`}
+              width={300}
+              height={400}
+              alt={row.title}
+              sizes="100vw"
+              class="peer-hover:scale-110 z-10 rounded-lg transition-transform"
+            />
+          </article>
+        ))
+      }
+    </div>
+  </div>
+</section>
+
+<style>
+  section {
+    background-image: radial-gradient(ellipse at bottom,#1b2735 0%,#090a0f 100%);
+
+    &::after {
+      content: '';
+      position: absolute;
+      right: 0;
+      bottom: 0;
+      background-image: url('https://raw.githubusercontent.com/danielstuart14/CSS_FOG_ANIMATION/master/fog1.png');
+      background-size: 200% auto;
+      background-position: 0 bottom;
+      width: 100%;
+      height: 100%;
+      z-index: 10;
+      animation: fog 30s linear infinite;
+      filter: brightness(2.5);
+    }
+  }
+  .wrapper-grid {
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  }
+
+  .link:hover {
+    text-shadow: 0px 0px 10px #fff;
+  }
+
+  @keyframes fog {
+    0% {
+      background-position: -200% bottom;
+      filter: brightness(3.5);
+      opacity: 1;
+    }
+    10% {
+      filter: brightness(2.5);
+      opacity: 0.7;
+    }
+    50% {
+      filter: brightness(2);
+      opacity: 0.5;
+    }
+    90% {
+      filter: brightness(2.5);
+      opacity: 0.7;
+    }
+    100% {
+      background-position: 0 bottom;
+      filter: brightness(3.5);
+      opacity: 1;
+    }
+  }
+</style>

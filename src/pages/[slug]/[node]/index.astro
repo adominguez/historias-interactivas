@@ -1,5 +1,6 @@
 ---
-import Layout from "@layouts/Layout.astro";
+import Options from "@components/Options.astro";
+import Layout from "@layouts/LayoutStory.astro";
 import { turso } from "@src/turso";
 import { type Node, type Option } from "@types";
 export const prerender = false;
@@ -52,14 +53,6 @@ const backUrl =
     : `/${node.parentSlug}/${node.backSlug}`;
 ---
 
-<Layout title={node.title} description={node.description}>
-  <a href={`${backUrl}`}>Atrás</a>
+<Layout title={node.title} description={node.description} slug={node.parentSlug} options={node.options} optionSlug={node.parentSlug} backUrl={backUrl}>
   <div set:html={node.text} />
-
-  {node?.options?.length > 0 && <h3>¿Qué quieres hacer?</h3>}
-  {
-    (node?.options || []).map((option: Option) => (
-      <a href={`/${node.parentSlug}/${option.next}`}>{option.text}</a>
-    ))
-  }
 </Layout>

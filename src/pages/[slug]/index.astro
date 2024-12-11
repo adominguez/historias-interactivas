@@ -1,7 +1,7 @@
 ---
-import Layout from "@layouts/Layout.astro";
+import Layout from "@layouts/LayoutStory.astro";
 import { turso } from "@src/turso";
-import { type Story, type Option } from "@types";
+import { type Story } from "@types";
 export const prerender = false;
 
 const { slug } = Astro.params;
@@ -41,13 +41,6 @@ const story = {
 } as Story;
 ---
 
-<Layout title={story.title} description={story.description}>
+<Layout title={story.title} description={story.description} slug={story.slug} resume={story.resume} options={story.options} optionSlug={story.slug} >
   <div set:html={story.text} />
-
-  <h3>¿Qué quieres hacer?</h3>
-  {
-    (story?.options || []).map((option: Option) => (
-      <a href={`${story.slug}/${option.next}`}>{option.text}</a>
-    ))
-  }
 </Layout>

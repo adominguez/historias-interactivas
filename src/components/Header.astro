@@ -4,8 +4,8 @@ import { SITE_TITLE } from '../consts';
 import ThemeIcon from './ThemeIcon.astro';
 ---
 
-<header>
-	<ThemeIcon />
+<header class="absolute w-svw z-10">
+	<!-- <ThemeIcon /> -->
 	<nav>
 		<h2><a href="/">{SITE_TITLE}</a></h2>
 		<div class="internal-links">
@@ -45,12 +45,6 @@ import ThemeIcon from './ThemeIcon.astro';
 	</nav>
 </header>
 <style>
-	header {
-		margin: 0;
-		padding: 0 1em;
-		background: white;
-		box-shadow: 0 2px 8px rgba(var(--black), 5%);
-	}
 	h2 {
 		margin: 0;
 		font-size: 1em;

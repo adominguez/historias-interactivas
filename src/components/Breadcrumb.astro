@@ -1,0 +1,27 @@
+---
+import { type BreadCrumbProps } from '@types';
+const { breadcrumb } = Astro.props;
+---
+
+<ul class="px-4 flex flex-wrap">
+  {
+    breadcrumb.map(({ title, slug, current }: BreadCrumbProps) => (
+      <li class="inline">
+        {
+          current ? (
+            <span>{title}</span>
+          ) : (
+            <a href={slug}>
+              {title}
+            </a>
+          )
+        }
+        {
+          !current && (
+            <span> / </span>
+          )
+        }
+      </li>
+    ))
+  }
+</ul>
