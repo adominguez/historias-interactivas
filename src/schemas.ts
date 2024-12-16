@@ -54,7 +54,7 @@ const storySchema = z.object({
   options: z.array(optionSchema), // Opciones iniciales
   categories: z.array(categoriesEnum).describe("Categorías relacionadas con el cuento"),
   characters: z.array(characterSchema).describe("Lista de personajes"),
-  duration: z.number().optional().describe("Duración estimada en minutos"),
+  duration: z.string().optional().describe("Duración estimada en minutos"),
 });
 
 // Esquema completo

@@ -73,11 +73,12 @@ const createStory = async ({ scenario, characters, category }: { scenario: strin
 
   // Comprobamos que no exista un cuento con el mismo slug
   const storyBySlug = await getStoryBySlug(story.slug);
+  const isValidSlug = storyBySlug?.length === 0;
 
   // Validamos la integridad del cuento
   const { isValidated } = validateStoryIntegrity(nodes as unknown as Node[]);
 
-  if (isValidated && storyBySlug?.length === 0) {
+  if (isValidated && isValidSlug) {
     const storyParams = [
       story.title,
       story.slug,
@@ -133,7 +134,7 @@ const createStory = async ({ scenario, characters, category }: { scenario: strin
       return { status: 400, error }
     }
   } else {
-    return { status: 400, error: "El cuento no ha pasado la validación de integridad" };
+    return { status: 400, error: isValidated ? "El cuento no ha pasado la validación de integridad" : "El slug del cuento ya existe" };
   }
 };
 
