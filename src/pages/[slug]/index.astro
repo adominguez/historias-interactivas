@@ -1,6 +1,6 @@
 ---
 import Layout from "@layouts/LayoutStory.astro";
-import { turso } from "@src/turso";
+import { getStoryBySlug } from "@src/turso";
 import { type Story } from "@types";
 export const prerender = false;
 
@@ -12,18 +12,15 @@ if (!slug) {
   });
 }
 
-const storyResponse = await turso.execute({
-  sql: "SELECT * FROM stories WHERE slug = ?;",
-  args: [slug as string],
-});
+const storyResponse = await getStoryBySlug(slug);
 
-if (!storyResponse.rows.length) {
+if (!storyResponse.length) {
   return new Response(null, {
     status: 404,
     statusText: "Not found",
   });
 }
-const storyData = storyResponse.rows[0] as any;
+const storyData = storyResponse[0] as any;
 if (!storyData) {
   return new Response(null, {
     status: 404,
