@@ -75,3 +75,17 @@ export const getLittleStoriesList = async () => {
   });
   return result.rows;
 }
+
+export const getSearchStories = async (query: string) => {
+  const results = await turso.execute({
+    sql: `
+      SELECT title, slug, description
+      FROM stories
+      WHERE title LIKE ? OR keywords LIKE ? OR description LIKE ?
+      LIMIT 5;
+    `,
+    args: [`%${query}%`, `%${query}%`, `%${query}%`],
+  });
+
+  return results.rows;
+}
