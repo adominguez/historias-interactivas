@@ -8,6 +8,7 @@ import OpenAI from "openai";
 import { v2 as cloudinary } from 'cloudinary'
 import { insertNewNodes, insertNewStory, getStoryBySlug } from "@src/turso";
 import { type Node } from "@types";
+import { AGES } from '@src/utils/characters';
 
 cloudinary.config({
   cloud_name: import.meta.env.PUBLIC_CLOUDINARY_CLOUD_NAME,
@@ -55,14 +56,14 @@ const generateImage = async (prompt: string, slug: string, retry = 0) => {
   }
 };
 
-const createStory = async ({ scenario, characters, category }: { scenario: string, characters: string[], category: string }) => {
+const createStory = async ({ scenario, characters, category, age }: { scenario: string, characters: string[], category: string, age: string }) => {
   // Generamos el prompt para OpenAI
   console.log('Generando cuento...');
-  const prompt = generateStoryPrompt({ scenario, characters, category });
+  const prompt = generateStoryPrompt({ scenario, characters, category, age });
   const schema = fullSchema;
   const result = await generateObject({
     model: openai('gpt-4o-mini'),
-    system: `Eres un escritor de cuentos interactivos para niños de entre 5 y 8 años.`,
+    system: `Eres un escritor de cuentos interactivos para personas de ${age} años.`,
     prompt,
     schema,
   });
@@ -90,15 +91,17 @@ const createStory = async ({ scenario, characters, category }: { scenario: strin
       JSON.stringify([category]),
       JSON.stringify(story.characters),
       `cuentos-interactivos/${story.slug}/${story.slug}`,
-      '5-8',
+      age,
       story.duration || '10-15 minutos',
       0
     ];
 
+    const selectedAge = AGES[age as keyof typeof AGES] || AGES["9-12"];
+
     // comenzamos la creación de imágenes con IA
     const imagePrompt = `${truncateString(
       `I NEED to test how the tool works with extremely simple prompts. DO NOT add any detail, just use it AS-IS:
-    Ilustración 3D en estilo de cuento infantil, colores brillantes y texturas suaves, evita añadir texto. Este es el texto: ${story.text}.`, 700,)}. Personajes: ${story.characters.map(({ name, description }) => `${name}: ${description}`).join(", ")}.`
+    Ilustración 3D para ${selectedAge.people} de ${selectedAge.alias}, colores brillantes y texturas suaves, evita añadir texto. Este es el texto: ${story.text}.`, 700,)}. Personajes: ${story.characters.map(({ name, description }) => `${name}: ${description}`).join(", ")}.`
 
     const { isGenerated, error, imageUrl } = await generateImage(imagePrompt, story.slug);
 
@@ -146,13 +149,14 @@ export async function GET(request: Request) {
 
   // Extraer el parámetro "category"
   const paramCategory = url.searchParams.get("category") || undefined;
+  const paramAge = url.searchParams.get("age") || undefined;
 
   // Obtenemos la configuración del cuento
-  const { scenario, characters, category } = generateStorySetup(paramCategory);
-  console.log('Configuración del cuento: ', scenario, characters, category);
+  const { scenario, characters, category, age } = generateStorySetup(paramCategory, paramAge);
+  console.log('Configuración del cuento: ', scenario, characters, category, age);
 
   // Creamos el cuento
-  const { status, story, nodes, error } = await createStory({ scenario, characters, category });
+  const { status, story, nodes, error } = await createStory({ scenario, characters, category, age });
 
   // Devolvemos el resultado
   if (status === 200) {

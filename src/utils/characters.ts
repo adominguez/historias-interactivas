@@ -283,10 +283,53 @@ const categories: Category = {
   // }
 };
 
-function generateStorySetup(paramCategory?: string) {
+const ages = [
+  "3-4",
+  "5-8",
+  "9-12",
+  "13-18",
+  "18"
+]
+
+export const AGES = {
+  "3-4": {
+    type: "un cuento",
+    people: "niños",
+    alias: "3-4 años",
+    words: "40-60 palabras"
+  },
+  "5-8": {
+    type: "un cuento",
+    people: "niños",
+    alias: "5-8 años",
+    words: "100-200 palabras"
+  },
+  "9-12": {
+    type: "un cuento",
+    people: "niños",
+    alias: "9-12 años",
+    words: "200-300 palabras"
+  },
+  "13-18": {
+    type: "una historia",
+    people: "jóvenes",
+    alias: "13-18 años",
+    words: "300-500 palabras"
+  },
+  "18": {
+    type: "una historia",
+    people: "personas",
+    alias: "18 años o más",
+    words: "500-1000 palabras"
+  }
+}
+
+function generateStorySetup(paramCategory?: string, paramAge?: string) {
   // Obtener una categoría aleatoria
   const categoriesTypes = Object.keys(categories);
   const category = paramCategory ?? categoriesTypes[Math.floor(Math.random() * categoriesTypes.length)];
+  // Obtener una edad aleatoria
+  const age = paramAge ?? ages[Math.floor(Math.random() * ages.length)];
 
   // Obtener un escenario aleatorio
   const { scenarios, characters } = categories[category];
@@ -297,6 +340,7 @@ function generateStorySetup(paramCategory?: string) {
     .sort(() => 0.5 - Math.random())
     .slice(0, Math.random() < 0.5 ? 2 : 3);
   return {
+    age,
     scenario: randomScenario,
     category,
     characters: selectedCharacters.map((ch) => `${ch} (${sexos[ch] !== undefined ? sexos[ch] : Math.random() < 0.5 ? "masculino" : "femenino"})`)};

@@ -1,18 +1,25 @@
-function generateStoryPrompt({scenario, characters, category}: {scenario: string, characters: string[], category: string}) {
+import { AGES } from '@src/utils/characters';
+
+function generateStoryPrompt({scenario, characters, category, age}: {scenario: string, characters: string[], category: string, age: string}) {
   const formattedList = new Intl.ListFormat('es', { style: 'long', type: 'conjunction' });
   const formattedCharacters = formattedList.format(characters);
+
+  const selectedAge = AGES[age as keyof typeof AGES] || AGES["9-12"];
+  console.log(selectedAge)
   
-  return `Genera un cuento interactivo para niños entre 5 y 8 años con las siguientes características:
-  1. **Estructura del cuento:**
+  return `Genera ${selectedAge.type} interactivo para ${selectedAge.people} de ${selectedAge.alias} con las siguientes características:
+  1. **Estructura:**
      - Los personajes principales son ${formattedCharacters}.
      - El escenario del cuento es '${scenario}'.
      - La categoría del cuento es '${category}'.
      - El cuento debe estar dividido en un **inicio**, un **nudo** y un **desenlace**.
      - ¡Muy importante! Se original, no hagas el típico de encontrar algo eligiendo caminos, por ejemplo podría ser elegir opciones en un diálogo...
-     - Cada sección debe contener al menos **300-400 palabras**, con un lenguaje adecuado para niños.
+     - Puede darse el caso de que los personajes puedan encontrarse con otros personajes secundarios, pero no deben ser el foco principal de la historia.
+     - Puede darse el caso de que los personajes se complementen y puedan enfrentarse entre ellos, por ejemplo, un cazador de brujas y una bruja.
+     - Cada sección debe contener de ${selectedAge.words} para que lo entiendan ${selectedAge.people} de ${selectedAge.alias}, con un lenguaje adecuado para ${selectedAge.people} de ${selectedAge.alias}.
      - La trama debe incluir decisiones importantes que lleven a diferentes caminos y nodos finales.
      - El texto debe estar en HTML utilizando las etiquetas <p>, <strong>, <em>... que sean necesarias.
-     - El cuento debe de tener un mínimo de 3 nodos y un máximo de 5.
+     - El cuento debe de tener un mínimo de 3 nodos y un máximo de 8.
      - cada decisión puede ofrecer un mínimo de 2 opciones y un máximo de 4.
   
   3. **Validación de las opciones:**
