@@ -30,18 +30,18 @@ const nodeSchema = z.object({
 });
 
 const categoriesEnum = z.enum([
-  "Medievales",
-  "Fantasía",
-  "futuristas",
-  "mitología",
+  "medieval",
+  "fantasy",
+  "futurist",
+  "mythologycal",
   "terror",
-  "animales",
-  "Halloween",
-  "Navidad",
-  "piratas",
-  "San Valentín",
-  "verano",
-  "divertidos",
+  "animals",
+  "halloween",
+  "christmas",
+  "pirates",
+  "valentin",
+  "summer",
+  "comedy",
 ]);
 
 // Esquema para la historia principal
@@ -54,6 +54,7 @@ const storySchema = z.object({
   options: z.array(optionSchema), // Opciones iniciales
   categories: z.array(categoriesEnum).describe("Categorías relacionadas con el cuento"),
   characters: z.array(characterSchema).describe("Lista de personajes"),
+  duration: z.number().optional().describe("Duración estimada en minutos"),
 });
 
 // Esquema completo

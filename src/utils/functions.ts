@@ -4,6 +4,7 @@ import { type Node, type Option } from "@types"
 function validateStoryIntegrity(nodes: Node[]) {
   const slugs = new Set(nodes.map(node => node.slug)); // Conjunto de slugs existentes
   const errors = [] as any[];
+  let isValidated = false;
 
   nodes.forEach(node => {
     if (node.options && node.options.length > 0) {
@@ -20,6 +21,7 @@ function validateStoryIntegrity(nodes: Node[]) {
   });
 
   if (errors.length > 0) {
+    isValidated = false;
     console.log("Se encontraron errores:");
     errors.forEach(error => {
       console.log(
@@ -27,8 +29,11 @@ function validateStoryIntegrity(nodes: Node[]) {
       );
     });
   } else {
+    isValidated = true;
     console.log("¡Todo está correctamente enlazado!");
   }
+
+  return {isValidated};
 }
 
 function truncateString(input: string | any[], maxLength = 800) {

@@ -8,6 +8,13 @@ CREATE TABLE stories (
     text TEXT NOT NULL,          -- Texto del nodo principal en formato HTML
     options TEXT NOT NULL,       -- JSON con las opciones iniciales
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP -- Fecha de creación
+    categories TEXT,             -- JSON con las categorías
+    resume TEXT                  -- Resumen del cuento
+    characters TEXT              -- JSON con los personajes
+    image TEXT                   -- URL de la imagen
+    age TEXT                     -- Edad recomendada
+    duration TEXT                -- Duración estimada
+    rating REAL                  -- Calificación
 );
 
 CREATE TABLE nodes (
@@ -18,6 +25,9 @@ CREATE TABLE nodes (
     back_slug TEXT,
     text TEXT NOT NULL,
     options TEXT,
+    title TEXT,
+    description TEXT,
+    keywords TEXT,
     FOREIGN KEY (story_id) REFERENCES stories (id)
 );
 

@@ -5,11 +5,11 @@ export const turso = createClient({
   authToken: import.meta.env.TURSO_AUTH_TOKEN,
 });
 
-export const insertNewStory = async (storyParams: string[]) => {
+export const insertNewStory = async (storyParams: (string | number)[]) => {
   await turso.execute({
     sql: `
-      INSERT INTO stories (title, slug, resume, text, options, description, keywords, categories, characters)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);
+      INSERT INTO stories (title, slug, resume, text, options, description, keywords, categories, characters, image, age, duration, rating)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
     `,
     args: storyParams,
   });
@@ -44,6 +44,15 @@ export const getNodesByParentSlug = async (slug: string) => {
       SELECT * FROM nodes WHERE parent_slug = ?;
     `,
     args: [slug],
+  });
+
+  return result.rows;
+}
+
+export const getStoryBySlug = async (slug: string) => {
+  const result = await turso.execute({
+    sql: "SELECT * FROM stories WHERE slug = ?;",
+    args: [slug as string],
   });
 
   return result.rows;

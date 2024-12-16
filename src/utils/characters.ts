@@ -77,7 +77,7 @@ const categories: Category = {
       "Montaña prohibida", "Lago de los deseos", "Isla flotante"
     ]
   },
-  futuristic: {
+  futurist: {
     characters: [
       "Robot", "Científico loco", "Extraterrestre", "Niño", "Niña", "Astronauta", "Navegante del tiempo",
       "Inventor del futuro", "Inteligencia artificial", "Cazador de estrellas",
@@ -111,7 +111,7 @@ const categories: Category = {
       "Bosque de olivos", "Bosque de almendros", "Bosque de cerezos", "Bosque de manzanos", "Bosque de perales", "Bosque de ciruelos"
   ]
   },
-  mythological: {
+  mythologycal: {
     characters: [
       "Minotauro", "Medusa", "Dios del trueno", "Genio de la lámpara", "Quimera", "Pegaso",
       "Esfinge", "Héroe mitológico", "Tritón", "Dios de la sabiduría", "Semidiós",
@@ -130,12 +130,163 @@ const categories: Category = {
       "Templo de Hypnos", "Templo de Morfeo", "Templo de Tánatos", "Templo de Némesis", "Templo de Tyche"
     ]
   },
+  terror: {
+    characters: [
+      "Fantasma", "Vampiro", "Hombre lobo", "Bruja", "Zombi", "Espectro",
+      "Licántropo", "Demonio", "Ángel caído", "Cazador de monstruos", "Cazador de vampiros",
+      "Cazador de demonios", "Cazador de brujas", "Cazador de fantasmas", "Cazador de zombis",
+      "Cazador de licántropos", "Cazador de espectros", "Cazador de ángeles caídos", "Cazador de criaturas",
+      "Cazador de seres sobrenaturales"
+    ],
+    scenarios: [
+      "Cementerio", "Mansión abandonada", "Bosque oscuro", "Casa encantada", "Hospital psiquiátrico",
+      "Asilo abandonado", "Cueva de los murciélagos", "Cueva de los vampiros", "Carretera maldita", "Isla desierta",
+      "Barco fantasma", "Casa de muñecas", "Casa de espejos", "Casa de los horrores", "Casa de los sustos", "Casa embrujada",
+    ]
+  },
+  // christmas: {
+  //   characters: [
+  //     "Papá Noel", "Mamá Noel", "Duende", "Renos", "Muñeco de nieve", "Árbol de Navidad",
+  //     "Estrella de Belén", "Pastor", "Reyes Magos", "Ángel de la guarda", "Caramelo de jengibre", "Hada de la Navidad",
+  //     "Copa de chocolate", "Bola de nieve", "Regalo de Navidad", "Trineo mágico", "Casa de jengibre", "niño", "niña"
+  //   ],
+  //   scenarios: [
+  //     "Polo Norte", "Taller de juguetes", "Casa de Papá Noel", "Casa de Mamá Noel", "Casa de los duendes", "Casa de los renos",
+  //     "Casa de los muñecos de nieve", "Casa de los caramelos", "Casa de los regalos", "Casa de las estrellas", "Casa de los pastores",
+  //     "Casa de los Reyes Magos", "Casa de los ángeles", "Casa de los copos de nieve", "Casa de los trineos", "Casa de los regalos", "centro comercial", "ciudad nevada",
+  //     "ciudad iluminada", "ciudad de los juguetes", "ciudad de los caramelos", "ciudad de los regalos", "ciudad de las estrellas", "ciudad de los pastores", "ciudad de los Reyes Magos",
+  //   ]
+  // },
+  pirates: {
+    characters: [
+      "Pirata", "Capitán pirata", "Marinero", "Corsario", "Bucanero", "Navegante",
+      "Rey de los piratas", "Reina de los piratas", "Príncipe pirata", "Princesa pirata",
+      "Pata de palo", "Ojo de vidrio", "Garfio", "Loro pirata"
+    ],
+    scenarios: [
+      "Isla del tesoro", "Barco pirata", "Taberna pirata", "Puerto pirata", "Cueva del pirata",
+      "Mar de los siete mares", "Isla desierta", "Isla misteriosa", "Isla de los piratas",
+      "Isla de los corsarios", "Isla de los bucaneros", "Isla de los navegantes", "Isla de los tesoros",
+      "barco fantasma", "barco de los piratas", "barco de los corsarios", "barco de los bucaneros",
+      "tesoro pirata", "tesoro de los piratas", "tesoro de los corsarios", "tesoro de los bucaneros",
+    ]
+  },
+  // valentin: {
+  //   characters: [
+  //     "Cupido", "Pareja", "Enamorado", "Enamorada"
+  //   ],
+  //   scenarios: [
+  //     "Carta de amor", "Cita romántica", "Cena a la luz de las velas",
+  //     "Paseo por la playa", "Paseo por el parque", "Paseo en globo", "Paseo en barco", "Paseo en coche",
+  //     "Paseo en moto", "Paseo en bicicleta", "Paseo en patines", "Paseo en patinete", "Paseo en patín"
+  //   ]
+  // },
+  verano: {
+    characters: [
+      "Niño", "Niña", "Padre", "Madre", "Abuelo", "Abuela", "Tío", "Tía", "Primo", "Prima",
+      "Amigo", "Amiga", "Vecino", "Vecina", "Perro", "Gato", "Pájaro", "Pez", "Delfín", "Tortuga",
+      "Cangrejo", "Pulpo", "Medusa", "Coral", "Estrella de mar", "Caracola", "Concha", "Barco", "Velero",
+      "Lancha", "Yate", "Catamarán", "Surfista", "Nadador", "Bañista", "Pescador", "Buzo", "Socorrista",
+      "Vendedor de helados", "Vendedor de refrescos", "Vendedor de palomitas", "Vendedor de churros", "Vendedor de perritos calientes",
+    ],
+    scenarios: [
+      "Playa", "Mar", "Océano", "Piscina", "Río", "Lago", "Charca", "Cascada",
+      "Fuente", "Parque acuático", "Parque de atracciones", "Parque de juegos", "Parque de diversiones", "Parque temático",
+      "vacaciones", "campamento", "excursión", "viaje", "paseo", "piscina", "fiesta", "barbacoa", "picnic", "merienda",
+    ]
+  },
+  // comedy: {
+  //   characters: [
+  //     "Payaso",
+  //     "Bufón",
+  //     "Profesor despistado",
+  //     "Rey ingenuo",
+  //     "Caballero torpe",
+  //     "Bruja olvidadiza",
+  //     "Dragón miedoso",
+  //     "Gigante torpe",
+  //     "Aldeano chismoso",
+  //     "Héroe presumido",
+  //     "Gato parlante",
+  //     "Inventor loco",
+  //     "Cocinero exagerado",
+  //     "Troll amable",
+  //     "Fantasma bromista",
+  //     "Pirata cobarde",
+  //     "Princesa mandona",
+  //     "Príncipe vanidoso",
+  //     "Mago incompetente",
+  //     "Explorador perdido",
+  //     "Sirena cantarina",
+  //     "Duende tramposo",
+  //     "Monje perezoso",
+  //     "Ladronzuelo desafortunado",
+  //     "Caballo charlatán",
+  //     "Hada distraída",
+  //     "Mercader regateador",
+  //     "Barquero gruñón",
+  //     "Lobo vegetariano",
+  //     "Cazador miope",
+  //     "Conejo hiperactivo",
+  //     "Pájaro charlatán",
+  //     "Robot torpe",
+  //     "Detective confuso",
+  //     "Abuela astuta",
+  //     "Vecino entrometido",
+  //     "Jardinero exagerado",
+  //     "Bardo desafinado",
+  //     "Pez olvidadizo",
+  //     "Reina paranoica"
+  //   ],
+  //   scenarios: [
+  //     "Un banquete real que termina en desastre",
+  //     "Un concurso de talentos desastroso",
+  //     "Un castillo encantado lleno de trampas tontas",
+  //     "Una carrera en la que todos los competidores hacen trampa",
+  //     "Un bosque donde los árboles hablan demasiado",
+  //     "Una boda interrumpida por un dragón vegetariano",
+  //     "Un mercado lleno de regateadores exagerados",
+  //     "Un torneo de caballeros donde las armas son utensilios de cocina",
+  //     "Una misión para rescatar a un gato perdido",
+  //     "Una cueva misteriosa con ecos que se burlan",
+  //     "Un viaje en barco con una tripulación que no sabe nadar",
+  //     "Una granja donde los animales lideran una revuelta",
+  //     "Un carnaval donde todo sale mal",
+  //     "Un laboratorio donde los experimentos siempre explotan",
+  //     "Un pueblo donde todos se comunican con rimas",
+  //     "Una biblioteca mágica con libros que hablan",
+  //     "Un hechizo que cambia las voces de todos los personajes",
+  //     "Un circo donde los actos salen mal pero divierten al público",
+  //     "Una tienda de pociones con ingredientes impredecibles",
+  //     "Una caza del tesoro con un mapa lleno de errores",
+  //     "Un taller de inventos donde nada funciona correctamente",
+  //     "Una escuela de magia con maestros muy despistados",
+  //     "Un castillo en ruinas lleno de trampas absurdas",
+  //     "Un festival donde todos intercambian roles",
+  //     "Un puente custodiado por un troll amistoso pero hablador",
+  //     "Una misión para devolver un objeto mágico que causa problemas",
+  //     "Un zoológico mágico donde los animales escapan",
+  //     "Un pueblo congelado donde los habitantes se deslizan constantemente",
+  //     "Una tienda de dulces con caramelos que hablan",
+  //     "Un concurso de cocina donde los ingredientes cobran vida",
+  //     "Un estanque donde las ranas cuentan chistes",
+  //     "Un reino donde todo se resuelve con concursos de baile",
+  //     "Un desierto donde las dunas forman mensajes misteriosos",
+  //     "Una torre donde la princesa no quiere ser rescatada",
+  //     "Un pueblo donde todos tienen habilidades mágicas inútiles",
+  //     "Una cueva donde el eco tiene opiniones propias",
+  //     "Un volcán que erupciona confeti en lugar de lava",
+  //     "Un bosque donde los animales intercambian personalidades",
+  //     "Un río que fluye hacia arriba y confunde a todos",
+  //     "Una posada donde los fantasmas son camareros bromistas"
+  //   ]
+  // }
 };
 
-function generateStorySetup() {
+function generateStorySetup(paramCategory?: string) {
   // Obtener una categoría aleatoria
   const categoriesTypes = Object.keys(categories);
-  const category = categoriesTypes[Math.floor(Math.random() * categoriesTypes.length)];
+  const category = paramCategory ?? categoriesTypes[Math.floor(Math.random() * categoriesTypes.length)];
 
   // Obtener un escenario aleatorio
   const { scenarios, characters } = categories[category];
