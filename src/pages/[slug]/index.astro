@@ -1,6 +1,6 @@
 ---
 import Layout from "@layouts/LayoutStory.astro";
-import { getStoryBySlug } from "@src/turso";
+import { getStoryBySlug, getRelatedStoriesBySlug } from "@src/turso";
 import { type Story } from "@types";
 export const prerender = false;
 
@@ -36,8 +36,10 @@ const story = {
   title: storyData.title,
   description: storyData.description,
 } as Story;
+
+const relatedStories = await getRelatedStoriesBySlug(story.slug);
 ---
 
-<Layout title={story.title} description={story.description} slug={story.slug} options={story.options} optionSlug={story.slug} >
+<Layout title={story.title} description={story.description} slug={story.slug} options={story.options} optionSlug={story.slug} relatedStories={relatedStories} >
   <div set:html={story.text} />
 </Layout>

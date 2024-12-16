@@ -1,8 +1,8 @@
 ---
-import Options from "@components/Options.astro";
 import Layout from "@layouts/LayoutStory.astro";
 import { turso } from "@src/turso";
-import { type Node, type Option } from "@types";
+import { getRelatedStoriesBySlug } from "@src/turso";
+import { type Node } from "@types";
 export const prerender = false;
 
 const { slug, node: nodeParam } = Astro.params;
@@ -43,15 +43,17 @@ const node = {
   description: nodeData.description,
   parentSlug: nodeData.parent_slug,
   backSlug: nodeData.back_slug,
+  storyId: nodeData.story_id,
 } as Node;
-
 
 const backUrl =
   node.backSlug === node.parentSlug
     ? `/${node.parentSlug}`
     : `/${node.parentSlug}/${node.backSlug}`;
+  
+const relatedStories = await getRelatedStoriesBySlug(node.parentSlug);
 ---
 
-<Layout title={node.title} description={node.description} slug={node.parentSlug} options={node.options} optionSlug={node.parentSlug} backUrl={backUrl}>
+<Layout title={node.title} description={node.description} slug={node.parentSlug} options={node.options} optionSlug={node.parentSlug} backUrl={backUrl} relatedStories={relatedStories}>
   <div set:html={node.text} />
 </Layout>

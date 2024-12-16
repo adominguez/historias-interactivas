@@ -2,9 +2,13 @@
 import CardBook from "./CardBook.astro"
 import { type LittleStory } from "@types"
 
-const { bookList } = Astro.props
+const { bookList, showFilter } = Astro.props
 ---
-<div>Elegir tipo</div>
+{
+  showFilter && (
+    <div>Elegir tipo</div>
+  )
+}
 <div class="wrapper-grid grid gap-4 z-20">
   {
     bookList.map(({ slug, title, created_at, resume }: LittleStory) => (

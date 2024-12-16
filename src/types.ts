@@ -19,6 +19,7 @@ export interface Node {
   backSlug?: string; // Slug del nodo anterior
   text: string; // Contenido del nodo en HTML
   options: Option[]; // Opciones para navegar
+  storyId: number; // ID del cuento principal
 }
 
 export interface Option {
