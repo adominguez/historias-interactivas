@@ -283,7 +283,7 @@ const categories: Category = {
   // }
 };
 
-const ages = [
+export const ages = [
   "3-4",
   "5-8",
   "9-12",
