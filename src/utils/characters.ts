@@ -181,7 +181,7 @@ const categories: Category = {
   //     "Paseo en moto", "Paseo en bicicleta", "Paseo en patines", "Paseo en patinete", "Paseo en patín"
   //   ]
   // },
-  verano: {
+  summer: {
     characters: [
       "Niño", "Niña", "Padre", "Madre", "Abuelo", "Abuela", "Tío", "Tía", "Primo", "Prima",
       "Amigo", "Amiga", "Vecino", "Vecina", "Perro", "Gato", "Pájaro", "Pez", "Delfín", "Tortuga",
