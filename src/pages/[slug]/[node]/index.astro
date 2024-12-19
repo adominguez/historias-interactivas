@@ -1,7 +1,7 @@
 ---
 import Layout from "@layouts/LayoutStory.astro";
 import { turso } from "@src/turso";
-import { getRelatedStoriesBySlug } from "@src/turso";
+import { getRelatedStoriesBySlug, getRatingStoryBySlug } from "@src/turso";
 import { type Node } from "@types";
 export const prerender = false;
 
@@ -52,8 +52,9 @@ const backUrl =
     : `/${node.parentSlug}/${node.backSlug}`;
   
 const relatedStories = await getRelatedStoriesBySlug(node.parentSlug);
+const { rating, ratingCount } = await getRatingStoryBySlug(node.parentSlug);
 ---
 
-<Layout title={node.title} description={node.description} slug={node.parentSlug} options={node.options} optionSlug={node.parentSlug} backUrl={backUrl} relatedStories={relatedStories}>
+<Layout title={node.title} description={node.description} slug={node.parentSlug} options={node.options} optionSlug={node.parentSlug} backUrl={backUrl} relatedStories={relatedStories} ratingSlug={node.parentSlug} rating={rating as number} ratingCount={ratingCount as number}>
   <div set:html={node.text} />
 </Layout>

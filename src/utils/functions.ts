@@ -86,5 +86,67 @@ function findExtraNodes(storySlug: string, nodes: any[]) {
   return extraNodes; // Retorna los nodos sobrantes
 }
 
+const LOCAL_STORAGE_KEY = "ratedStories";
+export const isBrowser = typeof window !== "undefined";
 
-export { truncateString, validateStoryIntegrity, findExtraNodes };
+/**
+ * Guarda un cuento valorado en el localStorage
+ * @param {string} slug - El identificador único (slug) del cuento.
+ * @param {number} rating - La calificación que el usuario dio al cuento.
+ */
+const saveRatedStory = (slug: string, rating: number) => {
+  if (!isBrowser) return; // Verificar entorno cliente
+
+  const ratedStories = JSON.parse(localStorage.getItem(LOCAL_STORAGE_KEY) || "[]");
+
+  const existingStory = ratedStories.find((story: any) => story.slug === slug);
+
+  if (existingStory) {
+    existingStory.rating = rating;
+  } else {
+    ratedStories.push({ slug, rating, date: new Date().toISOString() });
+  }
+
+  localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(ratedStories));
+};
+
+/**
+ * Recupera todos los cuentos valorados del localStorage
+ * @returns {Array<{slug: string, rating: number, date: string}>} - Listado de cuentos valorados
+ */
+const getRatedStories = (): { slug: string; rating: number; date: string }[] => {
+  if (!isBrowser) return []; // Verificar entorno cliente
+
+  return JSON.parse(localStorage.getItem(LOCAL_STORAGE_KEY) || "[]");
+};
+
+/**
+ * Recupera la calificación de un cuento valorado del localStorage
+ * @param {string} slug - El identificador único (slug) del cuento.
+ */
+const getRatedStory = (slug: string) => {
+  if (!isBrowser) return; // Verificar entorno cliente
+
+  const ratedStories = JSON.parse(localStorage.getItem(LOCAL_STORAGE_KEY) || "[]");
+  const existingStory = ratedStories.find((story: any) => story.slug === slug);
+
+  return existingStory;
+}
+
+/**
+ * Elimina un cuento valorado del localStorage
+ * @param {string} slug - El identificador único (slug) del cuento a eliminar.
+ */
+const removeRatedStory = (slug: string) => {
+  if (!isBrowser) return; // Verificar entorno cliente
+
+  const ratedStories = JSON.parse(localStorage.getItem(LOCAL_STORAGE_KEY) || "[]");
+  const updatedStories = ratedStories.filter((story: any) => story.slug !== slug);
+
+  localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updatedStories));
+};
+
+
+
+
+export { truncateString, validateStoryIntegrity, findExtraNodes, saveRatedStory, getRatedStories, removeRatedStory, getRatedStory };

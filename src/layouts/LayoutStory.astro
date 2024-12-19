@@ -8,6 +8,7 @@ import Breadcrumb from '@components/Breadcrumb.astro';
 import Options from '@components/Options.astro';
 import { type Option } from "@types";
 import Books from '@components/sections/Books.astro';
+import Rating from '@components/Rating';
 
 interface Props {
 	title: string;
@@ -18,9 +19,12 @@ interface Props {
   optionSlug: string;
   backUrl?: string;
   relatedStories: any[];
+  ratingSlug: string;
+  ratingCount: number;
+  rating: number;
 }
 
-const { description, transition = 'fade', title, slug, options = [], optionSlug, backUrl, relatedStories } = Astro.props;
+const { description, transition = 'fade', title, slug, options = [], optionSlug, backUrl, relatedStories, ratingCount, rating, ratingSlug } = Astro.props;
 ---
 
 <!doctype html>
@@ -55,9 +59,27 @@ const { description, transition = 'fade', title, slug, options = [], optionSlug,
             <a href={`${backUrl}#contenido`}>Atrás</a>
           )
         }
-        <h1 class="mb-8 leading-tight text-balance">{title}</h1>
-          <slot />
-          <Options options={options} slug={optionSlug} />
+        <div class="mb-8">
+          <h1 class="leading-tight text-balance">{title}</h1>
+          <Rating
+            totalStars={5}
+            initialRating={rating}
+            ratingCount={ratingCount}
+            size={24}
+            color="#FFD700"
+            slug={ratingSlug}
+            client:visible
+          />
+          {
+            ratingCount === 0 ? (
+              <p class="text-sm text-gray-500">Este cuento aún no ha sido valorado, se el primero en valorarlo</p>
+            ) : (
+              <p class="text-sm text-gray-500">Realiza una valoración del cuento</p>
+            )
+          }
+        </div>
+        <slot />
+        <Options options={options} slug={optionSlug} />
       </section>
       <Books bookList={relatedStories} title='¿Quieres leer otro cuento?' />
     </main>

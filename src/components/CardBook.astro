@@ -1,9 +1,10 @@
 ---
 import { CldImage } from 'astro-cloudinary';
-const { slug, title, description, created_at } = Astro.props;
+import Rating from './Rating';
+const { slug, title, description, created_at, resume, age, rating, ratingCount } = Astro.props;
 ---
 
-<article class="aspect-[300/420] shadow-md flex flex-col p-4 relative group">
+<article class="aspect-[300/450] shadow-md flex flex-col p-4 relative group border border-gray-200">
   <!-- <a href={`/${slug}`}> -->
     <div class="border-2 border-slate-800 overflow-hidden">
       <CldImage
@@ -17,8 +18,17 @@ const { slug, title, description, created_at } = Astro.props;
       />
     </div>
     <a href={`/${slug}`} class="absolute flex flex-col justify-end left-0 top-0 w-full h-full" title={title}>
-      <h3 class="text-xl line-clamp-1 m-0 px-4 mb-2">{title}</h3>
-      <p class="text-sm line-clamp-2 m-0 mx-4 mb-4">{description}</p>
+      <h3 class="text-xl line-clamp-1 m-0 px-4">{title}</h3>
+      <Rating
+        totalStars={5}
+        initialRating={rating}
+        ratingCount={ratingCount}
+        size={16}
+        color="#FFD700"
+        slug={slug}
+        className='px-4'
+      />
+      <p class="text-sm line-clamp-2 m-0 mx-4 mb-4">{resume}</p>
     </a>
   <!-- </a> -->
 </article>

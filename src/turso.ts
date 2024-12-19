@@ -68,9 +68,34 @@ export const getStoriesList = async () => {
   return result.rows;
 }
 
+export const getFeaturedStoriesList = async () => {
+  const result = await turso.execute({
+    sql: `
+    SELECT
+      id,
+      slug,
+      title,
+      description,
+      created_at,
+      resume,
+      rating,
+      rating_count,
+      (rating * 0.7 + rating_count * 0.3) AS score
+    FROM
+      stories
+    ORDER BY
+      score DESC;
+  `,
+    args: [],
+  });
+  return result.rows;
+}
+
+
+
 export const getLittleStoriesList = async () => {
   const result = await turso.execute({
-    sql: 'SELECT id, slug, title, description, created_at, resume FROM stories;',
+    sql: 'SELECT id, slug, title, description, created_at, resume, rating, rating_count, age FROM stories;',
     args: [],
   });
   return result.rows;
@@ -152,4 +177,53 @@ export const getRelatedStoriesBySlug = async (storySlug: string) => {
   });
 
   return result.rows;
+};
+
+export const getRatingStoryBySlug = async (slug: string) => {
+  const results = await turso.execute({
+    sql: `
+      SELECT rating, rating_count FROM stories WHERE slug = ?;
+    `,
+    args: [slug],
+  });
+
+  const [result] = results.rows;
+  const { rating, rating_count: ratingCount } = result;
+  return { rating, ratingCount };
+}
+
+export const updateStoryRating = async (slug: string, newRating: number, isRated: boolean) => {
+  try {
+    // Iniciar una transacción para garantizar consistencia
+    const result = await turso.execute({
+      sql: isRated ? `
+        UPDATE stories
+        SET rating = (
+          (rating * rating_count + ?) / (rating_count + 1)
+        )
+        WHERE slug = ?;
+      ` : `
+        UPDATE stories
+        SET rating = (
+          (rating * rating_count + ?) / (rating_count + 1)
+        ),
+        rating_count = rating_count + 1
+        WHERE slug = ?;
+      `,
+      args: [newRating, slug],
+    });
+
+    // Verificar si la actualización fue exitosa
+    if (result.rowsAffected > 0) {
+      const { rating, ratingCount } = await getRatingStoryBySlug(slug);
+      console.log(`Rating actualizado correctamente: ${rating} (${ratingCount})`)
+      return { success: true, message: 'Rating actualizado correctamente', rating, ratingCount };
+    } else {
+      console.error(`No se encontró ninguna historia con el slug: ${slug}`);
+      return { success: false, message: 'No se encontró la historia' };
+    }
+  } catch (error) {
+    console.error('Error al actualizar el rating:', error);
+    return { success: false, message: 'Error al actualizar el rating' };
+  }
 };

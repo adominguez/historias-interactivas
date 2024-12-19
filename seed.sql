@@ -15,6 +15,7 @@ CREATE TABLE stories (
     age TEXT                     -- Edad recomendada
     duration TEXT                -- Duración estimada
     rating REAL                  -- Calificación
+    rating_count INTEGER         -- Cantidad de calificaciones
 );
 
 CREATE TABLE nodes (

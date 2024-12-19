@@ -5,7 +5,6 @@ function generateStoryPrompt({scenario, characters, category, age}: {scenario: s
   const formattedCharacters = formattedList.format(characters);
 
   const selectedAge = AGES[age as keyof typeof AGES] || AGES["9-12"];
-  console.log(selectedAge)
   
   return `Genera ${selectedAge.type} interactivo para ${selectedAge.people} de ${selectedAge.alias} con las siguientes características:
   1. **Estructura:**

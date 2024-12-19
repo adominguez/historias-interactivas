@@ -3,10 +3,10 @@ import Layout from "@layouts/Layout.astro"
 import HeroSection from '@components/sections/Hero.astro'
 import CategoriesSection from '@components/sections/Categories.astro'
 import BooksSection from '@components/sections/Books.astro'
-import { getLittleStoriesList } from '@src/turso'
+import { getFeaturedStoriesList } from '@src/turso'
 import { type LittleStory } from "@types"
 
-const bookList = await getLittleStoriesList() as unknown as LittleStory[]
+const bookList = await getFeaturedStoriesList() as unknown as LittleStory[]
 ---
 
 <Layout title="título" description="super descripción">

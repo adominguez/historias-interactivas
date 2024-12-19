@@ -8,6 +8,8 @@ export interface Story {
   text: string; // Contenido del cuento en HTML
   options: Option[]; // Opciones para navegar
   categories: Category[]; // Categorías relacionadas con el cuento
+  rating: number; // Calificación del cuento
+  ratingCount: number; // Número de calificaciones
 }
 
 export interface Node {
@@ -45,4 +47,7 @@ export interface LittleStory {
   description: string,
   created_at: string,
   resume: string,
+  age: string,
+  rating: number,
+  rating_count: number
 }
