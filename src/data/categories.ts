@@ -7,6 +7,7 @@ export const generalCategories = [
     "initialContent": "Explora mundos fantásticos llenos de acción y desafíos con nuestros cuentos de aventuras.",
     "metaTitle": "Cuentos de Aventuras Interactivos | Historias para Todas las Edades",
     "metaDescription": "Descubre cuentos de aventuras interactivos para todas las edades. Vive historias emocionantes con múltiples finales y caminos únicos.",
+    "type": "general",
     "contentByAge": {
       "3-4": {
         "title": "Aventuras mágicas para los más pequeños",
@@ -38,6 +39,7 @@ export const generalCategories = [
     "initialContent": "Déjate llevar por la magia y lo sobrenatural con nuestros cuentos de fantasía interactivos.",
     "metaTitle": "Cuentos de Fantasía Interactivos | Magia y Aventuras Épicas",
     "metaDescription": "Explora cuentos de fantasía interactivos con magia, criaturas sobrenaturales y reinos encantados. Historias únicas para todas las edades.",
+    "type": "general",
     "contentByAge": {
       "3-4": {
         "title": "Mundos mágicos para los más pequeños",
@@ -69,6 +71,7 @@ export const generalCategories = [
     "initialContent": "Descubre enigmas fascinantes y resuelve casos intrigantes con nuestros cuentos de misterio.",
     "metaTitle": "Cuentos de Misterio Interactivos | Resolviendo Enigmas para Todas las Edades",
     "metaDescription": "Explora cuentos de misterio interactivos llenos de suspense y sorpresas. Historias para quienes disfrutan resolver casos y descubrir secretos.",
+    "type": "general",
     "contentByAge": {
       "3-4": {
         "title": "Pequeños misterios para grandes imaginaciones",
@@ -100,6 +103,7 @@ export const generalCategories = [
     "initialContent": "Explora futuros fascinantes y tecnologías asombrosas con nuestros cuentos de ciencia ficción.",
     "metaTitle": "Cuentos de Ciencia Ficción Interactivos | Historias del Futuro",
     "metaDescription": "Descubre cuentos de ciencia ficción interactivos llenos de innovación, aventura y exploración espacial. Historias únicas para todas las edades.",
+    "type": "general",
     "contentByAge": {
       "3-4": {
         "title": "Viajes espaciales para los más pequeños",
@@ -131,6 +135,7 @@ export const generalCategories = [
     "initialContent": "Celebra la magia de la Navidad con cuentos que calientan el corazón y celebran el espíritu de las fiestas.",
     "metaTitle": "Cuentos de Navidad Interactivos | Historias Mágicas para la Época Festiva",
     "metaDescription": "Explora cuentos interactivos de Navidad llenos de magia, amor y valores familiares. Perfectos para disfrutar en la temporada festiva.",
+    "type": "general",
     "contentByAge": {
       "3-4": {
         "title": "Navidad mágica para los más pequeños",
@@ -162,6 +167,7 @@ export const generalCategories = [
     "initialContent": "Prepárate para una noche de misterio y emoción con nuestros cuentos de Halloween, llenos de criaturas escalofriantes y aventuras espeluznantes.",
     "metaTitle": "Cuentos de Halloween Interactivos | Historias para Todas las Edades",
     "metaDescription": "Explora cuentos de Halloween interactivos llenos de sustos, sorpresas y personajes encantadores. Diversión garantizada para grandes y pequeños.",
+    "type": "general",
     "contentByAge": {
       "3-4": {
         "title": "Diversión escalofriante para los más pequeños",
@@ -193,6 +199,7 @@ export const generalCategories = [
     "initialContent": "Sumérgete en el mágico mundo de las princesas con cuentos llenos de valentía, amor y fantasía.",
     "metaTitle": "Cuentos de Princesas Interactivos | Historias Mágicas y Encantadoras",
     "metaDescription": "Explora cuentos interactivos de princesas llenos de magia, lecciones de vida y emocionantes aventuras. Perfectos para inspirar a niños y adultos.",
+    "type": "general",
     "contentByAge": {
       "3-4": {
         "title": "Princesas valientes y encantadoras",
@@ -224,6 +231,7 @@ export const generalCategories = [
     "initialContent": "Descubre cuentos llenos de aventuras y enseñanzas protagonizados por animales increíbles y entrañables.",
     "metaTitle": "Cuentos de Animales Interactivos | Historias Educativas y Divertidas",
     "metaDescription": "Explora cuentos de animales interactivos que enseñan valores, amistad y respeto por la naturaleza. Perfectos para todas las edades.",
+    "type": "general",
     "contentByAge": {
       "3-4": {
         "title": "Animales adorables en historias mágicas",
@@ -255,6 +263,7 @@ export const generalCategories = [
     "initialContent": "Descubre historias escalofriantes que te mantendrán al borde de tu asiento.",
     "metaTitle": "Cuentos de Terror Interactivos | Historias Escalofriantes para Todas las Edades",
     "metaDescription": "Explora cuentos de terror interactivos llenos de suspense, emociones intensas y giros inesperados. Ideales para quienes buscan emociones fuertes.",
+    "type": "general",
     "contentByAge": {
       "3-4": {
         "title": "Historias suaves con un toque de misterio",
@@ -286,6 +295,7 @@ export const generalCategories = [
     "initialContent": "Explora historias que celebran el amor en todas sus formas.",
     "metaTitle": "Cuentos de Amor Interactivos | Historias Románticas y Emotivas",
     "metaDescription": "Descubre cuentos de amor interactivos que celebran la amistad, el romance y los vínculos humanos. Perfectos para todas las edades.",
+    "type": "general",
     "contentByAge": {
       "3-4": {
         "title": "Historias de amistad y cariño",
@@ -317,6 +327,7 @@ export const generalCategories = [
     "initialContent": "Descubre historias inquietantes que te harán temblar de emoción.",
     "metaTitle": "Cuentos de Miedo Interactivos | Historias de Suspense para Todas las Edades",
     "metaDescription": "Explora cuentos de miedo interactivos llenos de intriga, giros inesperados y emociones intensas. Ideales para valientes de todas las edades.",
+    "type": "general",
     "contentByAge": {
       "3-4": {
         "title": "Historias de misterio ligeras",
@@ -348,6 +359,7 @@ export const generalCategories = [
     "initialContent": "Historias que enseñan y refuerzan valores esenciales para la vida.",
     "metaTitle": "Cuentos de Valores Interactivos | Enseñanza a Través de Historias",
     "metaDescription": "Explora cuentos interactivos que inculcan valores como el respeto, la honestidad y la empatía en todas las edades.",
+    "type": "general",
     "contentByAge": {
       "3-4": {
         "title": "Lecciones simples y efectivas",
@@ -379,6 +391,7 @@ export const generalCategories = [
     "initialContent": "Descubre historias llenas de acción y heroísmo con nuestros cuentos de superhéroes.",
     "metaTitle": "Cuentos de Superhéroes Interactivos | Historias de Valor y Justicia",
     "metaDescription": "Explora cuentos interactivos de superhéroes que destacan valores como el coraje, la lealtad y la justicia. Perfectos para todas las edades.",
+    "type": "general",
     "contentByAge": {
       "3-4": {
         "title": "Héroes adorables y valientes",
@@ -410,6 +423,7 @@ export const generalCategories = [
     "initialContent": "Zarpa hacia aventuras épicas con nuestros cuentos de piratas llenos de acción y misterio.",
     "metaTitle": "Cuentos de Piratas Interactivos | Aventuras en Alta Mar",
     "metaDescription": "Explora cuentos interactivos de piratas con búsquedas de tesoros, batallas en el mar y misterios en islas lejanas. Perfectos para todas las edades.",
+    "type": "general",
     "contentByAge": {
       "3-4": {
         "title": "Piratas amigables y tesoros escondidos",
@@ -441,6 +455,7 @@ export const generalCategories = [
     "initialContent": "Explora los mitos y leyendas de culturas antiguas con nuestros cuentos de mitología.",
     "metaTitle": "Cuentos de Mitología Interactivos | Historias Épicas y Legendarias",
     "metaDescription": "Descubre cuentos interactivos de mitología que narran las historias de dioses, héroes y criaturas legendarias. Perfectos para todas las edades.",
+    "type": "general",
     "contentByAge": {
       "3-4": {
         "title": "Mitos adaptados para los más pequeños",
@@ -472,6 +487,7 @@ export const generalCategories = [
     "initialContent": "Revive los momentos más fascinantes del pasado con nuestros cuentos históricos.",
     "metaTitle": "Cuentos de Historia Interactivos | Aprende a Través de Historias",
     "metaDescription": "Explora cuentos interactivos que narran eventos históricos de forma entretenida y educativa. Perfectos para todas las edades.",
+    "type": "general",
     "contentByAge": {
       "3-4": {
         "title": "Lecciones simples de historia",

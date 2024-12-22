@@ -261,8 +261,8 @@ export const updateStoryRating = async (slug: string, newRating: number, isRated
 export const insertNewCategory = async (categoryParams: (string)[]) => {
   await turso.execute({
     sql: `
-      INSERT INTO tblCategories (slug, name, title, initial_content, meta_title, meta_description, content_by_age)
-      VALUES (?, ?, ?, ?, ?, ?, ?);
+      INSERT INTO categories (slug, name, title, initial_content, meta_title, meta_description, type, content_by_age)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?);
     `,
     args: categoryParams,
   });
@@ -271,7 +271,7 @@ export const insertNewCategory = async (categoryParams: (string)[]) => {
 export const getCategories = async () => {
   const result = await turso.execute({
     sql: `
-      SELECT * FROM tblCategories;
+      SELECT * FROM categories;
     `,
     args: [],
   });
@@ -281,7 +281,7 @@ export const getCategories = async () => {
 export const getCategoryBySlug = async (slug: string) => {
   const result = await turso.execute({
     sql: `
-      SELECT * FROM tblCategories WHERE slug = ?;
+      SELECT * FROM categories WHERE slug = ?;
     `,
     args: [slug],
   });
