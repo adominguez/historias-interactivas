@@ -30,18 +30,22 @@ const nodeSchema = z.object({
 });
 
 const categoriesEnum = z.enum([
-  "medieval",
   "fantasy",
-  "futurist",
-  "mythologycal",
-  "terror",
-  "animals",
-  "halloween",
+  "adventures",
+  "mystery",
+  "science-fiction",
   "christmas",
+  "halloween",
+  "princesses",
+  "animals",
+  "horror",
+  "love",
+  "fear",
+  "values",
+  "superheroes",
   "pirates",
-  "valentin",
-  "summer",
-  "comedy",
+  "mythology",
+  "history",
 ]);
 
 // Esquema para la historia principal

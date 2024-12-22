@@ -80,6 +80,7 @@ export const getFeaturedStoriesList = async () => {
       resume,
       rating,
       rating_count,
+      age,
       (rating * 0.7 + rating_count * 0.3) AS score
     FROM
       stories
@@ -179,6 +180,35 @@ export const getRelatedStoriesBySlug = async (storySlug: string) => {
   return result.rows;
 };
 
+export const getStoriesByCategory = async (category: string) => {
+  const query = `
+    SELECT
+      s.id,
+      s.slug,
+      s.title,
+      s.description,
+      s.created_at,
+      s.resume,
+      s.age,
+      s.rating,
+      s.rating_count
+    FROM
+      stories s,
+      json_each(json(s.categories)) c
+    WHERE
+      c.value = ? -- Coincidencia exacta con la categoría
+    ORDER BY
+      s.created_at DESC;
+  `;
+
+  const result = await turso.execute({
+    sql: query,
+    args: [category],
+  });
+
+  return result.rows;
+};
+
 export const getRatingStoryBySlug = async (slug: string) => {
   const results = await turso.execute({
     sql: `
@@ -227,3 +257,33 @@ export const updateStoryRating = async (slug: string, newRating: number, isRated
     return { success: false, message: 'Error al actualizar el rating' };
   }
 };
+
+export const insertNewCategory = async (categoryParams: (string)[]) => {
+  await turso.execute({
+    sql: `
+      INSERT INTO tblCategories (slug, name, title, initial_content, meta_title, meta_description, content_by_age)
+      VALUES (?, ?, ?, ?, ?, ?, ?);
+    `,
+    args: categoryParams,
+  });
+}
+
+export const getCategories = async () => {
+  const result = await turso.execute({
+    sql: `
+      SELECT * FROM tblCategories;
+    `,
+    args: [],
+  });
+  return result.rows;
+}
+
+export const getCategoryBySlug = async (slug: string) => {
+  const result = await turso.execute({
+    sql: `
+      SELECT * FROM tblCategories WHERE slug = ?;
+    `,
+    args: [slug],
+  });
+  return result.rows[0];
+}

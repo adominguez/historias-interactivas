@@ -10,6 +10,7 @@ export interface Story {
   categories: Category[]; // Categorías relacionadas con el cuento
   rating: number; // Calificación del cuento
   ratingCount: number; // Número de calificaciones
+  age: string; // Edad recomendada para el cuento
 }
 
 export interface Node {
@@ -27,6 +28,17 @@ export interface Node {
 export interface Option {
   text: string; // Texto que describe la opción
   next: string; // Slug del siguiente nodo
+}
+
+export interface CategoryData {
+  id: number;
+  name: string;
+  slug: string;
+  title: string;
+  meta_title: string;
+  meta_description: string;
+  initial_content: string;
+  content_by_age: string;
 }
 
 export interface Category {

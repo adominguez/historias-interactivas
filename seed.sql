@@ -34,8 +34,13 @@ CREATE TABLE nodes (
 
 CREATE TABLE categories (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name TEXT UNIQUE NOT NULL
-);
+    slug TEXT UNIQUE, -- O UNIQUE CONSTRAINT
+    name TEXT,
+    title TEXT,
+    meta_title TEXT,
+    meta_description TEXT,
+    content_by_age TEXT
+)
 
 CREATE TABLE story_categories (
     story_id INTEGER NOT NULL,
@@ -45,8 +50,6 @@ CREATE TABLE story_categories (
     FOREIGN KEY (category_id) REFERENCES categories (id)
 );
 
--- Insertar categorías
-INSERT INTO categories (name) VALUES ('Fantasía'), ('Aventuras'), ('Piratas'), ('Misterio'), ('Valores');
 
 -- Insertar historias
 INSERT INTO stories (slug, title, description, keywords)
