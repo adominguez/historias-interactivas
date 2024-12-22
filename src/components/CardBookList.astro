@@ -2,7 +2,7 @@
 import CardBook from "./CardBook.astro"
 import { type LittleStory } from "@types"
 
-const { bookList, showFilter } = Astro.props
+const { bookList = [], showFilter } = Astro.props
 ---
 {
   showFilter && (

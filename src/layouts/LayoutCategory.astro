@@ -1,0 +1,51 @@
+---
+import { ClientRouter } from 'astro:transitions';
+import Header from '@components/Header.astro';
+import BaseHead from '@components/BaseHead.astro';
+import Footer from '@components/Footer.astro';
+import { CldImage } from 'astro-cloudinary';
+import Breadcrumb from '@components/Breadcrumb.astro';
+
+interface Props {
+	title: string;
+  metaTitle: string;
+	metaDescription: string;
+  transition?: 'slide' | 'fade' | 'none';
+  slug: string;
+  name: string;
+}
+
+const { metaDescription, metaTitle, transition = 'fade', title, slug, name } = Astro.props;
+---
+
+<!doctype html>
+<html lang="es">
+  <head>
+    <BaseHead title={metaTitle} description={metaDescription} />
+    <ClientRouter />
+	</head>
+	<body>
+    <Header />
+    <main class="flex pt-24 flex-col gap-8 mx-auto max-w-5xl" transition:animate={transition}>
+      <Breadcrumb breadcrumb={[{
+        title: 'Cuentos interactivos',
+        slug: '/#cuentos',
+        current: false,
+      }, {
+        title,
+        slug: `/cuentos-interactivos/${slug}`,
+        current: true,
+      }]} />
+      <CldImage
+        src={`cuentos-interactivos/categories/hero-${name}`}
+        width={1024}
+        height={512}
+        alt={title}
+        sizes="100vw"
+        class="peer-hover:scale-110 z-10 rounded-lg transition-transform"
+      />
+      <slot />
+    </main>
+	</body>
+  <Footer />
+</html>

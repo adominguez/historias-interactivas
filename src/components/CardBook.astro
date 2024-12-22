@@ -1,12 +1,18 @@
 ---
 import { CldImage } from 'astro-cloudinary';
 import Rating from './Rating';
-const { slug, title, description, created_at, resume, age, rating, ratingCount } = Astro.props;
+import { AGES } from '@src/utils/characters';
+const { slug, title, created_at, resume, age, rating, ratingCount } = Astro.props;
+const { color, alias } = AGES[age as keyof typeof AGES];
 ---
 
 <article class="aspect-[300/450] shadow-md flex flex-col p-4 relative group border border-gray-200">
   <!-- <a href={`/${slug}`}> -->
-    <div class="border-2 border-slate-800 overflow-hidden">
+    <div class="border-2 border-slate-800 overflow-hidden relative">
+      <div class:list={[
+        'w-5 h-5 absolute top-4 right-4 z-10 rounded-full border-2 border-white',
+        color
+      ]} title={alias} />
       <CldImage
         transition:name={slug}
         src={`cuentos-interactivos/${slug}/${slug}`}

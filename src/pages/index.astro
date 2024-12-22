@@ -12,5 +12,5 @@ const bookList = await getFeaturedStoriesList() as unknown as LittleStory[]
 <Layout title="título" description="super descripción">
 	<HeroSection />
 	<CategoriesSection />
-	<BooksSection bookList={bookList} />
+	<BooksSection bookList={bookList || []} />
 </Layout>

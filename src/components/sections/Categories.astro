@@ -1,55 +1,8 @@
 ---
+import { getCategories } from '@src/turso';
 import { CldImage } from 'astro-cloudinary';
 
-const categories = [{
-  title: 'Cuentos Medievales',
-  publicId: 'medieval',
-  slug: 'cuentos/medievales',
-}, {
-  title: 'Cuentos de Fantasía',
-  publicId: 'fantasy',
-  slug: 'cuentos/fantasia',
-}, {
-  title: 'Cuentos futuristas',
-  publicId: 'futurist',
-  slug: 'cuentos/futuristas',
-}, {
-  title: 'Cuentos de mitología',
-  publicId: 'mythologycal',
-  slug: 'cuentos/mitologia',
-}, {
-  title: 'Cuentos de terror',
-  publicId: 'terror',
-  slug: 'cuentos/terror',
-}, {
-  title: 'Cuentos de animales',
-  publicId: 'animals',
-  slug: 'cuentos/animales',
-}, {
-  title: 'Cuentos de Halloween',
-  publicId: 'halloween',
-  slug: 'cuentos/halloween',
-}, {
-  title: 'Cuentos de Navidad',
-  publicId: 'christmas',
-  slug: 'cuentos/navidad',
-}, {
-  title: 'Cuentos de piratas',
-  publicId: 'pirates',
-  slug: 'cuentos/piratas',
-}, {
-  title: 'Cuentos de San Valentín',
-  publicId: 'valentin',
-  slug: 'cuentos/san-valentín',
-}, {
-  title: 'Cuentos de verano',
-  publicId: 'summer',
-  slug: 'cuentos/verano',
-}, {
-  title: 'Cuentos divertidos',
-  publicId: 'comedy',
-  slug: 'cuentos/divertidos',
-}]
+const categories = await getCategories();
 ---
 
 <section class="px-4 py-20 relative">
@@ -57,14 +10,14 @@ const categories = [{
     <h2 class="text-white text-balance">¿Qué categoría quieres?</h2>
     <div class="wrapper-grid grid gap-4 z-20">
       {
-        categories.map(row => (
+        categories.map(({name, slug, title}) => (
           <article class="relative overflow-hidden rounded-lg aspect-[300/400]">
-            <a href={`/${row.slug}`} class="link peer absolute bottom-0 px-2 py-4 text-white border-transparent hover:border-red text-center top-0 left-0 right-0 flex flex-col justify-end items-center text-balance z-20 leading-6 hover:text-white">{row.title}</a>
+            <a href={`cuentos/${slug}`} class="link peer absolute bottom-0 px-2 py-4 text-white border-transparent hover:border-red text-center top-0 left-0 right-0 flex flex-col justify-end items-center text-balance z-20 leading-6 hover:text-white">{title}</a>
             <CldImage
-              src={`cuentos-interactivos/categories/${row.publicId}`}
+              src={`cuentos-interactivos/categories/${name}_cat`}
               width={300}
               height={400}
-              alt={row.title}
+              alt={title as string}
               sizes="100vw"
               class="peer-hover:scale-110 z-10 rounded-lg transition-transform"
             />

@@ -77,7 +77,7 @@ const categories: Category = {
       "Montaña prohibida", "Lago de los deseos", "Isla flotante"
     ]
   },
-  futurist: {
+  "science-fiction": {
     characters: [
       "Robot", "Científico loco", "Extraterrestre", "Niño", "Niña", "Astronauta", "Navegante del tiempo",
       "Inventor del futuro", "Inteligencia artificial", "Cazador de estrellas",
@@ -111,7 +111,7 @@ const categories: Category = {
       "Bosque de olivos", "Bosque de almendros", "Bosque de cerezos", "Bosque de manzanos", "Bosque de perales", "Bosque de ciruelos"
   ]
   },
-  mythologycal: {
+  mythology: {
     characters: [
       "Minotauro", "Medusa", "Dios del trueno", "Genio de la lámpara", "Quimera", "Pegaso",
       "Esfinge", "Héroe mitológico", "Tritón", "Dios de la sabiduría", "Semidiós",
@@ -171,7 +171,7 @@ const categories: Category = {
       "tesoro pirata", "tesoro de los piratas", "tesoro de los corsarios", "tesoro de los bucaneros",
     ]
   },
-  // valentin: {
+  // love: {
   //   characters: [
   //     "Cupido", "Pareja", "Enamorado", "Enamorada"
   //   ],
@@ -291,38 +291,51 @@ export const ages = [
   "18"
 ]
 
+export type Age = {
+  type: string;
+  people: string;
+  alias: string;
+  words: string;
+  color: string;
+}
+
 export const AGES = {
   "3-4": {
     type: "un cuento",
     people: "niños",
     alias: "3-4 años",
-    words: "40-60 palabras"
+    words: "40-60 palabras",
+    color: "bg-green-500"
   },
   "5-8": {
     type: "un cuento",
     people: "niños",
     alias: "5-8 años",
-    words: "100-200 palabras"
+    words: "100-200 palabras",
+    color: "bg-blue-500"
   },
   "9-12": {
     type: "un cuento",
     people: "niños",
     alias: "9-12 años",
-    words: "200-300 palabras"
+    words: "200-300 palabras",
+    color: "bg-yellow-500"
   },
   "13-18": {
     type: "una historia",
     people: "jóvenes",
     alias: "13-18 años",
-    words: "300-500 palabras"
+    words: "300-500 palabras",
+    color: "bg-orange-500"
   },
-  "18": {
+  "18+": {
     type: "una historia",
     people: "personas",
     alias: "18 años o más",
-    words: "500-1000 palabras"
+    words: "500-1000 palabras",
+    color: "bg-red-500"
   }
-}
+} as { [key: string]: Age };
 
 function generateStorySetup(paramCategory?: string, paramAge?: string) {
   // Obtener una categoría aleatoria
