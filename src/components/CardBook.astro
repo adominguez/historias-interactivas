@@ -6,7 +6,7 @@ const { slug, title, created_at, resume, age, rating, ratingCount } = Astro.prop
 const { color, alias } = AGES[age as keyof typeof AGES];
 ---
 
-<article class="aspect-[300/450] shadow-md flex flex-col p-4 relative group border border-gray-200">
+<article class="aspect-[300/450] shadow-md flex flex-col p-4 relative group border border-gray-200" id={slug}>
   <!-- <a href={`/${slug}`}> -->
     <div class="border-2 border-slate-800 overflow-hidden relative">
       <div class:list={[
