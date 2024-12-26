@@ -85,8 +85,19 @@ export const getFeaturedStoriesList = async () => {
     FROM
       stories
     ORDER BY
-      score DESC;
+      score DESC
+    LIMIT 12;
   `,
+    args: [],
+  });
+  return result.rows;
+}
+
+export const getStoryOrderByDate = async () => {
+  const result = await turso.execute({
+    sql: `
+      SELECT * FROM stories ORDER BY created_at DESC LIMIT 12;
+    `,
     args: [],
   });
   return result.rows;
@@ -209,6 +220,40 @@ export const getStoriesByCategory = async (category: string) => {
   return result.rows;
 };
 
+export const getStoriesByAge = async (ages: string | string[]) => {
+  // Asegúrate de que las edades sean un array
+  const ageList = Array.isArray(ages) ? ages : [ages];
+
+  // Generar placeholders dinámicos para cada edad
+  const placeholders = ageList.map(() => '?').join(', ');
+
+  const query = `
+    SELECT
+      s.id,
+      s.slug,
+      s.title,
+      s.description,
+      s.created_at,
+      s.resume,
+      s.age,
+      s.rating,
+      s.rating_count
+    FROM
+      stories s
+    WHERE
+      s.age IN (${placeholders})
+    ORDER BY
+      s.created_at DESC;
+  `;
+
+  const result = await turso.execute({
+    sql: query,
+    args: ageList,
+  });
+
+  return result.rows;
+};
+
 export const getRatingStoryBySlug = async (slug: string) => {
   const results = await turso.execute({
     sql: `
@@ -274,6 +319,17 @@ export const getCategories = async () => {
       SELECT * FROM categories;
     `,
     args: [],
+  });
+  return result.rows;
+}
+
+export const getCategoriesByType = async (type: string) => {
+  const result = await turso.execute({
+    sql: `
+      SELECT * FROM categories where type = ? ORDER BY
+      sort;
+    `,
+    args: [type],
   });
   return result.rows;
 }

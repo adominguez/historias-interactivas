@@ -39,6 +39,7 @@ export interface CategoryData {
   meta_description: string;
   initial_content: string;
   content_by_age: string;
+  type: string;
 }
 
 export interface Category {
