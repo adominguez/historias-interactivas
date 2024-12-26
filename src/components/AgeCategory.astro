@@ -1,0 +1,68 @@
+---
+import Books from "@components/sections/Books.astro";
+import { type LittleStory } from "@types";
+import { getStoriesByAge } from "@src/turso";
+
+const { contentByAge, name } = Astro.props;
+
+const categories: Record<string, string | string[]> = {
+  children: '3-4',
+  kids: ['5-8', '9-12'],
+  teens: '13-18',
+  adults: '18+',
+};
+
+const storiesCategory = await getStoriesByAge(categories[name]) as unknown as LittleStory[];
+const whyRead = contentByAge.whyRead;
+const features = contentByAge.features;
+const benefits = contentByAge.benefits;
+const activities = contentByAge.activities;
+const tips = contentByAge.tips;
+const cta = contentByAge.cta;
+---
+
+{
+  whyRead ?
+  <section class:list="px-4 py-20 relative" id="porque-leer">
+    <h2 class="text-balance">{whyRead.title}</h2>
+    <p class="text-gray-700 text-balance">{whyRead.content}</p>
+  </section>
+  : null
+}
+{
+  features ?
+  <section class:list="px-4 py-20 relative" id="caracteristicas">
+    <h2 class="text-balance">{features.title}</h2>
+    <p class="text-gray-700 text-balance">{features.content}</p>
+  </section>
+  : null
+}
+{
+  benefits ?
+    <section class:list="px-4 py-20 relative" id="beneficios">
+      <h2 class="text-balance">{benefits.title}</h2>
+      <p class="text-gray-700 text-balance">{benefits.content}</p>
+    </section>
+  : null
+}
+{
+  activities ?
+    <section class:list="px-4 py-20 relative" id="actividades">
+      <h2 class="text-balance">{activities.title}</h2>
+      <p class="text-gray-700 text-balance">{activities.content}</p>
+    </section>
+  : null
+}
+{
+  tips ?
+    <section class:list="px-4 py-20 relative" id="consejos">
+      <h2 class="text-balance">{tips.title}</h2>
+      <p class="text-gray-700 text-balance">{tips.content}</p>
+    </section>
+  : null
+}
+{
+  cta ?
+    <Books bookList={storiesCategory} title={cta.title} content={cta.content}/>
+  : null
+}

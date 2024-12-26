@@ -513,6 +513,151 @@ export const generalCategories = [
   },
 ];
 
+export const ageCategories = [{
+  "slug": "infantiles",
+  "name": "children",
+  "sort": 1,
+  "title": "Cuentos infantiles",
+  "initialContent": "Los cuentos infantiles están diseñados para estimular la imaginación y el aprendizaje temprano de los más pequeños. Con historias breves, personajes encantadores y escenarios mágicos, estos cuentos ofrecen una ventana al mundo del asombro y la curiosidad.",
+  "metaTitle": "Cuentos infantiles para edades de 3-4 años",
+  "metaDescription": "Descubre los mejores cuentos infantiles diseñados para estimular la imaginación de niños de 3 a 4 años. Historias mágicas y educativas.",
+  "type": "age",
+  "contentByAge": {
+    "whyRead": {
+      "title": "¿Por qué leer cuentos infantiles?",
+      "content": "A los más pequeños de 3 a 5 años les encanta descubrir el mundo a través de la fantasía y los colores. En esta etapa, la lectura favorece la adquisición de vocabulario, el desarrollo de la imaginación y el vínculo afectivo con padres y educadores."
+    },
+    "features": {
+      "title": "Características de los cuentos infantiles",
+      "content": "Los cuentos infantiles para niños de 3 a 4 años suelen ser cortos, con ilustraciones coloridas y personajes adorables y entrañables. Las historias suelen abordar temas sencillos como la amistad, la familia y las aventuras cotidianas."
+    },
+    "benefits": {
+      "title": "Beneficios de los cuentos infantiles",
+      "content": "Los cuentos infantiles estimulan la imaginación, fomentan el amor por la lectura y enseñan valores importantes a través de historias sencillas y emotivas. Además, ayudan a desarrollar habilidades lingüísticas y cognitivas en los niños."
+    },
+    "activities": {
+      "title": "Actividades para complementar los cuentos",
+      "content": "Para enriquecer la experiencia de lectura, se pueden realizar actividades como dibujar a los personajes, inventar finales alternativos, representar la historia con títeres o jugar a recrear escenas con juguetes."
+    },
+    "tips": {
+      "title": "Consejos para leer cuentos infantiles",
+      "content": "Al leer cuentos infantiles a niños de 3 a 4 años, es importante usar voces expresivas, señalar las ilustraciones, hacer preguntas sobre la historia y permitir que los niños participen en la narración con sus propias palabras."
+    },
+    "cta": {
+      "title": "Descubre nuestros cuentos infantiles",
+      "content": "Explora nuestra colección de cuentos infantiles diseñados para niños de 3 a 4 años. Historias mágicas, personajes entrañables y aventuras inolvidables te esperan."
+    }
+  }
+},
+{
+  "slug": "para-ninos",
+  "name": "kids",
+  "sort": 1,
+  "title": "Cuentos para niños",
+  "initialContent": "Cuentos fascinantes para niños de 5 a 12 años que combinan diversión y aprendizaje con personajes inolvidables y aventuras emocionantes.",
+  "metaTitle": "Cuentos educativos y entretenidos para niños",
+  "metaDescription": "Descubre cuentos diseñados para estimular la imaginación y enseñar lecciones importantes a niños de 5 a 12 años.",
+  "type": "age",
+  "contentByAge": {
+    "whyRead": {
+      "title": "¿Por qué leer cuentos para niños?",
+      "content": "Entre los 5 y 8 años, los niños comienzan a leer de forma más autónoma y se sienten orgullosos de sus progresos. La lectura contribuye al desarrollo de la comprensión lectora, la curiosidad y la construcción de valores."
+    },
+    "features": {
+      "title": "Características de los cuentos para niños",
+      "content": "Los cuentos para niños de 5 a 12 años suelen tener tramas un poco más complejas pero con textos cortos, personajes variados y escenarios detallados. Estas historias abordan temas como la amistad, la valentía, la diversidad y la superación de desafíos."
+    },
+    "benefits": {
+      "title": "Beneficios de los cuentos para niños",
+      "content": "Los cuentos para niños estimulan la imaginación, fomentan la empatía, enseñan valores importantes y amplían el vocabulario. Además, ayudan a desarrollar habilidades de comprensión, creatividad y pensamiento crítico."
+    },
+    "activities": {
+      "title": "Actividades para complementar los cuentos",
+      "content": "Para enriquecer la experiencia de lectura, se pueden realizar actividades como escribir finales alternativos, dibujar mapas de los escenarios, inventar nuevos personajes o representar la historia con disfraces."
+    },
+    "tips": {
+      "title": "Consejos para leer cuentos a niños",
+      "content": "Al leer cuentos a niños de 5 a 12 años, es importante fomentar la participación activa, hacer preguntas sobre la historia, relacionarla con experiencias personales y promover la reflexión sobre los valores y las decisiones de los personajes."
+    },
+    "cta": {
+      "title": "Descubre nuestros cuentos para niños",
+      "content": "Explora nuestra colección de cuentos para niños de 5 a 12 años. Aventuras emocionantes, personajes inolvidables y lecciones valiosas te esperan en cada historia."
+    }
+  }
+},
+{
+  "slug": "adolescentes",
+  "name": "teens",
+  "sort": 1,
+  "title": "Cuentos para adolescentes",
+  "initialContent": "Historias que resuenan con adolescentes de 13 a 18 años, abordando temas de aventura, amistad y autodescubrimiento.",
+  "metaTitle": "Cuentos cautivadores para adolescentes",
+  "metaDescription": "Explora cuentos diseñados para adolescentes que buscan historias emocionantes y significativas.",
+  "type": "age",
+  "contentByAge": {
+    "whyRead": {
+      "title": "¿Por qué leer cuentos para adolescentes?",
+      "content": "Los adolescentes de 13 a 18 años pueden afrontar textos más largos y complejos. Buscan historias que reflejen sus inquietudes, emociones y desafíos. La lectura les permite explorar nuevos mundos, reflexionar sobre sus propias experiencias y conectar con personajes que enfrentan dilemas similares."
+    },
+    "features": {
+      "title": "Características de los cuentos para adolescentes",
+      "content": "Los cuentos para adolescentes suelen abordar temas más profundos como la identidad, la amistad, el amor y la justicia. Las tramas son más complejas, los personajes tienen matices y los escenarios reflejan la diversidad del mundo real."
+    },
+    "benefits": {
+      "title": "Beneficios de los cuentos para adolescentes",
+      "content": "Los cuentos para adolescentes estimulan la reflexión, fomentan la empatía, promueven la diversidad y enseñan lecciones valiosas sobre la vida. Además, ayudan a desarrollar habilidades de análisis, comunicación y pensamiento crítico."
+    },
+    "activities": {
+      "title": "Actividades para complementar los cuentos",
+      "content": "Para enriquecer la experiencia de lectura, se pueden realizar actividades como escribir diarios de los personajes, debatir sobre las decisiones de los protagonistas, investigar temas relacionados con la historia o crear fan art inspirado en los cuentos."
+    },
+    "tips": {
+      "title": "Consejos para leer cuentos a adolescentes",
+      "content": "Al leer cuentos a adolescentes, es importante respetar su autonomía, fomentar la discusión sobre los temas tratados, relacionar la historia con la actualidad y promover la reflexión crítica sobre los valores y dilemas presentados."
+    },
+    "cta": {
+      "title": "Descubre nuestros cuentos para adolescentes",
+      "content": "Explora nuestra colección de cuentos para adolescentes de 13 a 18 años. A través de aventuras emocionantes, personajes complejos y dilemas universales, encontrarás historias que resuenan con tus emociones y desafíos."
+    }
+  }
+},
+{
+  "slug": "adultos",
+  "name": "adults",
+  "sort": 1,
+  "title": "Cuentos para adultos",
+  "initialContent": "Narrativas profundas y cautivadoras para mayores de 18 años que exploran temas complejos y universales.",
+  "metaTitle": "Cuentos profundos para adultos",
+  "metaDescription": "Descubre cuentos diseñados para adultos que abordan emociones y desafíos de la vida con profundidad.",
+  "type": "age",
+  "contentByAge": {
+    "whyRead": {
+      "title": "¿Por qué leer cuentos para adultos?",
+      "content": "La lectura de cuentos para adultos es una forma de explorar la complejidad de la vida, reflexionar sobre dilemas éticos y emocionales, y conectar con narrativas que abordan la condición humana en toda su diversidad. Los cuentos para adultos ofrecen una experiencia literaria rica en matices, simbolismos y significados ocultos."
+    },
+    "features": {
+      "title": "Características de los cuentos para adultos",
+      "content": "Los cuentos para adultos suelen abordar temas profundos como la soledad, la redención, la muerte y la esperanza. Las tramas son complejas, los personajes tienen múltiples capas y los escenarios reflejan la complejidad de la vida real."
+    },
+    "benefits": {
+      "title": "Beneficios de los cuentos para adultos",
+      "content": "Los cuentos para adultos estimulan la reflexión, fomentan la empatía, promueven la introspección y ofrecen una visión amplia de la condición humana. Además, ayudan a desarrollar habilidades de análisis, interpretación y apreciación estética."
+    },
+    "activities": {
+      "title": "Actividades para complementar los cuentos",
+      "content": "Para enriquecer la experiencia de lectura, se pueden realizar actividades como escribir análisis literarios, debatir sobre los temas tratados, o crear adaptaciones visuales de los cuentos."
+    },
+    "tips": {
+      "title": "Consejos para leer cuentos a adultos",
+      "content": "Al leer cuentos a adultos, es importante respetar su autonomía, fomentar la discusión sobre los temas tratados, relacionar la historia con la actualidad y promover la reflexión crítica sobre los valores y dilemas presentados."
+    },
+    "cta": {
+      "title": "Descubre nuestros cuentos para adultos",
+      "content": "Explora nuestra colección de cuentos para adultos mayores de 18 años. A través de narrativas profundas, personajes complejos y dilemas universales, encontrarás historias que resuenan con tus emociones y desafíos."
+    }
+  }
+}]
+
 export const setupCategories = {
   "fantasy": {
     "3-4": {

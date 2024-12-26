@@ -5,19 +5,23 @@ import { type LittleStory } from "@types";
 interface Props {
   bookList: LittleStory[];
   title?: string;
+  content?: string;
   class?: string;
+  id?: string;
 }
-const { bookList, title, class: className } = Astro.props;
+const { bookList, title, content, class: className, id = 'cuentos' } = Astro.props;
 
 ---
 
 <section class:list={[
   "px-4 py-20 relative",
   className
-  ]} id="cuentos">
+  ]} id={id}>
   <div class="flex flex-col gap-8 mx-auto max-w-7xl">
     <h2 class="text-balance">{title || '¿Qué cuento quieres leer?'}</h2>
-    <slot />
+    {
+      content && <p class="text-gray-700 text-balance">{content}</p>
+    }
     <CardBookList bookList={bookList} />
   </div>
 </section>

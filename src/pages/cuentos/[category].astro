@@ -1,8 +1,10 @@
 ---
-import Books from "@components/sections/Books.astro";
+import AgeCategory from "@components/AgeCategory.astro";
+import GeneralCategory from "@components/GeneralCategory.astro";
+
 import Layout from "@layouts/LayoutCategory.astro";
 import { getStoriesByCategory, getCategoryBySlug } from "@src/turso";
-import { type LittleStory, type CategoryData } from "@types";
+import { type CategoryData } from "@types";
 export const prerender = false;
 
 const { category } = Astro.params;
@@ -13,14 +15,8 @@ if (!category) {
   });
 }
 
-const { name, title, meta_title: metaTitle, slug, meta_description: metaDescription, content_by_age, initial_content: initialContent } = await getCategoryBySlug(category) as unknown as CategoryData;
+const { name, title, meta_title: metaTitle, slug, meta_description: metaDescription, content_by_age, initial_content: initialContent, type } = await getCategoryBySlug(category) as unknown as CategoryData;
 const contentByAge = JSON.parse(content_by_age);
-const storiesCategory = await getStoriesByCategory(name) as unknown as LittleStory[];
-const stories34 = storiesCategory.filter(({age}) => age === '3-4');
-const stories58 = storiesCategory.filter(({age}) => age === '5-8');
-const stories912 = storiesCategory.filter(({age}) => age === '9-12');
-const stories1318 = storiesCategory.filter(({age}) => age === '13-18');
-const stories18 = storiesCategory.filter(({age}) => age === '18+');
 ---
 
 <Layout title={title}, metaTitle={metaTitle} metaDescription={metaDescription} slug={slug} name={name} >
@@ -33,39 +29,14 @@ const stories18 = storiesCategory.filter(({age}) => age === '18+');
     }
   </section>
   {
-    stories34.length ?
-      <Books bookList={stories34} title={contentByAge['3-4'].title} class="py-0 pb-10">
-        <p>{contentByAge['3-4'].content}</p>
-      </Books>
-    : null
+    type === 'general' && (
+      <GeneralCategory contentByAge={contentByAge} name={name} />
+    )
   }
   {
-    stories58.length ?
-      <Books bookList={stories58} title={contentByAge['5-8'].title} class="py-0 pb-10">
-        <p>{contentByAge['5-8'].content}</p>
-      </Books>
-    : null
-  }
-  {
-    stories912.length ?
-      <Books bookList={stories912} title={contentByAge['9-12'].title} class="py-0 pb-10">
-        <p>{contentByAge['9-12'].content}</p>
-      </Books>
-    : null
-  }
-  {
-    stories1318.length ?
-      <Books bookList={stories1318} title={contentByAge['13-18'].title} class="py-0 pb-10">
-        <p>{contentByAge['13-18'].content}</p>
-      </Books>
-    : null
-  }
-  {
-    stories18.length ?
-      <Books bookList={stories18} title={contentByAge['18+'].title} class="py-0 pb-10">
-        <p>{contentByAge['18+'].content}</p>
-      </Books>
-    : null
+    type === 'age' && (
+      <AgeCategory contentByAge={contentByAge} name={name} />
+    )
   }
 </Layout>
 

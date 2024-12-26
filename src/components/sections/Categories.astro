@@ -1,17 +1,34 @@
 ---
-import { getCategories } from '@src/turso';
+import { getCategoriesByType } from '@src/turso';
 import { CldImage } from 'astro-cloudinary';
 
-const categories = await getCategories();
+interface Props {
+  type: string;
+  title?: string;
+  effect?: string;
+  id?: string;
+  content?: string;
+}
+
+const { type, title = 'Qué Categoría quieres?', effect = 'fog', id='categorias', content = 'Elige una categoría para comenzar a disfrutar de los cuentos interactivos.' } = Astro.props;
+
+const categories = await getCategoriesByType(type);
 ---
 
-<section class="px-4 py-20 relative" id="categorias">
+<section class:list={[
+  "px-4 py-20 relative",
+  effect
+]} id={id}>
   <div class="flex flex-col gap-8 mx-auto max-w-7xl">
-    <h2 class="text-white text-balance">¿Qué categoría quieres?</h2>
-    <div class="wrapper-grid grid gap-4 z-20">
+    <h2 class="text-white text-balance">{title}</h2>
+    <p class="text-gray-300 text-balance">{content}</p>
+    <div class={`wrapper-${type} grid gap-4 z-20`}>
       {
         categories.map(({name, slug, title}) => (
-          <article class="relative overflow-hidden rounded-lg aspect-[300/400]">
+          <article class:list={[
+            "relative overflow-hidden rounded-lg",
+            "aspect-[300/400]"
+          ]}>
             <a href={`cuentos/${slug}`} class="link peer absolute bottom-0 px-2 py-4 text-white border-transparent hover:border-red text-center top-0 left-0 right-0 flex flex-col justify-end items-center text-balance z-20 leading-6 hover:text-white">{title}</a>
             <CldImage
               src={`cuentos-interactivos/categories/${name}_cat`}
@@ -37,7 +54,7 @@ const categories = await getCategories();
       position: absolute;
       right: 0;
       bottom: 0;
-      background-image: url('https://raw.githubusercontent.com/danielstuart14/CSS_FOG_ANIMATION/master/fog1.png');
+      background-image: url('categories/fog1.png');
       background-size: 200% auto;
       background-position: 0 bottom;
       width: 100%;
@@ -47,8 +64,14 @@ const categories = await getCategories();
       filter: brightness(2.5);
     }
   }
-  .wrapper-grid {
+
+  .wrapper-general {
     grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  }
+
+  .wrapper-age {
+    gap: 3rem;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
   }
 
   .link:hover {

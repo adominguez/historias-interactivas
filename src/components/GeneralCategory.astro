@@ -1,0 +1,40 @@
+---
+import Books from "@components/sections/Books.astro";
+import { type LittleStory } from "@types";
+import { getStoriesByCategory } from "@src/turso";
+
+const { contentByAge, name } = Astro.props;
+
+const storiesCategory = await getStoriesByCategory(name) as unknown as LittleStory[];
+const stories34 = storiesCategory.filter(({age}) => age === '3-4');
+const stories58 = storiesCategory.filter(({age}) => age === '5-8');
+const stories912 = storiesCategory.filter(({age}) => age === '9-12');
+const stories1318 = storiesCategory.filter(({age}) => age === '13-18');
+const stories18 = storiesCategory.filter(({age}) => age === '18+');
+---
+
+{
+  stories34.length ?
+    <Books bookList={stories34} title={contentByAge['3-4'].title} class="py-0 pb-10" content={contentByAge['3-4'].content} />
+  : null
+}
+{
+  stories58.length ?
+    <Books bookList={stories58} title={contentByAge['5-8'].title} class="py-0 pb-10"  content={contentByAge['5-8'].content} />
+  : null
+}
+{
+  stories912.length ?
+    <Books bookList={stories912} title={contentByAge['9-12'].title} class="py-0 pb-10" content={contentByAge['9-12'].content} />
+  : null
+}
+{
+  stories1318.length ?
+    <Books bookList={stories1318} title={contentByAge['13-18'].title} class="py-0 pb-10" content={contentByAge['13-18'].content} />
+  : null
+}
+{
+  stories18.length ?
+    <Books bookList={stories18} title={contentByAge['18+'].title} class="py-0 pb-10" content={contentByAge['18+'].content} />
+  : null
+}
