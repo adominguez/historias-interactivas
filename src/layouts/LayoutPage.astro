@@ -5,51 +5,59 @@ import BaseHead from '@components/BaseHead.astro';
 import Footer from '@components/Footer.astro';
 import { CldImage } from 'astro-cloudinary';
 import Breadcrumb from '@components/Breadcrumb.astro';
+import Books from '@components/sections/Books.astro';
 
 interface Props {
 	title: string;
-  metaTitle: string;
-	metaDescription: string;
+	description: string;
   transition?: 'slide' | 'fade' | 'none';
-  slug: string;
-  name: string;
+  relatedStories?: any[];
+  page: string;
 }
 
-const { metaDescription, metaTitle, transition = 'fade', title, slug, name } = Astro.props;
+const { description, transition = 'fade', page, title, relatedStories = [] } = Astro.props;
 ---
 
 <!doctype html>
 <html lang="es">
   <head>
-    <BaseHead title={metaTitle} description={metaDescription} />
+    <BaseHead title={title} description={description} />
     <ClientRouter />
 	</head>
 	<body>
     <Header />
     <main class="flex pt-24 flex-col gap-8 mx-auto max-w-5xl" transition:animate={transition}>
-      <Breadcrumb breadcrumb={[{
-        title: 'Cuentos interactivos',
-        slug: '/#categorias',
-        current: false,
-      }, {
-        title,
-        slug: `/cuentos-interactivos/${slug}`,
-        current: true,
-      }]} />
       <CldImage
-        src={`cuentos-interactivos/categories/hero-${name}`}
+        src={`cuentos-interactivos/${page}`}
         width={1024}
         height={512}
         alt={title}
         sizes="100vw"
-        class="peer-hover:scale-110 z-10 rounded-lg transition-transform"
       />
-      <slot />
+      <Breadcrumb breadcrumb={[{
+        title: 'Cuentos interactivos',
+        slug: `/`,
+        current: false,
+      }, {
+        title,
+        slug: `/${page}`,
+        current: true,
+      }]} />
+      <section id="contenido" class="px-4 py-8 pb-20">
+        <div class="mb-8">
+          <h1 class="leading-tight text-balance">{title}</h1>
+        </div>
+        <slot />
+      </section>
+      {
+        relatedStories.length > 0 && (
+          <Books bookList={relatedStories} title='¿Quieres leer un cuento?' />
+        )
+      }
     </main>
 	</body>
   <Footer />
 </html>
-
 <style is:global>
 	:root {
 		--accent: 136, 58, 234;
@@ -61,6 +69,15 @@ const { metaDescription, metaTitle, transition = 'fade', title, slug, name } = A
 			rgb(var(--accent-light)) 30%,
 			white 60%
 		);
+	}
+
+	html.dark {
+		background-color: #0d0950;
+		color: #fff;
+	}
+
+	.dark .nav-links a {
+		color: #fff;
 	}
 
   h1 {

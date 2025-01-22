@@ -11,7 +11,7 @@ const { breadcrumb } = Astro.props;
           current ? (
             <span>{title}</span>
           ) : (
-            <a href={slug}>
+            <a href={slug} class="hover:text-primary">
               {title}
             </a>
           )

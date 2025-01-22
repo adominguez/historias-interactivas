@@ -35,6 +35,9 @@ importers:
       '@fontsource-variable/ysabeau-infant':
         specifier: ^5.1.0
         version: 5.1.0
+      '@fontsource-variable/ysabeau-sc':
+        specifier: ^5.1.1
+        version: 5.1.1
       '@libsql/client':
         specifier: ^0.14.0
         version: 0.14.0
@@ -607,6 +610,9 @@ packages:
 
   '@fontsource-variable/ysabeau-infant@5.1.0':
     resolution: {integrity: sha512-EOl9vYYu/2Ty3n535TW0oMjm6xhpTENBRfU3mfqoyr1VVda+PZlSxIPAx81wekOHaLAay4BZ47UU9O7MQNOFeA==}
+
+  '@fontsource-variable/ysabeau-sc@5.1.1':
+    resolution: {integrity: sha512-sptIvK1ibOZlHMOLIahsvWA159IGFNj8x3FSPZlwsU6xrHuImC0SiyucKqFKB1l1yxBeUd02zNXv25IMlv9xPA==}
 
   '@img/sharp-darwin-arm64@0.33.5':
     resolution: {integrity: sha512-UT4p+iz/2H4twwAoLCqfA9UH5pI6DggwKEGuaPy7nCVQ8ZsiY5PIcrRvD1DzuY3qYL07NtIQcWnBSY/heikIFQ==}
@@ -3719,6 +3725,8 @@ snapshots:
     optional: true
 
   '@fontsource-variable/ysabeau-infant@5.1.0': {}
+
+  '@fontsource-variable/ysabeau-sc@5.1.1': {}
 
   '@img/sharp-darwin-arm64@0.33.5':
     optionalDependencies:

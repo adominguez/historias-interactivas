@@ -14,30 +14,34 @@ import Stars from '@components/Stars.astro'
     <Planet planet1 />
     <Planet planet2 />
     <div class="absolute bottom-0 flex margin-auto max-w-3xl justify-between items-end">
-      <div class="w-2/5 h-auto relative -ml-20 -mb-4 z-10">
-        <img src="hero/hero-left-ornament.webp" alt="ornamentos de la izquierda" class="left-ornament-shine z-20" />
-        <img src="hero/hero-left-ornament.webp" alt="ornamentos de la izquierda" class="left-ornament z-10 absolute top-0" />
+      <div class="w-2/5 h-auto relative -ml-20 -mb-4 z-20">
+        <img src="hero/hero-left-ornament.webp" alt="ornamentos de la izquierda" class="left-ornament-shine z-30" />
+        <img src="hero/hero-left-ornament.webp" alt="ornamentos de la izquierda" class="left-ornament z-20 absolute top-0" />
       </div>
-      <div class="w-2/5 h-auto relative -mb-4 -mr-20 z-10">
-        <img src="hero/hero-right-ornament.webp" alt="ornamentos de la derecha" class="right-ornament-shine z-20" />
-        <img src="hero/hero-right-ornament.webp" alt="ornamentos de la derecha" class="right-ornament z-10 absolute top-0" />
+      <div class="w-2/5 h-auto relative -mb-4 -mr-20 z-20">
+        <img src="hero/hero-right-ornament.webp" alt="ornamentos de la derecha" class="right-ornament-shine z-30" />
+        <img src="hero/hero-right-ornament.webp" alt="ornamentos de la derecha" class="right-ornament z-20 absolute top-0" />
       </div>
     </div>
-    <div class="flex justify-between z-10 -mb-12 gap-12">
+    <div class="absolute z-10 -m-12">
+      <img src="hero/magic-tree.webp" alt="árbol mágico" class="z-10 w-full h-auto mx-auto bottom-0 absolute blur-3xl" />
+      <img src="hero/magic-tree.webp" alt="árbol mágico" class="z-20 w-full h-auto mx-auto bottom-0" />
+    </div>
+    <div class="flex justify-between z-20 -mb-12 gap-12">
       <div class="relative w-48 flex">
-        <img src="hero/hero-left-book.webp" alt="Libro abierto en el centro de la imagen" class="left-book hidden md:block z-20 w-full h-auto mx-auto bottom-0" />
+        <img src="hero/hero-left-book.webp" alt="Libro abierto en el centro de la imagen" class="left-book hidden md:block z-30 w-full h-auto mx-auto bottom-0" />
       </div>
       <div class="relative w-80">
         <img src="hero/hero-center-book.webp" alt="Libro abierto en el centro de la imagen" class="center-book z-20 w-full h-auto mx-auto bottom-0" />
         <img src="hero/hero-center-book.webp" alt="Libro abierto en el centro de la imagen" class="center-book-2 -z-10 w-full top-0 h-auto mx-auto absolute bottom-0" />
       </div>
       <div class="relative w-48 flex items-center pt-4">
-        <img src="hero/hero-right-book.webp" alt="Libro abierto en el centro de la imagen" class="right-book hidden md:block z-20 w-full h-auto mx-auto bottom-0" />
+        <img src="hero/hero-right-book.webp" alt="Libro abierto en el centro de la imagen" class="right-book hidden md:block z-30 w-full h-auto mx-auto bottom-0" />
       </div>
     </div>
-    <div class="flex flex-col gap-4 items-center justify-center z-10 text-white">
+    <div class="flex flex-col gap-4 items-center justify-center z-50 text-white">
       <div class="flex justify-center items-center flex-col">
-        <h1 class="pretitle text-balance font-bold mb-0">Cuentos interactivos</h1>
+        <h1 class="sc pretitle text-balance font-bold mb-0 uppercase text-xs">Cuentos interactivos</h1>
         <span class="title font-thin text-center text-balance leading-none">¿Qué camino eliges?</span>
       </div>
       <Search client:visible />
@@ -61,7 +65,7 @@ import Stars from '@components/Stars.astro'
   }
 
   .title {
-    color: #eb8c76;
+    color: #fff;
     text-shadow: 1px 1px 2px #4e4e4e;
     font-size: clamp(1.5em,4vw + .5em,3em);
   }

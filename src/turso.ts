@@ -343,3 +343,14 @@ export const getCategoryBySlug = async (slug: string) => {
   });
   return result.rows[0];
 }
+
+export const updateStoryText = async (id: number, text: string) => {
+  await turso.execute({
+    sql: `
+      UPDATE stories
+      SET text = ?
+      WHERE id = ?;
+    `,
+    args: [text, id],
+  });
+}

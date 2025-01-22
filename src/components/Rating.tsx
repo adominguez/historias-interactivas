@@ -28,11 +28,9 @@ const Rating: React.FC<RatingProps> = ({
   // Manejar el cambio de rating
   const handleRating = async (value: number) => {
     const isRated = await getRatedStory(slug);
-    debugger
     const result = await fetch(`/api/update-rating?slug=${slug}&rating=${value}&isRated=${!!isRated}`);
     if (result.status === 200) {
       const response = await result.json()
-      debugger
       setRatingCount(response.results.ratingCount);
       const newRating = response.results.rating;
       if (newRating) {

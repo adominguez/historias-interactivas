@@ -7,19 +7,14 @@ import ThemeIcon from './ThemeIcon.astro';
 <header class="absolute w-svw z-10">
 	<!-- <ThemeIcon /> -->
 	<nav>
-		<a href="/" class="logo">
-			<svg width="20" height="20" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-				<circle cx="50" cy="50" r="45" fill="#3498db" />
-			</svg>
-		</a>
+		<a href="/" class="sc">El Árbol de las Historias</a>
 		<input type="checkbox" id="nav-toggle" class="nav-toggle">
 		<label for="nav-toggle" class="nav-toggle-label">
 			<span></span>
 		</label>
-		<ul class="nav-links">
-			<HeaderLink href="/">Home</HeaderLink>
-			<HeaderLink href="/cuentos">categorías</HeaderLink>
-			<HeaderLink href="/about">Cuentos</HeaderLink>
+		<ul class="nav-links sc">
+			<HeaderLink href="/">Inicio</HeaderLink>
+			<HeaderLink href="/sobre-mi">Sobre mí</HeaderLink>
 		</ul>
 	</nav>
 </header>
@@ -96,8 +91,6 @@ import ThemeIcon from './ThemeIcon.astro';
 		font-weight: 500;
 		transition: color var(--transition-speed) ease;
 		position: relative;
-		font-family: var(--font-primary);
-		font-size: var(--font-size-md);
 	}
 
 	.nav-links a::after {
@@ -107,7 +100,7 @@ import ThemeIcon from './ThemeIcon.astro';
 		height: 2px;
 		bottom: -4px;
 		left: 0;
-		background-color: #3498db;
+		background-color: hsl(11.28deg 74.52% 69.22%);
 		transform: scaleX(0);
 		transition: transform var(--transition-speed) ease;
 	}

@@ -47,21 +47,41 @@ const categories = await getCategoriesByType(type);
 
 <style>
   section {
-    background-image: radial-gradient(ellipse at bottom,#1b2735 0%,#090a0f 100%);
+    
+    &.fog {
+      background-image: radial-gradient(ellipse at bottom,#1b2735 0%,#090a0f 100%);
+      &::after {
+        content: '';
+        position: absolute;
+        right: 0;
+        bottom: 0;
+        background-image: url('categories/fog1.png');
+        background-size: 200% auto;
+        background-position: 0 bottom;
+        width: 100%;
+        height: 100%;
+        z-index: 10;
+        animation: fog 30s linear infinite;
+        filter: brightness(2.5);
+      }
+    }
 
-    &::after {
-      content: '';
-      position: absolute;
-      right: 0;
-      bottom: 0;
-      background-image: url('categories/fog1.png');
-      background-size: 200% auto;
-      background-position: 0 bottom;
-      width: 100%;
-      height: 100%;
-      z-index: 10;
-      animation: fog 30s linear infinite;
-      filter: brightness(2.5);
+    &.cloud {
+      background-image: radial-gradient(ellipse at bottom,#63acff 0%,#5b72e6 100%);
+      &::after {
+        content: '';
+        position: absolute;
+        right: 0;
+        bottom: 0;
+        background-image: url('https://www.clicktorelease.com/blog/css3dclouds/cloud.png');
+        background-size: 200% auto;
+        background-position: 0 bottom;
+        width: 100%;
+        height: 100%;
+        z-index: 10;
+        animation: fog 30s linear infinite;
+        filter: brightness(2.5);
+      }
     }
   }
 

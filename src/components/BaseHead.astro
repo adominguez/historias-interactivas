@@ -3,6 +3,7 @@
 // all pages through the use of the <BaseHead /> component.
 import '../styles/global.css';
 import ysabeau from '@fontsource-variable/ysabeau-infant/files/ysabeau-infant-latin-wght-normal.woff2';
+import ysabeauSC from '@fontsource-variable/ysabeau-sc/files/ysabeau-sc-latin-wght-normal.woff2';
 
 interface Props {
 	title: string;
@@ -23,6 +24,7 @@ const { title, description, image = '/blog-placeholder-1.jpg' } = Astro.props;
 
 <!-- Font preloads -->
 <link rel="preload" href={ysabeau} as="font" type="font/woff2" crossorigin="anonymous" />
+<link rel="preload" href={ysabeauSC} as="font" type="font/woff2" crossorigin="anonymous" />
 
 
 <!-- Canonical URL -->

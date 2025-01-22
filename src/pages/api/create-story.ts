@@ -6,7 +6,7 @@ import { truncateString, validateStoryIntegrity } from "@src/utils/functions";
 import { generateStoryPrompt } from "@src/utils/prompts";
 import OpenAI from "openai";
 import { v2 as cloudinary } from 'cloudinary'
-import { insertNewNodes, insertNewStory, getStoryBySlug } from "@src/turso";
+import { insertNewNodes, insertNewStory, getStoryBySlug, getCategories } from "@src/turso";
 import { type Node } from "@types";
 import { AGES } from '@src/utils/characters';
 
@@ -63,7 +63,11 @@ const createStory = async ({ scenario, characters, category, age }: { scenario: 
   const schema = fullSchema;
   const result = await generateObject({
     model: openai('gpt-4o-mini'),
-    system: `Eres un escritor de cuentos interactivos para personas de ${age} años.`,
+    system: `Eres un escritor de cuentos interactivos para ${AGES[age].type} de ${AGES[age].alias} con habilidades SEO.
+    Cada nodo y la historia principal deben incluir un objeto "meta" con los siguientes campos:
+    - "keywords": Una lista de palabras clave relevantes al contenido.
+    - "title": Un título breve y descriptivo para SEO.
+    - "description": Una descripción atractiva que resuma el contenido.`,
     prompt,
     schema,
   });
@@ -78,6 +82,8 @@ const createStory = async ({ scenario, characters, category, age }: { scenario: 
 
   // Validamos la integridad del cuento
   const { isValidated } = validateStoryIntegrity(nodes as unknown as Node[]);
+
+  console.log({ isValidated, isValidSlug });
 
   if (isValidated && isValidSlug) {
     const storyParams = [
@@ -137,19 +143,21 @@ const createStory = async ({ scenario, characters, category, age }: { scenario: 
       return { status: 400, error }
     }
   } else {
-    return { status: 400, error: isValidated ? "El cuento no ha pasado la validación de integridad" : "El slug del cuento ya existe" };
+    return { status: 400, error: !isValidated ? "El cuento no ha pasado la validación de integridad" : "El slug del cuento ya existe" };
   }
 };
 
 export async function GET(request: Request) {
-  console.log('acaba de entrar en la función GET');
+  console.log('Va a comenzar la creación del cuento...');
 
   // Obtener la URL completa
   const url = new URL(request.url);
 
   // Extraer el parámetro "category"
   const paramCategory = url.searchParams.get("category") || undefined;
-  const paramAge = url.searchParams.get("age") || undefined;
+  const paramAge = url.searchParams.get("age") === '18 ' || url.searchParams.get("age") === '18' ? '18+' : url.searchParams.get("age") || undefined;
+
+  console.log('Parámetros de la petición: ', paramCategory, paramAge);
 
   // Obtenemos la configuración del cuento
   const { scenario, characters, category, age } = generateStorySetup(paramCategory, paramAge);
