@@ -8,6 +8,7 @@ import Breadcrumb from '@components/Breadcrumb.astro';
 import Options from '@components/Options.astro';
 import { type Option } from "@types";
 import Books from '@components/sections/Books.astro';
+import DownloadImageButton from '@components/DownloadImageButton';
 import Rating from '@components/Rating';
 
 interface Props {
@@ -78,6 +79,7 @@ const { description, transition = 'fade', title, slug, options = [], optionSlug,
             )
           }
         </div>
+        <DownloadImageButton slug={slug} imageUrl={`https://res.cloudinary.com/dnxab4qma/image/upload/v1737579916/cuentos-interactivos/${slug}/${slug}`} client:visible />
         <slot />
         <Options options={options} slug={optionSlug} />
       </section>

@@ -41,6 +41,9 @@ importers:
       '@libsql/client':
         specifier: ^0.14.0
         version: 0.14.0
+      '@techstark/opencv-js':
+        specifier: 4.10.0-beta.1
+        version: 4.10.0-beta.1
       '@types/react':
         specifier: ^19.0.1
         version: 19.0.1
@@ -941,6 +944,9 @@ packages:
 
   '@shikijs/vscode-textmate@9.3.0':
     resolution: {integrity: sha512-jn7/7ky30idSkd/O5yDBfAnVt+JJpepofP/POZ1iMOxK59cOfqIgg/Dj0eFsjOTMw+4ycJN0uhZH/Eb0bs/EUA==}
+
+  '@techstark/opencv-js@4.10.0-beta.1':
+    resolution: {integrity: sha512-4ARkSxFCBvEg7qv7LHpbNW+XePua8Wdm6wUf3snz/i4nDFAgY6LPOLoWme2AOkZBbKMUir1O5kswJI5D+vXJjw==}
 
   '@tsconfig/node10@1.0.11':
     resolution: {integrity: sha512-DcRjDCujK/kCk/cUe8Xz8ZSpm8mS3mNNpta+jGCA6USEDfktlNvm1+IuZ9eTcDbNk41BHwpHHeW+N1lKCz4zOw==}
@@ -4045,6 +4051,8 @@ snapshots:
       '@types/hast': 3.0.4
 
   '@shikijs/vscode-textmate@9.3.0': {}
+
+  '@techstark/opencv-js@4.10.0-beta.1': {}
 
   '@tsconfig/node10@1.0.11':
     optional: true
