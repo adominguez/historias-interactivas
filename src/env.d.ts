@@ -4,10 +4,7 @@ interface ImportMetaEnv {
   readonly OPENAI_API_KEY: string;
   readonly PUBLIC_CLOUDINARY_CLOUD_NAME: string;
   readonly PUBLIC_CLOUDINARY_API_KEY: string;
-  readonly NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME: string;
-  readonly NEXT_PUBLIC_CLOUDINARY_API_KEY: string;
   readonly CLOUDINARY_API_SECRET: string;
-  readonly FREEPIK_API_KEY: string;
   readonly SITE_URL: string;
 }
 

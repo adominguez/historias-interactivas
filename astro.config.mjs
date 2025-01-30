@@ -23,10 +23,7 @@ export default defineConfig({
             OPENAI_API_KEY: envField.string({ context: "server", access: "secret" }),
             PUBLIC_CLOUDINARY_CLOUD_NAME: envField.string({ context: "server", access: "public" }),
             PUBLIC_CLOUDINARY_API_KEY: envField.string({ context: "server", access: "public" }),
-            NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME: envField.string({ context: "server", access: "public" }),
-            NEXT_PUBLIC_CLOUDINARY_API_KEY: envField.string({ context: "server", access: "public" }),
             CLOUDINARY_API_SECRET: envField.string({ context: "server", access: "secret" }),
-            FREEPIK_API_KEY: envField.string({ context: "server", access: "secret" }),
             SITE_URL: envField.string({ context: "server", access: "secret" }),
         }
     }
