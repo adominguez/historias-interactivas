@@ -23,7 +23,10 @@ interface Props {
   ratingSlug: string;
   ratingCount: number;
   rating: number;
-  category: string;
+  category: {
+    slug: string;
+    title: string;
+  };
 }
 
 const { description, transition = 'fade', title, slug, options = [], optionSlug, backUrl, relatedStories, ratingCount, rating, ratingSlug, category } = Astro.props;
@@ -50,9 +53,10 @@ const { description, transition = 'fade', title, slug, options = [], optionSlug,
         title: 'Cuentos interactivos',
         slug: `/#${slug}`,
         current: false,
+        back: !backUrl,
       }, {
-        title: category,
-        slug: `/cuentos-interactivos/${category}`,
+        title: category.title,
+        slug: `/cuentos/${category.slug}`,
         current: false,
       }, {
         title,
@@ -62,7 +66,7 @@ const { description, transition = 'fade', title, slug, options = [], optionSlug,
       <section id="contenido" class="px-4 py-8 pb-20">
         {
           backUrl && (
-            <a href={`${backUrl}#contenido`}>Atrás</a>
+            <button onclick="history.back()">Atrás</button>
           )
         }
         <div class="mb-8">

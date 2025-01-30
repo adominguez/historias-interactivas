@@ -17,6 +17,7 @@ if (!category) {
 
 const { name, title, meta_title: metaTitle, slug, meta_description: metaDescription, content_by_age, initial_content: initialContent, type } = await getCategoryBySlug(category) as unknown as CategoryData;
 const contentByAge = JSON.parse(content_by_age);
+
 ---
 
 <Layout title={title}, metaTitle={metaTitle} metaDescription={metaDescription} slug={slug} name={name} >

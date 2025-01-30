@@ -5,13 +5,15 @@ const { breadcrumb } = Astro.props;
 
 <ul class="px-4 flex flex-wrap">
   {
-    breadcrumb.map(({ title, slug, current }: BreadCrumbProps) => (
+    breadcrumb.map(({ title, slug, current, back }: BreadCrumbProps) => (
       <li class="inline">
         {
           current ? (
             <span>{title}</span>
           ) : (
-            <a href={slug} class="hover:text-primary">
+            back ?
+              <button onclick="history.back()">{title}</button>
+            : <a href={slug} class="hover:text-primary">
               {title}
             </a>
           )

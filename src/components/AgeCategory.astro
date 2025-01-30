@@ -13,6 +13,9 @@ const categories: Record<string, string | string[]> = {
 };
 
 const storiesCategory = await getStoriesByAge(categories[name]) as unknown as LittleStory[];
+
+console.log(storiesCategory);
+
 const whyRead = contentByAge.whyRead;
 const features = contentByAge.features;
 const benefits = contentByAge.benefits;

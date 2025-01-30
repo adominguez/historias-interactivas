@@ -1,8 +1,9 @@
 ---
 import Layout from "@layouts/LayoutStory.astro";
 import { turso } from "@src/turso";
-import { getRelatedStoriesBySlug, getRatingStoryBySlug } from "@src/turso";
-import { type Node } from "@types";
+import { getRelatedStoriesBySlug, getRatingStoryBySlug, getStoryBySlug } from "@src/turso";
+import { type Node, type Story } from "@types";
+import { generalCategories } from "@src/data/categories";
 export const prerender = false;
 
 const { slug, node: nodeParam } = Astro.params;
@@ -46,6 +47,28 @@ const node = {
   storyId: nodeData.story_id,
 } as Node;
 
+const storyResponse = await getStoryBySlug(parentSlug);
+const storyData = storyResponse[0] as any;
+
+const story = {
+  id: storyData.id,
+  slug: storyData.slug,
+  text: storyData.text,
+  options: JSON.parse(storyData.options),
+  title: storyData.title,
+  description: storyData.description,
+  rating: storyData.rating,
+  ratingCount: storyData.rating_count,
+  categories: storyData.categories,
+} as Story;
+
+const parsedCategory = JSON.parse(story.categories)[0];
+const matchedCategory = generalCategories.find((cat) => cat.name === parsedCategory) || generalCategories[0];
+const category = {
+  title: matchedCategory.title,
+  slug: matchedCategory.slug,
+};
+
 const backUrl =
   node.backSlug === node.parentSlug
     ? `/${node.parentSlug}`
@@ -55,6 +78,6 @@ const relatedStories = await getRelatedStoriesBySlug(node.parentSlug);
 const { rating, ratingCount } = await getRatingStoryBySlug(node.parentSlug);
 ---
 
-<Layout category="pirates" title={node.title} description={node.description} slug={node.parentSlug} options={node.options} optionSlug={node.parentSlug} backUrl={backUrl} relatedStories={relatedStories} ratingSlug={node.parentSlug} rating={rating as number} ratingCount={ratingCount as number}>
+<Layout category={category} title={node.title} description={node.description} slug={node.parentSlug} options={node.options} optionSlug={node.parentSlug} backUrl={backUrl} relatedStories={relatedStories} ratingSlug={node.parentSlug} rating={rating as number} ratingCount={ratingCount as number}>
   <div set:html={node.text} />
 </Layout>

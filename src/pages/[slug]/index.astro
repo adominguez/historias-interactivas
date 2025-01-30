@@ -2,6 +2,7 @@
 import Layout from "@layouts/LayoutStory.astro";
 import { getStoryBySlug, getRelatedStoriesBySlug } from "@src/turso";
 import { type Story } from "@types";
+import { generalCategories } from "@src/data/categories";
 export const prerender = false;
 
 const { slug } = Astro.params;
@@ -40,8 +41,12 @@ const story = {
   categories: storyData.categories,
 } as Story;
 
-const category = JSON.parse(story.categories)[0];
-
+const parsedCategory = JSON.parse(story.categories)[0];
+const matchedCategory = generalCategories.find((cat) => cat.name === parsedCategory) || generalCategories[0];
+const category = {
+  title: matchedCategory.title,
+  slug: matchedCategory.slug,
+};
 const relatedStories = await getRelatedStoriesBySlug(story.slug);
 ---
 

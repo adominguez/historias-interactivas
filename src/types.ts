@@ -51,6 +51,7 @@ export interface BreadCrumbProps {
   title: string;
   slug: string;
   current?: boolean;
+  back?: boolean;
 }
 
 export interface LittleStory {
