@@ -37,11 +37,14 @@ const story = {
   description: storyData.description,
   rating: storyData.rating,
   ratingCount: storyData.rating_count,
+  categories: storyData.categories,
 } as Story;
+
+const category = JSON.parse(story.categories)[0];
 
 const relatedStories = await getRelatedStoriesBySlug(story.slug);
 ---
 
-<Layout title={story.title} description={story.description} slug={story.slug} options={story.options} optionSlug={story.slug} relatedStories={relatedStories} rating={story.rating} ratingCount={story.ratingCount} ratingSlug={story.slug} >
+<Layout title={story.title} description={story.description} slug={story.slug} options={story.options} optionSlug={story.slug} relatedStories={relatedStories} rating={story.rating} ratingCount={story.ratingCount} ratingSlug={story.slug} category={category} >
   <div set:html={story.text} />
 </Layout>

@@ -1,0 +1,57 @@
+---
+import Globo from '@components/Globo.astro'
+import Planet from '@components/Planet.astro'
+import Search from '@components/Search'
+import Stars from '@components/Stars.astro'
+---
+
+<section class="hero w-full h-svh top-0 left-0 relative overflow-hidden">
+  <div class="w-full h-svh relative flex items-center pt-24 flex-col gap-32">
+    <div class="flex flex-col gap-4 items-center justify-center z-50 text-white">
+      <div class="flex justify-center items-center flex-col">
+        <h1 class="sc first-title text-balance font-bold mb-0 uppercase">404</h1>
+        <span class="sc pretitle text-balance font-bold mb-0 uppercase text-xs">Te has perdido en las historias</span>
+        <span class="title font-thin text-center text-balance leading-none">¿Qué camino eliges?</span>
+      </div>
+      <Search client:visible />
+    </div>
+    <div class="portal absolute overflow-hidden bottom-0 margin-auto h-full w-full z-10">
+      <Stars />
+    </div>
+    <Planet planet3 />
+    <Planet planet4 />
+  </div>
+</section>
+
+<style>
+
+  .hero {
+    perspective: 1000px;
+    transform-style: preserve-3d;
+  }
+
+  .first-title {
+    color: #96c6ce;
+    text-shadow: 0px 0px 16px #7db2bd;
+    font-size: clamp(3em, 4vw + 5em, 7em);
+    line-height: 2em;
+  }
+
+  .pretitle {
+    color: #fff;
+    text-shadow: 1px 1px 2px #4e4e4e;
+    font-size: clamp(.5em,4vw + .5em,1em);
+  }
+
+  .title {
+    color: #fff;
+    text-shadow: 1px 1px 2px #4e4e4e;
+    font-size: clamp(1.5em,4vw + .5em,3em);
+  }
+
+
+  .portal {
+    background-image: radial-gradient(ellipse at bottom, #1b2735 0%, #090a0f 100%);
+  }
+
+</style>

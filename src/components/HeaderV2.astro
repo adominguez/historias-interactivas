@@ -1,18 +1,30 @@
 ---
 import HeaderLink from './HeaderLink.astro';
-import { SITE_TITLE } from '../consts';
-import ThemeIcon from './ThemeIcon.astro';
+
+interface Props {
+	isLight?: boolean;
+}
+
+const { isLight } = Astro.props;
 ---
 
-<header class="absolute w-svw z-10">
-	<!-- <ThemeIcon /> -->
+<header class="absolute w-full z-10">
 	<nav>
-		<a href="/" class="sc">El Árbol de las Historias</a>
+		<a href="/" class:list={[
+			"sc",
+			isLight && "light"
+		]}>El Árbol de las Historias</a>
 		<input type="checkbox" id="nav-toggle" class="nav-toggle">
-		<label for="nav-toggle" class="nav-toggle-label">
+		<label for="nav-toggle" class:list={[
+			"nav-toggle-label",
+			isLight && "light"
+		]}>
 			<span></span>
 		</label>
-		<ul class="nav-links sc">
+		<ul class:list={[
+			"nav-links sc",
+			isLight && "light"
+		]}>
 			<HeaderLink href="/">Inicio</HeaderLink>
 			<HeaderLink href="/sobre-mi">Sobre mí</HeaderLink>
 		</ul>
@@ -22,6 +34,7 @@ import ThemeIcon from './ThemeIcon.astro';
 	:root {
 		--primary-gradient: linear-gradient(135deg, #1b2735 0%, #090a0f 100%);
 		--text-color: #2c3e50;
+		--text-light-color: #e7f0f9;
 		--card-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 		--hover-shadow: 0 8px 15px rgba(0, 0, 0, 0.15);
 		--spacing-unit: 2rem;
@@ -58,11 +71,17 @@ import ThemeIcon from './ThemeIcon.astro';
 	.nav-toggle-label span::before,
 	.nav-toggle-label span::after {
 		display: block;
-		background: red;
+		background: #374151;
 		height: 2px;
 		width: 2rem;
 		position: relative;
 		transition: all var(--transition-speed) ease;
+	}
+
+	.nav-toggle-label.light span,
+	.nav-toggle-label.light span::before,
+	.nav-toggle-label.light span::after {
+		background: var(--text-light-color);
 	}
 
 	.nav-toggle-label span::before,
@@ -91,6 +110,14 @@ import ThemeIcon from './ThemeIcon.astro';
 		font-weight: 500;
 		transition: color var(--transition-speed) ease;
 		position: relative;
+	}
+
+	.sc.light {
+		color: var(--text-light-color);
+	}
+
+	.sc.light a {
+		color: var(--text-light-color);
 	}
 
 	.nav-links a::after {

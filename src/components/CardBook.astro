@@ -2,7 +2,7 @@
 import { CldImage } from 'astro-cloudinary';
 import Rating from './Rating';
 import { AGES } from '@src/utils/characters';
-const { slug, title, created_at, resume, age, rating, ratingCount } = Astro.props;
+const { slug, title, resume, age, rating, ratingCount } = Astro.props;
 const { color, alias } = AGES[age as keyof typeof AGES];
 ---
 

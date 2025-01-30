@@ -23,9 +23,10 @@ interface Props {
   ratingSlug: string;
   ratingCount: number;
   rating: number;
+  category: string;
 }
 
-const { description, transition = 'fade', title, slug, options = [], optionSlug, backUrl, relatedStories, ratingCount, rating, ratingSlug } = Astro.props;
+const { description, transition = 'fade', title, slug, options = [], optionSlug, backUrl, relatedStories, ratingCount, rating, ratingSlug, category } = Astro.props;
 ---
 
 <!doctype html>
@@ -48,6 +49,10 @@ const { description, transition = 'fade', title, slug, options = [], optionSlug,
       <Breadcrumb breadcrumb={[{
         title: 'Cuentos interactivos',
         slug: `/#${slug}`,
+        current: false,
+      }, {
+        title: category,
+        slug: `/cuentos-interactivos/${category}`,
         current: false,
       }, {
         title,

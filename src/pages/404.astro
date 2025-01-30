@@ -1,6 +1,6 @@
 ---
 import Layout from "@layouts/Layout.astro"
-import HeroSection from '@components/sections/Hero.astro'
+import Hero404 from '@components/sections/Hero404.astro'
 import CategoriesSection from '@components/sections/Categories.astro'
 import BooksSection from '@components/sections/Books.astro'
 import { getFeaturedStoriesList, getStoryOrderByDate } from '@src/turso'
@@ -10,8 +10,8 @@ const bookList = await getFeaturedStoriesList() as unknown as LittleStory[]
 const bookListByDate = await getStoryOrderByDate() as unknown as LittleStory[]
 ---
 
-<Layout title="Cuentos Interactivos: Historias para todas las edades" description="Sumérgete en nuestra biblioteca de cuentos para todas las edades. Explora historias infantiles, juveniles y para adultos, ideales para leer y compartir.">
-	<HeroSection />
+<Layout title="Cuentos Interactivos: Historias para todas las edades" description="Sumérgete en nuestra biblioteca de cuentos para todas las edades. Explora historias infantiles, juveniles y para adultos, ideales para leer y compartir." isLight={true}>
+	<Hero404 />
 	<CategoriesSection type="general" />
 	<BooksSection id="cuentos-top" bookList={bookList || []} title="Top de cuentos más populares" content="Estos son los cuentos que han conquistado el corazón de nuestra comunidad de lectores. Cada uno ha sido destacado por su historia cautivadora, personajes inolvidables y por el impacto que han tenido en quienes los han leído. ¡Sumérgete en estas lecturas imprescindibles y descubre por qué se han convertido en los más valorados de nuestra colección!" />
 	<CategoriesSection type="age" title="¿Quieres encontrar cuentos por edad?" id="categorias-por-edad" effect="cloud">

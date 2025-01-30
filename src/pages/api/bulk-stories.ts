@@ -1,4 +1,5 @@
 import { ages } from '@src/utils/characters';
+import { SITE_URL } from "astro:env/server";
 
 function fillAgeArray(totalLength: number): string[] {
   const result: string[] = [];
@@ -37,7 +38,7 @@ export async function GET(request: Request) {
 
   const response = await Promise.all(
     stories.map(async (ages) => {
-      return await fetch(`${import.meta.env.SITE_URL}/api/create-story?age=${ages}`);
+      return await fetch(`${SITE_URL}/api/create-story?age=${ages}`);
     })
   )
 

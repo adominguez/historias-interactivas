@@ -8,9 +8,10 @@ interface Props {
 	title: string;
 	description: string;
   transition?: 'slide' | 'fade' | 'none';
+	isLight?: boolean;
 }
 
-const { title, description, transition = 'fade' } = Astro.props;
+const { title, description, transition = 'fade', isLight = false } = Astro.props;
 ---
 
 <!doctype html>
@@ -20,7 +21,7 @@ const { title, description, transition = 'fade' } = Astro.props;
     <ClientRouter />
 	</head>
 	<body>
-    <Header />
+    <Header isLight={isLight} />
     <main transition:animate={transition}>
       <slot />
     </main>

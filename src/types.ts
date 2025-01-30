@@ -7,7 +7,7 @@ export interface Story {
   createdAt: string; // Fecha de creación en formato ISO
   text: string; // Contenido del cuento en HTML
   options: Option[]; // Opciones para navegar
-  categories: Category[]; // Categorías relacionadas con el cuento
+  categories: string; // Categorías relacionadas con el cuento
   rating: number; // Calificación del cuento
   ratingCount: number; // Número de calificaciones
   age: string; // Edad recomendada para el cuento

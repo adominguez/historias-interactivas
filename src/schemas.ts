@@ -29,13 +29,6 @@ const virtues = [
   "esperanza"
 ]
 
-// Esquema para las virtudes
-// Virtue debe ser una de las virtudes definidas
-const virtueSchema = z.object({
-  virtue: z.enum(virtues as [string, ...string[]]).describe("Virtud"),
-  score: z.number().int().min(1).max(10).describe("Puntuación de la virtud"),
-});
-
 
 // Esquema para las opciones de navegación
 const optionSchema = z.object({

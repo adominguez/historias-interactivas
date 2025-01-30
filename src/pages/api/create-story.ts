@@ -1,4 +1,4 @@
-import { openai } from "@ai-sdk/openai";
+import { createOpenAI } from "@ai-sdk/openai";
 import { generateObject } from "ai";
 import { fullSchema } from "@src/schemas";
 import { generateStorySetup } from "@src/utils/characters";
@@ -6,19 +6,24 @@ import { truncateString, validateStoryIntegrity } from "@src/utils/functions";
 import { generateStoryPrompt } from "@src/utils/prompts";
 import OpenAI from "openai";
 import { v2 as cloudinary } from 'cloudinary'
-import { insertNewNodes, insertNewStory, getStoryBySlug, getCategories } from "@src/turso";
+import { insertNewNodes, insertNewStory, getStoryBySlug } from "@src/turso";
 import { type Node } from "@types";
 import { AGES } from '@src/utils/characters';
+import { PUBLIC_CLOUDINARY_CLOUD_NAME, PUBLIC_CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET, OPENAI_API_KEY } from "astro:env/server";
+
+const openai = createOpenAI({
+  apiKey: OPENAI_API_KEY,
+});
 
 cloudinary.config({
-  cloud_name: import.meta.env.PUBLIC_CLOUDINARY_CLOUD_NAME,
-  api_key: import.meta.env.PUBLIC_CLOUDINARY_API_KEY,
-  api_secret: import.meta.env.CLOUDINARY_API_SECRET,
+  cloud_name: PUBLIC_CLOUDINARY_CLOUD_NAME,
+  api_key: PUBLIC_CLOUDINARY_API_KEY,
+  api_secret: CLOUDINARY_API_SECRET,
   secure: true,
 });
 
 const ia = new OpenAI({
-  apiKey: import.meta.env.OPENAI_API_KEY,
+  apiKey: OPENAI_API_KEY,
 });
 
 const uploadImage = async (imageUrl: string, slug: string, retry = 0) => {
