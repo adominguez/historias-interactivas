@@ -9,15 +9,45 @@ interface Props {
 	description: string;
   transition?: 'slide' | 'fade' | 'none';
 	isLight?: boolean;
+	image?: string;
 }
 
-const { title, description, transition = 'fade', isLight = false } = Astro.props;
+const { title, description, transition = 'fade', isLight = false, image } = Astro.props;
 ---
 
 <!doctype html>
 <html lang="es">
   <head>
-    <BaseHead title={title} description={description} />
+    <BaseHead title={title} description={description} image={image} />
+		<script type="application/ld+json" set:html={JSON.stringify({
+			"@context": "https://schema.org",
+			"@type": "WebSite",
+			"name": title,
+			"url": "https://elarboldelashistorias.com",
+			"description": description,
+			"publisher": {
+				"@type": "Organization",
+				"name": "El Árbol de las Historias",
+				"url": "https://elarboldelashistorias.com",
+				"logo": {
+					"@type": "ImageObject",
+					"url": "https://elarboldelashistorias.com/logo.png"
+				}
+			},
+			"potentialAction": {
+				"@type": "SearchAction",
+				"target": "https://historias-interactivas.vercel.app/buscar?q={search_term_string}",
+				"query-input": "required name=search_term_string"
+			},
+			"mainEntity": {
+				"@type": "Organization",
+				"name": "El Árbol de las Historias",
+				"url": "https://elarboldelashistorias.com",
+				"sameAs": [
+					"https://instagram.com/elarboldelashistorias"
+				]
+			}
+		})}/>   			
     <ClientRouter />
 	</head>
 	<body>

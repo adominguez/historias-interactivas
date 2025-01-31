@@ -1,21 +1,13 @@
 ---
 import Books from "@components/sections/Books.astro";
 import { type LittleStory } from "@types";
-import { getStoriesByAge } from "@src/turso";
 
-const { contentByAge, name } = Astro.props;
+interface Props {
+  contentByAge: Record<string, any>;
+  stories: LittleStory[];
+}
 
-const categories: Record<string, string | string[]> = {
-  children: '3-4',
-  kids: ['5-8', '9-12'],
-  teens: '13-18',
-  adults: '18+',
-};
-
-const storiesCategory = await getStoriesByAge(categories[name]) as unknown as LittleStory[];
-
-console.log(storiesCategory);
-
+const { contentByAge, stories } = Astro.props;
 const whyRead = contentByAge.whyRead;
 const features = contentByAge.features;
 const benefits = contentByAge.benefits;
@@ -66,6 +58,6 @@ const cta = contentByAge.cta;
 }
 {
   cta ?
-    <Books bookList={storiesCategory} title={cta.title} content={cta.content}/>
+    <Books bookList={stories} title={cta.title} content={cta.content}/>
   : null
 }

@@ -10,6 +10,8 @@ import { type Option } from "@types";
 import Books from '@components/sections/Books.astro';
 import DownloadImageButton from '@components/DownloadImageButton';
 import Rating from '@components/Rating';
+import { getCldOgImageUrl } from 'astro-cloudinary/helpers';
+import { PUBLIC_CLOUDINARY_CLOUD_NAME } from "astro:env/server";
 
 interface Props {
 	title: string;
@@ -30,12 +32,48 @@ interface Props {
 }
 
 const { description, transition = 'fade', title, slug, options = [], optionSlug, backUrl, relatedStories, ratingCount, rating, ratingSlug, category } = Astro.props;
+
+const imageUrl = `https://res.cloudinary.com/${PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload/v1737579916/cuentos-interactivos/${slug}/${slug}`;
+
+const ogImageUrl = getCldOgImageUrl({ src: `cuentos-interactivos/${slug}/${slug}` });
+
+const url = new URL(Astro.url.pathname, Astro.site);
+
+const keywords = `${category.title}, Cuento interactivo, historia interactiva, ${title.split(' ').filter(item => item.length > 3).join(', ')}, decisiones`
+
+const genre = category.title.toLowerCase().replace('cuentos de ', '')
 ---
 
 <!doctype html>
 <html lang="es">
   <head>
-    <BaseHead title={title} description={description} />
+    <BaseHead title={title} description={description} image={ogImageUrl} />
+    <script type="application/ld+json" set:html={JSON.stringify({
+      "@context": "https://schema.org",
+      "@type": "CreativeWork",
+      "name": title,
+      "url": url,
+      "author": {
+        "@type": "Organization",
+        "name": "El Árbol de las Historias",
+        "url": Astro.site
+      },
+      "publisher": {
+        "@type": "Organization",
+        "name": "El Árbol de las Historias",
+      },
+      "description": description,
+      "image": imageUrl,
+      "datePublished": "2025-01-31",
+      "dateModified": "2025-01-31",
+      "genre": [genre],
+      "keywords": keywords,
+      "inLanguage": "es",
+      "mainEntityOfPage": {
+        "@type": "WebPage",
+        "@id": url
+      }
+    })}/>    
     <ClientRouter />
 	</head>
 	<body>
@@ -43,7 +81,7 @@ const { description, transition = 'fade', title, slug, options = [], optionSlug,
     <main class="flex pt-24 flex-col gap-8 mx-auto max-w-5xl" transition:animate={transition}>
       <CldImage
         transition:name={slug}
-        src={`cuentos-interactivos/${slug}/${slug}`}
+        src={imageUrl}
         width={1024}
         height={512}
         alt={title}

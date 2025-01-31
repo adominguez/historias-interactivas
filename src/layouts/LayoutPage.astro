@@ -13,15 +13,16 @@ interface Props {
   transition?: 'slide' | 'fade' | 'none';
   relatedStories?: any[];
   page: string;
+  image?: string;
 }
 
-const { description, transition = 'fade', page, title, relatedStories = [] } = Astro.props;
+const { description, transition = 'fade', page, title, relatedStories = [], image } = Astro.props;
 ---
 
 <!doctype html>
 <html lang="es">
   <head>
-    <BaseHead title={title} description={description} />
+    <BaseHead title={title} description={description} image={image} />
     <ClientRouter />
 	</head>
 	<body>

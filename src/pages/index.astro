@@ -5,12 +5,15 @@ import CategoriesSection from '@components/sections/Categories.astro'
 import BooksSection from '@components/sections/Books.astro'
 import { getFeaturedStoriesList, getStoryOrderByDate } from '@src/turso'
 import { type LittleStory } from "@types"
+import { getCldOgImageUrl } from 'astro-cloudinary/helpers';
 
 const bookList = await getFeaturedStoriesList() as unknown as LittleStory[]
 const bookListByDate = await getStoryOrderByDate() as unknown as LittleStory[]
----
 
-<Layout title="Cuentos Interactivos: Historias para todas las edades" description="Sumérgete en nuestra biblioteca de cuentos para todas las edades. Explora historias infantiles, juveniles y para adultos, ideales para leer y compartir.">
+const ogImageUrl = getCldOgImageUrl({ src: 'cuentos-interactivos/home' });
+
+---
+<Layout title="Cuentos Interactivos: Historias para todas las edades" description="Descubre cuentos interactivos donde cada elección cambia el rumbo de la historia. Explora aventuras, fantasía, mitología y más." image={ogImageUrl}>
 	<HeroSection />
 	<CategoriesSection type="general" />
 	<BooksSection id="cuentos-top" bookList={bookList || []} title="Top de cuentos más populares" content="Estos son los cuentos que han conquistado el corazón de nuestra comunidad de lectores. Cada uno ha sido destacado por su historia cautivadora, personajes inolvidables y por el impacto que han tenido en quienes los han leído. ¡Sumérgete en estas lecturas imprescindibles y descubre por qué se han convertido en los más valorados de nuestra colección!" />

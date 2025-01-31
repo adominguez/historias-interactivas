@@ -1,16 +1,18 @@
 ---
 import Books from "@components/sections/Books.astro";
 import { type LittleStory } from "@types";
-import { getStoriesByCategory } from "@src/turso";
 
-const { contentByAge, name } = Astro.props;
+interface Props {
+  contentByAge: Record<string, any>;
+  stories: LittleStory[];
+}
 
-const storiesCategory = await getStoriesByCategory(name) as unknown as LittleStory[];
-const stories34 = storiesCategory.filter(({age}) => age === '3-4');
-const stories58 = storiesCategory.filter(({age}) => age === '5-8');
-const stories912 = storiesCategory.filter(({age}) => age === '9-12');
-const stories1318 = storiesCategory.filter(({age}) => age === '13-18');
-const stories18 = storiesCategory.filter(({age}) => age === '18+');
+const { contentByAge, stories } = Astro.props;
+const stories34 = stories.filter(({age}) => age === '3-4');
+const stories58 = stories.filter(({age}) => age === '5-8');
+const stories912 = stories.filter(({age}) => age === '9-12');
+const stories1318 = stories.filter(({age}) => age === '13-18');
+const stories18 = stories.filter(({age}) => age === '18+');
 ---
 
 {

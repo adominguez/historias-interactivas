@@ -5,6 +5,9 @@ import BaseHead from '@components/BaseHead.astro';
 import Footer from '@components/Footer.astro';
 import { CldImage } from 'astro-cloudinary';
 import Breadcrumb from '@components/Breadcrumb.astro';
+import { getCldOgImageUrl } from 'astro-cloudinary/helpers';
+import type { LittleStory } from '@types';
+import { PUBLIC_CLOUDINARY_CLOUD_NAME } from 'astro:env/server';
 
 interface Props {
 	title: string;
@@ -13,15 +16,54 @@ interface Props {
   transition?: 'slide' | 'fade' | 'none';
   slug: string;
   name: string;
+  stories: LittleStory[];
 }
 
-const { metaDescription, metaTitle, transition = 'fade', title, slug, name } = Astro.props;
+const { metaDescription, metaTitle, transition = 'fade', title, slug, name, stories } = Astro.props;
+const imageUrl = `https://res.cloudinary.com/dnxab4qma/image/upload/v1737579916/cuentos-interactivos/categories/hero-${name}`;
+const ogImageUrl = getCldOgImageUrl({ src: `cuentos-interactivos/categories/hero-${name}` });
+
+const url = new URL(Astro.url.pathname, Astro.site);
+
+console.log(Astro.site);
 ---
 
 <!doctype html>
 <html lang="es">
   <head>
-    <BaseHead title={metaTitle} description={metaDescription} />
+    <BaseHead title={metaTitle} description={metaDescription} image={ogImageUrl} />
+    <script type="application/ld+json" set:html={JSON.stringify({
+      "@context": "https://schema.org",
+      "@type": "CollectionPage",
+      "name": title,
+      "url": url,
+      "description": metaDescription,
+      "publisher": {
+        "@type": "Organization",
+        "name": "El Árbol de las Historias",
+        "url": Astro.site?.origin,
+      },
+      "hasPart": {
+        "@type": "ItemList",
+        "name": title,
+        "itemListElement": stories.map(({title, slug, description}, index) => ({
+          "@type": "ListItem",
+          "position": index + 1,
+          "item": {
+            "@type": "CreativeWork",
+            "name": title,
+            "url": new URL(slug, Astro.site),
+            "image": `https://res.cloudinary.com/${PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload/v1737579916/cuentos-interactivos/${slug}/${slug}`,
+            "author": {
+              "@type": "Organization",
+              "name": "El Árbol de las Historias"
+            },
+            "description": description
+          }
+        }))
+      }
+    })}>  
+    </script>      
     <ClientRouter />
 	</head>
 	<body>
@@ -37,7 +79,7 @@ const { metaDescription, metaTitle, transition = 'fade', title, slug, name } = A
         current: true,
       }]} />
       <CldImage
-        src={`cuentos-interactivos/categories/hero-${name}`}
+        src={imageUrl}
         width={1024}
         height={512}
         alt={title}
