@@ -26,7 +26,7 @@ const ia = new OpenAI({
   apiKey: OPENAI_API_KEY,
 });
 
-const uploadImage = async (imageUrl: string, slug: string, retry = 0) => {
+const uploadImage = async (imageUrl: string, slug: string) => {
   console.log('Subiendo imagen a cloudinary...');
   try {
     await cloudinary.uploader
@@ -44,7 +44,7 @@ const uploadImage = async (imageUrl: string, slug: string, retry = 0) => {
   }
 };
 
-const generateImage = async (prompt: string, slug: string, retry = 0) => {
+const generateImage = async (prompt: string) => {
   try {
     console.log('Creando imagen con IA...');
     const aiResponse = await ia.images.generate({
@@ -114,7 +114,7 @@ const createStory = async ({ scenario, characters, category, age }: { scenario: 
       `I NEED to test how the tool works with extremely simple prompts. DO NOT add any detail, just use it AS-IS:
     Ilustración 3D para ${selectedAge.people} de ${selectedAge.alias}, colores brillantes y texturas suaves, evita añadir texto. Este es el texto: ${story.text}.`, 700,)}. Personajes: ${story.characters.map(({ name, description }) => `${name}: ${description}`).join(", ")}.`
 
-    const { isGenerated, error, imageUrl } = await generateImage(imagePrompt, story.slug);
+    const { isGenerated, error, imageUrl } = await generateImage(imagePrompt);
 
     if (isGenerated && imageUrl) {
 

@@ -1,33 +1,40 @@
 import { z } from 'zod';
 import { setupCategories } from '@src/data/categories'
 
-const virtues = [
-  "valentía",
-  "cautela",
-  "generosidad",
-  "compasión",
-  "astucia",
-  "lealtad",
-  "sabiduría",
-  "paciencia",
-  "determinación",
-  "honestidad",
-  "humildad",
-  "justicia",
-  "perseverancia",
-  "compromiso",
-  "integridad",
-  "empatía",
-  "carisma",
-  "creatividad",
-  "confianza",
-  "autocontrol",
-  "gratitud",
-  "resiliencia",
-  "curiosidad",
-  "tolerancia",
-  "esperanza"
-]
+// const virtues = [
+//   "valentía",
+//   "cautela",
+//   "generosidad",
+//   "compasión",
+//   "astucia",
+//   "lealtad",
+//   "sabiduría",
+//   "paciencia",
+//   "determinación",
+//   "honestidad",
+//   "humildad",
+//   "justicia",
+//   "perseverancia",
+//   "compromiso",
+//   "integridad",
+//   "empatía",
+//   "carisma",
+//   "creatividad",
+//   "confianza",
+//   "autocontrol",
+//   "gratitud",
+//   "resiliencia",
+//   "curiosidad",
+//   "tolerancia",
+//   "esperanza"
+// ]
+
+// Esquema para las virtudes
+// Virtue debe ser una de las virtudes definidas
+// const virtueSchema = z.object({
+//   virtue: z.enum(virtues as [string, ...string[]]).describe("Virtud"),
+//   score: z.number().int().min(1).max(10).describe("Puntuación de la virtud"),
+// });
 
 
 // Esquema para las opciones de navegación

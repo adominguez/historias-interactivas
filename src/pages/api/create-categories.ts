@@ -1,7 +1,7 @@
 import { ageCategories } from '@src/data/categories';
 import { insertNewCategory } from '@src/turso';
 
-export async function GET(request: Request) {
+export async function GET() {
   console.log('acaba de entrar en la función GET');
 
   await Promise.all(
