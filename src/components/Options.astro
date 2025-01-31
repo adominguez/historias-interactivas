@@ -3,7 +3,7 @@ import { type Option } from "@types";
 const { options = [], slug } = Astro.props;
 ---
 
-{options?.length > 0 && <span class="option-title">¿Qué quieres hacer?</span>}
+{options?.length > 0 && <h2 class="option-title">¿Qué camino eliges?</h2>}
 {
   options.length > 0 ?
   <div class="flex gap-4 flex-wrap mt-8">

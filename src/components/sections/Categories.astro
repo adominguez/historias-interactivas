@@ -10,13 +10,13 @@ interface Props {
   content?: string;
 }
 
-const { type, title = 'Qué Categoría quieres?', effect = 'fog', id='categorias', content = 'Elige una categoría para comenzar a disfrutar de los cuentos interactivos.' } = Astro.props;
+const { type, title = '¿Qué Categoría quieres?', effect = 'fog', id='categorias', content = 'Elige una categoría para comenzar a disfrutar de los cuentos interactivos.' } = Astro.props;
 
 const categories = await getCategoriesByType(type);
 ---
 
 <section class:list={[
-  "px-4 py-20 relative",
+  "px-4 py-8 relative",
   effect
 ]} id={id}>
   <div class="flex flex-col gap-8 mx-auto max-w-7xl">
@@ -29,7 +29,7 @@ const categories = await getCategoriesByType(type);
             "relative overflow-hidden rounded-lg",
             "aspect-[300/400]"
           ]}>
-            <a href={`cuentos/${slug}`} class="link peer absolute bottom-0 px-2 py-4 text-white border-transparent hover:border-red text-center top-0 left-0 right-0 flex flex-col justify-end items-center text-balance z-20 leading-6 hover:text-white">{title}</a>
+            <a href={`cuentos/${slug}`} class="link peer absolute bottom-0 px-2 py-4 text-white border-transparent hover:border-red text-center top-0 left-0 right-0 flex flex-col justify-end items-center text-balance z-20 leading-6 hover:text-white"><h3 class="category-text">{title}</h3></a>
             <CldImage
               src={`cuentos-interactivos/categories/${name}_cat`}
               width={300}
@@ -96,6 +96,10 @@ const categories = await getCategoriesByType(type);
 
   .link:hover {
     text-shadow: 0px 0px 10px #fff;
+  }
+
+  .category-text {
+    @apply text-lg text-white;
   }
 
   @keyframes fog {
