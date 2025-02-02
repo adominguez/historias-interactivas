@@ -60,6 +60,13 @@ const customPages = [...customStories, ...customNodes, ...customCategories];
 export default defineConfig({
   site: 'https://elarboldelashistorias.com',
   integrations: [mdx(), sitemap({
+    serialize(item) {
+      const lastCharacter = item.url.slice(-1);
+      if (lastCharacter === "/") {
+        item.url = item.url.slice(0, -1);
+      }
+      return item;
+    },
     customPages
   }), tailwind(), react()],
   output: 'server',
