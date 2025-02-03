@@ -11,6 +11,7 @@ export interface Story {
   rating: number; // Calificación del cuento
   ratingCount: number; // Número de calificaciones
   age: string; // Edad recomendada para el cuento
+  created_at: string; // Fecha de creación en formato ISO
 }
 
 export interface Node {

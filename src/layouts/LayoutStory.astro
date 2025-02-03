@@ -29,9 +29,10 @@ interface Props {
     slug: string;
     title: string;
   };
+  created: string;
 }
 
-const { description, transition = 'fade', title, slug, options = [], optionSlug, backUrl, relatedStories, ratingCount, rating, ratingSlug, category } = Astro.props;
+const { description, transition = 'fade', title, slug, options = [], optionSlug, backUrl, relatedStories, ratingCount, rating, ratingSlug, category, created } = Astro.props;
 
 const imageUrl = `https://res.cloudinary.com/${PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload/v1737579916/cuentos-interactivos/${slug}/${slug}`;
 
@@ -64,8 +65,8 @@ const genre = category.title.toLowerCase().replace('cuentos de ', '')
       },
       "description": description,
       "image": imageUrl,
-      "datePublished": "2025-01-31",
-      "dateModified": "2025-01-31",
+      "datePublished": {created},
+      "dateModified": {created},
       "genre": [genre],
       "keywords": keywords,
       "inLanguage": "es",
