@@ -79,8 +79,11 @@ const backUrl =
   
 const relatedStories = await getRelatedStoriesBySlug(node.parentSlug);
 const { rating, ratingCount } = await getRatingStoryBySlug(node.parentSlug);
+
+const title = `${story.title} - ${node.title || node.slug.replaceAll('-', ' ')} - ${category.title}`;
+const description = node.description || story.description;
 ---
 
-<Layout category={category} title={node.title} description={node.description} slug={node.parentSlug} options={node.options} optionSlug={node.parentSlug} backUrl={backUrl} relatedStories={relatedStories} ratingSlug={node.parentSlug} rating={rating as number} ratingCount={ratingCount as number} created={date}>
+<Layout category={category} title={title} description={description} slug={node.parentSlug} options={node.options} optionSlug={node.parentSlug} backUrl={backUrl} relatedStories={relatedStories} ratingSlug={node.parentSlug} rating={rating as number} ratingCount={ratingCount as number} created={date}>
   <div set:html={node.text} />
 </Layout>
