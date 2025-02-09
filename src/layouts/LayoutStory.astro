@@ -43,12 +43,45 @@ const url = new URL(Astro.url.pathname, Astro.site);
 const keywords = `${category.title}, Cuento interactivo, historia interactiva, ${title.split(' ').filter(item => item.length > 3).join(', ')}, decisiones`
 
 const genre = category.title.toLowerCase().replace('cuentos de ', '')
+
+const breadcrumb = !backUrl ? [{
+        title: 'Cuentos interactivos',
+        slug: `/#${slug}`,
+        current: false,
+        back: !backUrl,
+      }, {
+        title: category.title,
+        slug: `/cuentos/${category.slug}`,
+        current: false,
+      }, {
+        title,
+        slug: `/cuentos-interactivos/${slug}`,
+        current: true,
+      }] : [{
+        title: 'Cuentos interactivos',
+        slug: `/#${slug}`,
+        current: false,
+        back: !backUrl,
+      }, {
+        title: category.title,
+        slug: `/cuentos/${category.slug}`,
+        current: false,
+      }, {
+        title: backUrl.replaceAll('-', ' ').replace('/', ''),
+        slug: `${backUrl}`,
+        current: false,
+      }, {
+        title,
+        slug: `/cuentos-interactivos/${backUrl}/${slug}`,
+        current: true,
+      }]
+
 ---
 
 <!doctype html>
 <html lang="es">
   <head>
-    <BaseHead title={title} description={description} image={ogImageUrl} />
+    <BaseHead title={`${title} - ${category.title}`} description={description} image={ogImageUrl} />
     <script type="application/ld+json" set:html={JSON.stringify({
       "@context": "https://schema.org",
       "@type": "CreativeWork",
@@ -89,20 +122,7 @@ const genre = category.title.toLowerCase().replace('cuentos de ', '')
         sizes="100vw"
         loading="eager"
       />
-      <Breadcrumb breadcrumb={[{
-        title: 'Cuentos interactivos',
-        slug: `/#${slug}`,
-        current: false,
-        back: !backUrl,
-      }, {
-        title: category.title,
-        slug: `/cuentos/${category.slug}`,
-        current: false,
-      }, {
-        title,
-        slug: `/cuentos-interactivos/${slug}`,
-        current: true,
-      }]} />
+      <Breadcrumb breadcrumb={breadcrumb} />
       <section id="contenido" class="px-4 py-8 pb-20">
         {
           backUrl && (

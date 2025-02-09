@@ -80,7 +80,7 @@ const backUrl =
 const relatedStories = await getRelatedStoriesBySlug(node.parentSlug);
 const { rating, ratingCount } = await getRatingStoryBySlug(node.parentSlug);
 
-const title = `${story.title} - ${node.title || node.slug.replaceAll('-', ' ')} - ${category.title}`;
+const title = node.title || node.slug.replaceAll('-', ' ');
 const description = node.description || story.description;
 ---
 

@@ -52,7 +52,7 @@ const category = {
 };
 const relatedStories = await getRelatedStoriesBySlug(story.slug);
 
-const title = `${story.title} - ${category.title}`;
+const title = `${story.title}`;
 ---
 
 <Layout title={title} description={story.description} slug={story.slug} options={story.options} optionSlug={story.slug} relatedStories={relatedStories} rating={story.rating} ratingCount={story.ratingCount} ratingSlug={story.slug} category={category} created={date} >
