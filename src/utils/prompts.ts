@@ -12,14 +12,15 @@ function generateStoryPrompt({scenario, characters, category, age}: {scenario: s
      - El escenario del cuento es '${scenario}'.
      - La categoría del cuento es '${category}'.
      - El cuento debe estar dividido en un **inicio**, un **nudo** y un **desenlace**.
+     - Los personajes deben tener una personalidad definida y coherente, además puedes ponerles nombres.
      - ¡Muy importante! Se original, no hagas el típico de encontrar algo eligiendo caminos, por ejemplo podría ser elegir opciones en un diálogo...
-     - Puede darse el caso de que los personajes puedan encontrarse con otros personajes secundarios, pero no deben ser el foco principal de la historia.
+     - Puede darse el caso de que los personajes puedan encontrarse con otros personajes secundarios que también deben tener nombre, pero no deben ser el foco principal de la historia.
      - Puede darse el caso de que los personajes se complementen y puedan enfrentarse entre ellos, por ejemplo, un cazador de brujas y una bruja.
      - Cada sección debe contener de ${selectedAge.words} para que lo entiendan ${selectedAge.people} de ${selectedAge.alias}, con un lenguaje adecuado para ${selectedAge.people} de ${selectedAge.alias}.
      - La trama debe incluir decisiones importantes que lleven a diferentes caminos y nodos finales.
-     - El texto debe estar en HTML utilizando las etiquetas <p>, <strong>, <em>... que sean necesarias.
+     - NO uses markdown, Utiliza las etiquetas html <p>, <strong>, <em>... que sean necesarias.
      - El cuento debe de tener un mínimo de 3 nodos y un máximo de 8.
-     - cada decisión debe de ofrecer un mínimo de 2 opciones y un máximo de 4.
+     - Cada decisión debe de ofrecer un mínimo de 2 opciones y un máximo de 4.
   
   3. **Validación de las opciones:**
      - Es muy importante que **todas las opciones dentro del campo 'options' deben apuntar a un slug que exista dentro del JSON generado, si esto no funciona bien el cuento no será válido.

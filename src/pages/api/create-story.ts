@@ -65,10 +65,14 @@ const createStory = async ({ scenario, characters, category, age }: { scenario: 
   // Generamos el prompt para OpenAI
   console.log('Generando cuento...');
   const prompt = generateStoryPrompt({ scenario, characters, category, age });
+  const selectedAge = AGES[age as keyof typeof AGES] || AGES["9-12"];
   const schema = fullSchema;
   const result = await generateObject({
-    model: openai('gpt-4o-mini'),
-    system: `Eres un escritor de cuentos interactivos para ${AGES[age].type} de ${AGES[age].alias} con habilidades SEO.
+    model: openai('o4-mini'),
+    temperature: 1,
+    system: `Eres un experto escritor de cuentos interactivos para ${AGES[age].type} de ${AGES[age].alias}. Tu labor es generar ${selectedAge.type}.
+
+    ### Instrucciones:
     Cada nodo y la historia principal deben incluir un objeto "meta" con los siguientes campos:
     - "keywords": Una lista de palabras clave relevantes al contenido.
     - "title": Un título breve y descriptivo para SEO.
