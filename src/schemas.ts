@@ -37,10 +37,18 @@ import { setupCategories } from '@src/data/categories'
 // });
 
 
-// Esquema para las opciones de navegación
-const optionSchema = z.object({
+// Esquema para las opciones de navegación del esqueleto: 'next' es el ÍNDICE
+// (posición en el array 'nodes') del nodo al que lleva la opción, no un slug
+// de texto. Pedirle a la IA que invente un slug y lo repita carácter por
+// carácter en varios sitios del JSON es la fuente más habitual de cuentos
+// rotos (enlaces a slugs inexistentes, slugs duplicados); referenciar por
+// índice numérico es una tarea mucho más mecánica y fiable para el modelo.
+// Los slugs de verdad se calculan de forma determinista en el código a
+// partir del título, una vez resuelto el grafo (ver buildAncestorSummaries
+// y resolveBlueprint en utils/functions.ts).
+const indexOptionSchema = z.object({
   text: z.string().describe("Texto de la opción"),
-  next: z.string().describe("Slug del siguiente nodo formateado como 'slug-nodo'"),
+  next: z.number().int().min(0).describe("Índice (empezando en 0) del nodo del array 'nodes' al que lleva esta opción"),
 });
 
 // Esquema para los personajes
@@ -62,18 +70,15 @@ const categoriesEnum = z.enum(Object.keys(setupCategories) as [string, ...string
 // por escena, sin el texto final. Se valida la integridad del grafo con esto
 // antes de gastar en generar texto completo o imagen.
 const nodeBlueprintSchema = z.object({
-  slug: z.string().describe("Slug único del nodo"),
-  backSlug: z.string().nullable().describe("Slug del nodo anterior"),
   title: z.string().describe("Título breve del nodo"),
   summary: z.string().describe("Resumen de continuidad de 1-2 frases: qué ocurre en esta escena, y qué objetos/personajes/lugares relevantes aparecen, nombrados de forma exacta y reutilizable."),
-  options: z.array(optionSchema).describe("Opciones de navegación. Vacío ([]) si el nodo es un final."),
+  options: z.array(indexOptionSchema).describe("Opciones de navegación. Vacío ([]) si el nodo es un final."),
 });
 
 const storyBlueprintSchema = z.object({
-  slug: z.string().describe("Slug único del cuento formato titulo-del-cuento"),
   title: z.string().describe("Título del cuento"),
   summary: z.string().describe("Resumen de continuidad de 1-2 frases de la escena inicial, con los mismos criterios que el de los nodos."),
-  options: z.array(optionSchema).describe("Opciones de navegación iniciales"),
+  options: z.array(indexOptionSchema).describe("Opciones de navegación iniciales"),
   categories: z.array(categoriesEnum).describe("Categorías relacionadas con el cuento"),
   characters: z.array(characterSchema).describe("Lista de personajes"),
   duration: z.string().nullable().describe("Duración estimada en minutos"),

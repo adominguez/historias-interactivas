@@ -21,17 +21,18 @@ function generateBlueprintPrompt({ scenario, characters, category, age }: { scen
      - La trama debe incluir decisiones importantes que lleven a diferentes caminos y nodos finales.
      - El cuento debe tener un mínimo de 3 nodos y un máximo de 8.
      - Cada decisión debe ofrecer un mínimo de 2 opciones y un máximo de 4.
-     - El slug de la historia y de cada nodo debe ser descriptivo de lo que ocurre en esa escena concreta. Nunca uses palabras genéricas como "inicio", "cuento" o "nodo" como slug.
 
-  2. **El campo "summary" es el más importante de todos:**
+  2. **Cómo referenciar los nodos (MUY IMPORTANTE, léelo con cuidado):**
+     - NO inventes ningún identificador de texto para los nodos. Los nodos se identifican solo por su POSICIÓN dentro del array 'nodes'.
+     - La propia historia (el objeto 'story', con su resumen y sus opciones iniciales) NO forma parte del array 'nodes' y NO tiene índice. El array 'nodes' empieza a contar desde cero para su PRIMER elemento: nodes[0] es el índice 0, nodes[1] es el índice 1, y así sucesivamente. Si generas 5 nodos, sus índices válidos son 0, 1, 2, 3 y 4 (nunca 5).
+     - En cada opción ('options'), el campo 'next' debe ser ese NÚMERO de índice dentro de 'nodes' (por ejemplo, next: 2 significa "lleva a nodes[2]", el tercer elemento del array).
+     - Esto incluye también las opciones iniciales de la propia historia ('story.options'): igualmente usan 'next' como índice de un elemento de 'nodes', nunca como si la historia misma ocupara el índice 0.
+     - Si el nodo es final, su campo 'options' debe estar vacío ([]).
+
+  3. **El campo "summary" es el más importante de todos:**
      - Describe en 1-2 frases qué ocurre en esa escena concreta: dónde están los personajes, qué acaba de pasar y qué se plantea a continuación.
      - Nombra explícitamente cualquier objeto, personaje secundario o lugar relevante que aparezca, y usa siempre el mismo nombre exacto si vuelve a aparecer más adelante en ese mismo camino (por ejemplo, si consiguen "una moneda dorada", llámala siempre "la moneda dorada", no "el tesoro" o "la moneda" a secas).
-     - Este resumen se usará después para escribir el texto completo de cada escena manteniendo la coherencia con lo que pasó antes en ese camino (mismo escenario, mismos objetos y personajes salvo que la trama cambie explícitamente), así que no lo dejes vago ni genérico.
-
-  3. **Validación de las opciones:**
-     - Todas las opciones dentro de 'options' deben apuntar a un slug que exista entre los nodos generados.
-     - Cada 'next' debe corresponder a un slug de otro nodo, y ese nodo debe existir.
-     - Si el nodo es final, su campo 'options' debe estar vacío ([]).`
+     - Este resumen se usará después para escribir el texto completo de cada escena manteniendo la coherencia con lo que pasó antes en ese camino (mismo escenario, mismos objetos y personajes salvo que la trama cambie explícitamente), así que no lo dejes vago ni genérico.`
 }
 
 // Pass 2: el texto completo de UNA escena concreta, ya con el esqueleto

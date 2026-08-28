@@ -69,38 +69,138 @@ function validateStoryIntegrity(story: { slug: string; options: Option[] }, node
   return { isValidated, errors };
 }
 
-// A partir de las opciones REALES del grafo (option.next), no del backSlug que
-// declara la IA (que podría no coincidir con la estructura ya validada),
-// calcula para cada nodo el resumen de todas las escenas de su camino desde
-// la raíz, en orden. Se usa para dar continuidad narrativa (mismo escenario,
-// objetos y personajes) al generar el texto completo de cada escena.
-// Asume que el grafo es un árbol: si un nodo es alcanzable por más de un
-// camino, se queda con el primero que lo descubre.
-function buildAncestorSummaries(
-  story: { slug: string; summary: string; options: Option[] },
-  nodes: { slug: string; summary: string; options: Option[] }[]
-) {
-  const summaryBySlug = new Map<string, string>([[story.slug, story.summary]]);
-  const optionsBySlug = new Map<string, Option[]>([[story.slug, story.options]]);
-  nodes.forEach(node => {
-    summaryBySlug.set(node.slug, node.summary);
-    optionsBySlug.set(node.slug, node.options);
-  });
+function slugify(text: string): string {
+  return text
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "") // quita acentos
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
 
-  const historyBySlug = new Map<string, string[]>();
+type RawIndexOption = { text: string; next: number };
+type RawNodeBlueprint = { title: string; summary: string; options: RawIndexOption[] };
+type RawStoryBlueprint = {
+  title: string;
+  summary: string;
+  options: RawIndexOption[];
+  categories: string[];
+  characters: { name: string; description: string }[];
+  duration: string | null;
+};
 
-  const visit = (slug: string, history: string[]) => {
-    if (historyBySlug.has(slug)) return;
-    historyBySlug.set(slug, history);
-    (optionsBySlug.get(slug) ?? []).forEach(option => {
-      const summary = summaryBySlug.get(slug);
-      if (summary === undefined) return;
-      visit(option.next, [...history, summary]);
+// La IA ya no inventa slugs de texto: cada opción referencia el nodo al que
+// lleva por su ÍNDICE en el array 'nodes' (ver schemas.ts). Esta función:
+//  1. Comprueba que todos los índices están dentro de rango (si no, es un
+//     fallo real que hay que reintentar, no podemos adivinar la intención).
+//  2. Recorre el grafo desde la raíz y descarta en silencio los nodos que
+//     nadie referencia — un nodo huérfano no le hace daño a nadie, así que no
+//     hace falta rechazar todo el cuento por él.
+//  3. Comprueba que quede al menos un final entre los nodos alcanzables.
+//  4. Asigna slugs reales de forma determinista a partir de los títulos
+//     (con desambiguación si dos títulos generan el mismo slug), calcula el
+//     back_slug real de cada nodo a partir de quién lo descubrió primero en
+//     el recorrido (no de nada que declare la IA), y de paso calcula el
+//     historial de resúmenes de cada camino (para la continuidad narrativa
+//     de la pasada 2), todo en el mismo recorrido.
+function resolveBlueprint(story: RawStoryBlueprint, nodes: RawNodeBlueprint[]) {
+  const isValidIndex = (index: number) => Number.isInteger(index) && index >= 0 && index < nodes.length;
+
+  const invalidIndexErrors: any[] = [];
+  const checkIndices = (from: string | number, options: RawIndexOption[]) => {
+    options.forEach(option => {
+      if (!isValidIndex(option.next)) {
+        invalidIndexErrors.push({ type: "invalid-index", from, index: option.next, optionText: option.text });
+      }
     });
   };
-  visit(story.slug, []);
+  checkIndices("story", story.options);
+  nodes.forEach((node, index) => checkIndices(index, node.options));
 
-  return historyBySlug;
+  if (invalidIndexErrors.length > 0) {
+    return { ok: false as const, errors: invalidIndexErrors };
+  }
+
+  // Recorrido desde la raíz: descubre qué nodos son alcanzables, quién los
+  // descubrió primero (su padre real) y el historial de resúmenes hasta ahí.
+  const parentOf = new Map<number, "story" | number>();
+  const historyByIndex = new Map<number, string[]>();
+  const order: number[] = [];
+  const visited = new Set<number>();
+
+  const enqueue = (fromId: "story" | number, fromHistory: string[], options: RawIndexOption[]) => {
+    options.forEach(option => {
+      if (visited.has(option.next)) return;
+      visited.add(option.next);
+      parentOf.set(option.next, fromId);
+      historyByIndex.set(option.next, fromHistory);
+      order.push(option.next);
+    });
+  };
+
+  enqueue("story", [], story.options);
+  for (let cursor = 0; cursor < order.length; cursor++) {
+    const current = order[cursor];
+    const currentHistory = [...(historyByIndex.get(current) ?? []), nodes[current].summary];
+    enqueue(current, currentHistory, nodes[current].options);
+  }
+
+  if (order.length === 0) {
+    return { ok: false as const, errors: [{ type: "no-nodes-reachable" }] };
+  }
+  if (!order.some(index => nodes[index].options.length === 0)) {
+    return { ok: false as const, errors: [{ type: "no-ending" }] };
+  }
+
+  // Slugs deterministas a partir de los títulos, solo para lo alcanzable.
+  const MAX_SLUG_LENGTH = 60;
+  const usedSlugs = new Set<string>();
+  const slugFor = (title: string) => {
+    let base = slugify(title) || "escena";
+    if (base.length > MAX_SLUG_LENGTH) {
+      base = base.slice(0, MAX_SLUG_LENGTH).replace(/-[^-]*$/, "");
+    }
+    let candidate = base;
+    let suffix = 2;
+    while (usedSlugs.has(candidate)) {
+      candidate = `${base}-${suffix}`;
+      suffix += 1;
+    }
+    usedSlugs.add(candidate);
+    return candidate;
+  };
+
+  const storySlug = slugFor(story.title);
+  const slugByIndex = new Map(order.map(index => [index, slugFor(nodes[index].title)]));
+  const resolveOptions = (options: RawIndexOption[]): Option[] =>
+    options.map(({ text, next }) => ({ text, next: slugByIndex.get(next) as string }));
+
+  const resolvedStory = {
+    slug: storySlug,
+    title: story.title,
+    summary: story.summary,
+    options: resolveOptions(story.options),
+    categories: story.categories,
+    characters: story.characters,
+    duration: story.duration,
+  };
+
+  const historyBySlug = new Map<string, string[]>();
+  const resolvedNodes = order.map(index => {
+    const slug = slugByIndex.get(index) as string;
+    const parent = parentOf.get(index);
+    const backSlug = parent === "story" ? storySlug : (slugByIndex.get(parent as number) as string);
+    historyBySlug.set(slug, historyByIndex.get(index) ?? []);
+    return {
+      slug,
+      backSlug,
+      title: nodes[index].title,
+      summary: nodes[index].summary,
+      options: resolveOptions(nodes[index].options),
+    };
+  });
+
+  return { ok: true as const, story: resolvedStory, nodes: resolvedNodes, historyBySlug };
 }
 
 function truncateString(input: string | any[], maxLength = 800) {
@@ -183,4 +283,4 @@ const removeRatedStory = (slug: string) => {
 
 
 
-export { truncateString, validateStoryIntegrity, buildAncestorSummaries, saveRatedStory, getRatedStories, removeRatedStory, getRatedStory };
+export { truncateString, validateStoryIntegrity, resolveBlueprint, saveRatedStory, getRatedStories, removeRatedStory, getRatedStory };

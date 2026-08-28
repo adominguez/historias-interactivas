@@ -2,12 +2,12 @@ import { createOpenAI } from "@ai-sdk/openai";
 import { generateObject } from "ai";
 import { blueprintSchema, sceneContentSchema, storyContentSchema } from "@src/schemas";
 import { generateStorySetup } from "@src/utils/characters";
-import { truncateString, validateStoryIntegrity, buildAncestorSummaries } from "@src/utils/functions";
+import { truncateString, validateStoryIntegrity, resolveBlueprint } from "@src/utils/functions";
 import { generateBlueprintPrompt, generateSceneContentPrompt } from "@src/utils/prompts";
 import OpenAI from "openai";
 import { v2 as cloudinary } from 'cloudinary'
 import { insertNewNodes, insertNewStory, getStoryBySlug } from "@src/turso";
-import { type Node, type Option } from "@types";
+import { type Node } from "@types";
 import { AGES } from '@src/utils/characters';
 import { PUBLIC_CLOUDINARY_CLOUD_NAME, PUBLIC_CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET, OPENAI_API_KEY } from "astro:env/server";
 
@@ -114,32 +114,65 @@ const generateSceneContent = async ({ age, history, summary, isEnding, isRoot, c
   return result.object;
 };
 
+const MAX_BLUEPRINT_ATTEMPTS = 3;
+
 const createStory = async ({ scenario, characters, category, age }: { scenario: string, characters: string[], category: string, age: string }) => {
-  const blueprint = await generateBlueprint({ scenario, characters, category, age });
-  const { story: storyBlueprint, nodes: nodeBlueprints } = blueprint;
+  // El esqueleto ya no puede tener enlaces rotos, slugs duplicados ni nodos
+  // huérfanos (resolveBlueprint los descarta o los calcula de forma
+  // determinista). Lo único que sigue siendo un fallo real de contenido —y
+  // por tanto merece reintentar— es un índice fuera de rango, un cuento sin
+  // ningún nodo alcanzable, o un cuento que nunca termina.
+  let resolved: Extract<ReturnType<typeof resolveBlueprint>, { ok: true }> | undefined;
+  let lastErrors: any[] = [];
+  let attempt = 0;
 
-  // Comprobamos que no exista un cuento con el mismo slug
-  const storyBySlug = await getStoryBySlug(storyBlueprint.slug);
-  const isValidSlug = storyBySlug?.length === 0;
+  while (attempt < MAX_BLUEPRINT_ATTEMPTS && !resolved) {
+    attempt += 1;
+    const rawBlueprint = await generateBlueprint({ scenario, characters, category, age });
+    const result = resolveBlueprint(rawBlueprint.story, rawBlueprint.nodes);
 
-  // Validamos la integridad del grafo ANTES de generar texto completo o imagen
-  const { isValidated, errors } = validateStoryIntegrity(
+    console.log(`Esqueleto intento ${attempt}/${MAX_BLUEPRINT_ATTEMPTS}:`, result.ok ? { ok: true, nodos: result.nodes.length } : { ok: false, errors: result.errors });
+
+    if (result.ok) {
+      resolved = result;
+    } else {
+      lastErrors = result.errors;
+    }
+  }
+
+  if (!resolved) {
+    return { status: 400, error: { message: `El cuento no ha pasado la validación de integridad tras ${attempt} intentos`, errors: lastErrors } };
+  }
+
+  // El slug de la historia se deriva del título; si por casualidad ya existe
+  // (muy improbable, dos títulos distintos rara vez coinciden), lo
+  // desambiguamos con un sufijo en vez de descartar todo el esqueleto.
+  const originalStorySlug = resolved.story.slug;
+  let storySlug = originalStorySlug;
+  for (let suffix = 2; suffix <= 6; suffix++) {
+    const existing = await getStoryBySlug(storySlug);
+    if (!existing || existing.length === 0) break;
+    storySlug = `${originalStorySlug}-${suffix}`;
+  }
+
+  const storyBlueprint = { ...resolved.story, slug: storySlug };
+  const nodeBlueprints = resolved.nodes.map(node => ({
+    ...node,
+    backSlug: node.backSlug === originalStorySlug ? storySlug : node.backSlug,
+  }));
+  const historyBySlug = resolved.historyBySlug;
+
+  // Comprobación final de cordura: el grafo ya resuelto debería ser correcto
+  // por construcción. Si esto llega a fallar es un bug en resolveBlueprint,
+  // no un problema de la IA.
+  const sanityCheck = validateStoryIntegrity(
     { slug: storyBlueprint.slug, options: storyBlueprint.options },
     nodeBlueprints as unknown as Node[]
   );
-
-  console.log({ isValidated, isValidSlug, errors });
-
-  if (!isValidated || !isValidSlug) {
-    return { status: 400, error: !isValidated ? { message: "El cuento no ha pasado la validación de integridad", errors } : "El slug del cuento ya existe" };
+  if (!sanityCheck.isValidated) {
+    console.error('El esqueleto resuelto no superó la comprobación de cordura final (bug interno):', sanityCheck.errors);
+    return { status: 500, error: { message: "Error interno al resolver el esqueleto del cuento", errors: sanityCheck.errors } };
   }
-
-  // Calculamos, para cada nodo, el resumen de las escenas anteriores de su
-  // camino (a partir de las opciones reales del grafo, ya validadas).
-  const historyBySlug = buildAncestorSummaries(
-    { slug: storyBlueprint.slug, summary: storyBlueprint.summary, options: storyBlueprint.options as Option[] },
-    nodeBlueprints.map(node => ({ slug: node.slug, summary: node.summary, options: node.options as Option[] }))
-  );
 
   console.log('Generando el texto completo de cada escena...');
   const [storyContent, ...nodeContents] = await Promise.all([
