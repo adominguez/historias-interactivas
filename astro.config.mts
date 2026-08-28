@@ -81,6 +81,10 @@ export default defineConfig({
       PUBLIC_CLOUDINARY_CLOUD_NAME: envField.string({ context: "server", access: "public" }),
       PUBLIC_CLOUDINARY_API_KEY: envField.string({ context: "server", access: "public" }),
       CLOUDINARY_API_SECRET: envField.string({ context: "server", access: "secret" }),
+      FACEBOOK_API_TOKEN: envField.string({ context: "server", access: "secret" }),
+      FACEBOOK_PAGE_ID: envField.string({ context: "server", access: "public" }),
+      FACEBOOK_API_VERSION: envField.string({ context: "server", access: "public" }),
+      INSTAGRAM_PAGE_ID: envField.string({ context: "server", access: "public" }),
       SITE_URL: envField.string({ context: "server", access: "secret" }),
     }
   }

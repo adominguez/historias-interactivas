@@ -366,3 +366,21 @@ export const updateStoryText = async (id: number, text: string) => {
     args: [text, id],
   });
 }
+
+export const deleteStory = async (id: number) => {
+  await turso.execute({
+    sql: `
+      DELETE FROM stories WHERE id = ?;
+    `,
+    args: [id],
+  });
+}
+
+export const deleteNodesByStoryId = async (storyId: number) => {
+  await turso.execute({
+    sql: `
+      DELETE FROM nodes WHERE story_id = ?;
+    `,
+    args: [storyId],
+  });
+}
