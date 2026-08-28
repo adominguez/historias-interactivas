@@ -26,7 +26,6 @@ function generateStoryPrompt({scenario, characters, category, age}: {scenario: s
      - Es muy importante que **todas las opciones dentro del campo 'options' deben apuntar a un slug que exista dentro del JSON generado, si esto no funciona bien el cuento no será válido.
      - Cada 'next' debe corresponder a un slug de otro nodo, y ese nodo debe existir.
      - Si el nodo es final, su campo 'options' debe estar vacío ([]).
-     - Cada nodo debe de tener asociada una o varias virtudes con una puntuación de 1 a 10 en función del contenido que tenga el nodo.
   
   4. **Moraleja y cierre:**
      - El cuento debe tener un desenlace completo, sin dejar la sensación de que puede continuar.

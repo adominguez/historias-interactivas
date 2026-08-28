@@ -1,39 +1,72 @@
 import { type Node, type Option } from "@types"
 
-// Función para verificar integridad del JSON
-function validateStoryIntegrity(nodes: Node[]) {
-  const slugs = new Set(nodes.map(node => node.slug)); // Conjunto de slugs existentes
+// Función para verificar la integridad narrativa del grafo generado por la IA
+// antes de persistirlo: enlaces rotos, nodos huérfanos, slugs duplicados y
+// ausencia de finales.
+function validateStoryIntegrity(story: { slug: string; options: Option[] }, nodes: Node[]) {
   const errors = [] as any[];
-  let isValidated = false;
 
+  // Slugs duplicados entre nodos
+  const slugCounts = new Map<string, number>();
   nodes.forEach(node => {
-    if (node.options && node.options.length > 0) {
-      node.options.forEach((option) => {
-        if (!slugs.has(option.next)) {
-          errors.push({
-            currentSlug: node.slug,
-            missingSlug: option.next,
-            optionText: option.text
-          });
-        }
-      });
+    slugCounts.set(node.slug, (slugCounts.get(node.slug) ?? 0) + 1);
+  });
+  slugCounts.forEach((count, slug) => {
+    if (count > 1) {
+      errors.push({ type: "duplicate-slug", slug });
     }
   });
 
-  if (errors.length > 0) {
-    isValidated = false;
-    console.log("Se encontraron errores:");
-    errors.forEach(error => {
-      console.log(
-        `En el nodo "${error.currentSlug}" la opción "${error.optionText}" apunta a un slug inexistente: "${error.missingSlug}"`
-      );
+  const slugs = new Set(nodes.map(node => node.slug));
+  const slugToOptions = new Map(nodes.map(node => [node.slug, node.options ?? []]));
+
+  // Enlaces rotos: tanto desde las opciones iniciales de la historia como desde cada nodo
+  const checkOptions = (fromSlug: string, options: Option[] = []) => {
+    options.forEach(option => {
+      if (!slugs.has(option.next)) {
+        errors.push({
+          type: "broken-link",
+          currentSlug: fromSlug,
+          missingSlug: option.next,
+          optionText: option.text,
+        });
+      }
     });
+  };
+
+  checkOptions(story.slug, story.options);
+  nodes.forEach(node => checkOptions(node.slug, node.options));
+
+  // Nodos huérfanos: no alcanzables recorriendo el grafo desde la raíz de la historia
+  const reachable = new Set<string>();
+  const traverse = (options: Option[] = []) => {
+    options.forEach(option => {
+      if (!slugs.has(option.next) || reachable.has(option.next)) return;
+      reachable.add(option.next);
+      traverse(slugToOptions.get(option.next));
+    });
+  };
+  traverse(story.options);
+
+  nodes
+    .filter(node => !reachable.has(node.slug))
+    .forEach(node => errors.push({ type: "orphan-node", slug: node.slug }));
+
+  // Ausencia de finales: ningún nodo sin opciones significa que el cuento nunca termina
+  const hasEnding = nodes.some(node => !node.options || node.options.length === 0);
+  if (!hasEnding) {
+    errors.push({ type: "no-ending" });
+  }
+
+  const isValidated = errors.length === 0;
+
+  if (!isValidated) {
+    console.log("Se encontraron errores de integridad narrativa:", errors);
   } else {
-    isValidated = true;
     console.log("¡Todo está correctamente enlazado!");
   }
 
-  return {isValidated};
+  return { isValidated, errors };
 }
 
 function truncateString(input: string | any[], maxLength = 800) {
@@ -51,39 +84,6 @@ function truncateString(input: string | any[], maxLength = 800) {
   }
 
   return truncated + "..."; // Añadir "..." para indicar que el texto fue truncado
-}
-
-function findExtraNodes(storySlug: string, nodes: any[]) {
-  // Crear un Set para almacenar slugs válidos (incluyendo el nodo raíz)
-  const validSlugs = new Set();
-  validSlugs.add(storySlug); // Nodo raíz del cuento
-
-  // Crear un mapa para relacionar slugs con sus opciones
-  const slugToOptions = new Map();
-  nodes.forEach(node => {
-    slugToOptions.set(node.slug, JSON.parse(node.options || '[]'));
-  });
-
-  // Función para recorrer los nodos y agregar slugs válidos
-  function traverseNodes(slug: string) {
-    if (slugToOptions.has(slug)) {
-      const options = slugToOptions.get(slug);
-      options.forEach((option: Option) => {
-        if (!validSlugs.has(option.next)) {
-          validSlugs.add(option.next);
-          traverseNodes(option.next); // Recursión
-        }
-      });
-    }
-  }
-
-  // Iniciar la validación desde el nodo raíz
-  traverseNodes(storySlug);
-
-  // Detectar nodos sobrantes comparando con los válidos
-  const extraNodes = nodes.filter(node => !validSlugs.has(node.slug));
-
-  return extraNodes; // Retorna los nodos sobrantes
 }
 
 const LOCAL_STORAGE_KEY = "ratedStories";
@@ -149,4 +149,4 @@ const removeRatedStory = (slug: string) => {
 
 
 
-export { truncateString, validateStoryIntegrity, findExtraNodes, saveRatedStory, getRatedStories, removeRatedStory, getRatedStory };
+export { truncateString, validateStoryIntegrity, saveRatedStory, getRatedStories, removeRatedStory, getRatedStory };

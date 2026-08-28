@@ -59,11 +59,10 @@ const metaSchema = z.object({
 // Esquema para cada nodo
 const nodeSchema = z.object({
   slug: z.string().describe("Slug único del nodo"),
-  backSlug: z.string().optional().describe("Slug del nodo anterior"),
+  backSlug: z.string().nullable().describe("Slug del nodo anterior"),
   title: z.string().describe("Título del nodo"),
   text: z.string().describe("Texto en formato HTML, usar etiquetas como <p>, <strong>, <em>... Todo lo que se necesite"),
-  // virtues: z.array(virtueSchema),
-  options: z.array(optionSchema).optional(), // Opcional si no hay opciones (nodo final)
+  options: z.array(optionSchema).describe("Opciones de navegación. Vacío ([]) si el nodo es un final."),
   meta: metaSchema, // Metadatos del nodo
 });
 
@@ -79,7 +78,7 @@ const storySchema = z.object({
   options: z.array(optionSchema), // Opciones iniciales
   categories: z.array(categoriesEnum).describe("Categorías relacionadas con el cuento"),
   characters: z.array(characterSchema).describe("Lista de personajes"),
-  duration: z.string().optional().describe("Duración estimada en minutos"),
+  duration: z.string().nullable().describe("Duración estimada en minutos"),
 });
 
 // Esquema completo

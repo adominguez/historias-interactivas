@@ -48,13 +48,19 @@ const generateImage = async (prompt: string) => {
   try {
     console.log('Creando imagen con IA...');
     const aiResponse = await ia.images.generate({
-      model: "dall-e-3",
+      model: "gpt-image-1",
       prompt,
       n: 1,
-      size: "1792x1024",
+      size: "1536x1024",
+      quality: "high",
     });
     console.log('Imagen creada con IA!!');
-    const imageUrl = aiResponse.data[0].url as string;
+    const base64 = aiResponse.data?.[0]?.b64_json;
+    if (!base64) {
+      return { isGenerated: false, error: "La API no devolvió ninguna imagen" };
+    }
+    // gpt-image-1 ya no admite response_format: "url", siempre devuelve base64.
+    const imageUrl = `data:image/png;base64,${base64}`;
     return { imageUrl, isGenerated: true };
   } catch (error) {
     return { isGenerated: false, error };
@@ -68,8 +74,14 @@ const createStory = async ({ scenario, characters, category, age }: { scenario: 
   const selectedAge = AGES[age as keyof typeof AGES] || AGES["9-12"];
   const schema = fullSchema;
   const result = await generateObject({
-    model: openai('o4-mini'),
+    model: openai('gpt-5-nano'),
     temperature: 1,
+    maxOutputTokens: 16000,
+    providerOptions: {
+      openai: {
+        reasoningEffort: "low",
+      },
+    },
     system: `Eres un experto escritor de cuentos interactivos para ${AGES[age].type} de ${AGES[age].alias}. Tu labor es generar ${selectedAge.type}.
 
     ### Instrucciones:
@@ -90,9 +102,9 @@ const createStory = async ({ scenario, characters, category, age }: { scenario: 
   const isValidSlug = storyBySlug?.length === 0;
 
   // Validamos la integridad del cuento
-  const { isValidated } = validateStoryIntegrity(nodes as unknown as Node[]);
+  const { isValidated, errors } = validateStoryIntegrity({ slug: story.slug, options: story.options }, nodes as unknown as Node[]);
 
-  console.log({ isValidated, isValidSlug });
+  console.log({ isValidated, isValidSlug, errors });
 
   if (isValidated && isValidSlug) {
     const storyParams = [
@@ -152,7 +164,7 @@ const createStory = async ({ scenario, characters, category, age }: { scenario: 
       return { status: 400, error }
     }
   } else {
-    return { status: 400, error: !isValidated ? "El cuento no ha pasado la validación de integridad" : "El slug del cuento ya existe" };
+    return { status: 400, error: !isValidated ? { message: "El cuento no ha pasado la validación de integridad", errors } : "El slug del cuento ya existe" };
   }
 };
 
