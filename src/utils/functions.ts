@@ -69,6 +69,40 @@ function validateStoryIntegrity(story: { slug: string; options: Option[] }, node
   return { isValidated, errors };
 }
 
+// A partir de las opciones REALES del grafo (option.next), no del backSlug que
+// declara la IA (que podría no coincidir con la estructura ya validada),
+// calcula para cada nodo el resumen de todas las escenas de su camino desde
+// la raíz, en orden. Se usa para dar continuidad narrativa (mismo escenario,
+// objetos y personajes) al generar el texto completo de cada escena.
+// Asume que el grafo es un árbol: si un nodo es alcanzable por más de un
+// camino, se queda con el primero que lo descubre.
+function buildAncestorSummaries(
+  story: { slug: string; summary: string; options: Option[] },
+  nodes: { slug: string; summary: string; options: Option[] }[]
+) {
+  const summaryBySlug = new Map<string, string>([[story.slug, story.summary]]);
+  const optionsBySlug = new Map<string, Option[]>([[story.slug, story.options]]);
+  nodes.forEach(node => {
+    summaryBySlug.set(node.slug, node.summary);
+    optionsBySlug.set(node.slug, node.options);
+  });
+
+  const historyBySlug = new Map<string, string[]>();
+
+  const visit = (slug: string, history: string[]) => {
+    if (historyBySlug.has(slug)) return;
+    historyBySlug.set(slug, history);
+    (optionsBySlug.get(slug) ?? []).forEach(option => {
+      const summary = summaryBySlug.get(slug);
+      if (summary === undefined) return;
+      visit(option.next, [...history, summary]);
+    });
+  };
+  visit(story.slug, []);
+
+  return historyBySlug;
+}
+
 function truncateString(input: string | any[], maxLength = 800) {
   if (input.length <= maxLength) {
     return input; // Si el string ya está dentro del límite, se retorna tal cual
@@ -149,4 +183,4 @@ const removeRatedStory = (slug: string) => {
 
 
 
-export { truncateString, validateStoryIntegrity, saveRatedStory, getRatedStories, removeRatedStory, getRatedStory };
+export { truncateString, validateStoryIntegrity, buildAncestorSummaries, saveRatedStory, getRatedStories, removeRatedStory, getRatedStory };

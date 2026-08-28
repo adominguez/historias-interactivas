@@ -56,35 +56,43 @@ const metaSchema = z.object({
   description: z.string().describe("Descripción atractiva que resuma el contenido del nodo"),
 }).describe("Metadatos del nodo, necesarios para SEO");
 
-// Esquema para cada nodo
-const nodeSchema = z.object({
-  slug: z.string().describe("Slug único del nodo"),
-  backSlug: z.string().nullable().describe("Slug del nodo anterior"),
-  title: z.string().describe("Título del nodo"),
-  text: z.string().describe("Texto en formato HTML, usar etiquetas como <p>, <strong>, <em>... Todo lo que se necesite"),
-  options: z.array(optionSchema).describe("Opciones de navegación. Vacío ([]) si el nodo es un final."),
-  meta: metaSchema, // Metadatos del nodo
-});
-
 const categoriesEnum = z.enum(Object.keys(setupCategories) as [string, ...string[]]);
 
-// Esquema para la historia principal
-const storySchema = z.object({
+// Pass 1 (esqueleto): solo estructura del grafo y un resumen de continuidad
+// por escena, sin el texto final. Se valida la integridad del grafo con esto
+// antes de gastar en generar texto completo o imagen.
+const nodeBlueprintSchema = z.object({
+  slug: z.string().describe("Slug único del nodo"),
+  backSlug: z.string().nullable().describe("Slug del nodo anterior"),
+  title: z.string().describe("Título breve del nodo"),
+  summary: z.string().describe("Resumen de continuidad de 1-2 frases: qué ocurre en esta escena, y qué objetos/personajes/lugares relevantes aparecen, nombrados de forma exacta y reutilizable."),
+  options: z.array(optionSchema).describe("Opciones de navegación. Vacío ([]) si el nodo es un final."),
+});
+
+const storyBlueprintSchema = z.object({
   slug: z.string().describe("Slug único del cuento formato titulo-del-cuento"),
   title: z.string().describe("Título del cuento"),
-  resume: z.string().describe("Resumen del cuento"),
-  meta: metaSchema, // Metadatos del cuento
-  text: z.string().describe("Texto principal del cuento"),
-  options: z.array(optionSchema), // Opciones iniciales
+  summary: z.string().describe("Resumen de continuidad de 1-2 frases de la escena inicial, con los mismos criterios que el de los nodos."),
+  options: z.array(optionSchema).describe("Opciones de navegación iniciales"),
   categories: z.array(categoriesEnum).describe("Categorías relacionadas con el cuento"),
   characters: z.array(characterSchema).describe("Lista de personajes"),
   duration: z.string().nullable().describe("Duración estimada en minutos"),
 });
 
-// Esquema completo
-const fullSchema = z.object({
-  story: storySchema,
-  nodes: z.array(nodeSchema),
+const blueprintSchema = z.object({
+  story: storyBlueprintSchema,
+  nodes: z.array(nodeBlueprintSchema),
 });
 
-export { fullSchema };
+// Pass 2 (contenido): el texto completo de una única escena, generado ya con
+// el esqueleto validado y el historial de resúmenes de su camino como contexto.
+const sceneContentSchema = z.object({
+  text: z.string().describe("Texto en formato HTML, usar etiquetas como <p>, <strong>, <em>... Todo lo que se necesite"),
+  meta: metaSchema, // Metadatos de la escena, necesarios para SEO
+});
+
+const storyContentSchema = sceneContentSchema.extend({
+  resume: z.string().describe("Resumen atractivo del cuento completo, para mostrar en las tarjetas de la biblioteca"),
+});
+
+export { blueprintSchema, sceneContentSchema, storyContentSchema };
