@@ -80,7 +80,6 @@ const generateBlueprint = async ({ scenario, characters, category, age }: { scen
   console.log('Generando esqueleto del cuento...');
   const result = await generateObject({
     model: openai('gpt-5-nano'),
-    temperature: 1,
     maxOutputTokens: 8000,
     providerOptions: {
       openai: {
@@ -98,11 +97,10 @@ const generateBlueprint = async ({ scenario, characters, category, age }: { scen
 // Pass 2: genera el texto completo de UNA escena (la raíz o un nodo),
 // recibiendo el resumen de las escenas anteriores de su mismo camino como
 // contexto de continuidad.
-const generateSceneContent = async ({ age, history, summary, isEnding, isRoot }: { age: string, history: string[], summary: string, isEnding: boolean, isRoot: boolean }) => {
+const generateSceneContent = async ({ age, history, summary, isEnding, isRoot, characters }: { age: string, history: string[], summary: string, isEnding: boolean, isRoot: boolean, characters: { name: string, description: string }[] }) => {
   const schema = isRoot ? storyContentSchema : sceneContentSchema;
   const result = await generateObject({
     model: openai('gpt-5-nano'),
-    temperature: 1,
     maxOutputTokens: 4000,
     providerOptions: {
       openai: {
@@ -110,7 +108,7 @@ const generateSceneContent = async ({ age, history, summary, isEnding, isRoot }:
       },
     },
     system: buildWriterSystemPrompt(age),
-    prompt: generateSceneContentPrompt({ age, history, summary, isEnding }),
+    prompt: generateSceneContentPrompt({ age, history, summary, isEnding, characters }),
     schema,
   });
   return result.object;
@@ -145,13 +143,14 @@ const createStory = async ({ scenario, characters, category, age }: { scenario: 
 
   console.log('Generando el texto completo de cada escena...');
   const [storyContent, ...nodeContents] = await Promise.all([
-    generateSceneContent({ age, history: [], summary: storyBlueprint.summary, isEnding: false, isRoot: true }),
+    generateSceneContent({ age, history: [], summary: storyBlueprint.summary, isEnding: false, isRoot: true, characters: storyBlueprint.characters }),
     ...nodeBlueprints.map(node => generateSceneContent({
       age,
       history: historyBySlug.get(node.slug) ?? [],
       summary: node.summary,
       isEnding: node.options.length === 0,
       isRoot: false,
+      characters: storyBlueprint.characters,
     })),
   ]);
   console.log('Texto de todas las escenas generado!!');
@@ -187,9 +186,8 @@ const createStory = async ({ scenario, characters, category, age }: { scenario: 
   const selectedAge = AGES[age as keyof typeof AGES] || AGES["9-12"];
 
   // comenzamos la creación de imágenes con IA
-  const imagePrompt = `${truncateString(
-    `I NEED to test how the tool works with extremely simple prompts. DO NOT add any detail, just use it AS-IS:
-  Ilustración 3D para ${selectedAge.people} de ${selectedAge.alias}, colores brillantes y texturas suaves, evita añadir texto. Este es el texto: ${story.text}.`, 700,)}. Personajes: ${story.characters.map(({ name, description }) => `${name}: ${description}`).join(", ")}.`
+  const plainSceneText = story.text.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+  const imagePrompt = `Ilustración 3D para ${selectedAge.people} de ${selectedAge.alias}, colores brillantes y texturas suaves, evita añadir texto en la imagen. Escena: ${truncateString(plainSceneText, 900)}. Personajes: ${story.characters.map(({ name, description }) => `${name}: ${description}`).join(", ")}.`
 
   const { isGenerated, error, imageUrl } = await generateImage(imagePrompt);
 

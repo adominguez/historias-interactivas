@@ -37,14 +37,20 @@ function generateBlueprintPrompt({ scenario, characters, category, age }: { scen
 // Pass 2: el texto completo de UNA escena concreta, ya con el esqueleto
 // validado. Recibe el resumen de las escenas anteriores de ese mismo camino
 // para mantener la continuidad (escenario, objetos, personajes...).
-function generateSceneContentPrompt({ age, history, summary, isEnding }: { age: string, history: string[], summary: string, isEnding: boolean }) {
+function generateSceneContentPrompt({ age, history, summary, isEnding, characters }: { age: string, history: string[], summary: string, isEnding: boolean, characters: { name: string, description: string }[] }) {
   const selectedAge = AGES[age as keyof typeof AGES] || AGES["9-12"];
 
   const historyText = history.length > 0
     ? `Esto es lo que ya ha ocurrido en este camino de la historia, en orden:\n${history.map((line, index) => `${index + 1}. ${line}`).join('\n')}\n\nMantén coherencia total con estos hechos: no los contradigas, no hagas desaparecer objetos o personajes ya mencionados sin explicación, y continúa en el mismo escenario salvo que la trama indique explícitamente un cambio.`
     : 'Esta es la escena inicial del cuento, no hay nada previo que continuar.';
 
+  const charactersText = characters.length > 0
+    ? `Personajes de la historia (manténlos coherentes con esta descripción durante toda la escena, tanto en personalidad como en forma de hablar):\n${characters.map(({ name, description }) => `- ${name}: ${description}`).join('\n')}`
+    : '';
+
   return `Escribe el texto completo de esta escena de ${selectedAge.type} interactivo para ${selectedAge.people} de ${selectedAge.alias}.
+
+  ${charactersText}
 
   ${historyText}
 
