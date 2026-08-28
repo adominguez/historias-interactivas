@@ -54,7 +54,7 @@ const indexOptionSchema = z.object({
 // Esquema para los personajes
 const characterSchema = z.object({
   name: z.string().describe("Nombre del personaje"),
-  description: z.string().describe("Descripción del personaje, aspecto, personalidad..."),
+  description: z.string().describe("Descripción del personaje: aspecto, personalidad, y su género gramatical fijo (femenino, masculino o neutro), que debe mantenerse igual en todo el cuento."),
 });
 
 // Esquema para los metadatos

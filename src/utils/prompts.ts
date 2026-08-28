@@ -18,6 +18,7 @@ function generateBlueprintPrompt({ scenario, characters, category, age }: { scen
      - El cuento debe estar dividido en un **inicio**, un **nudo** y un **desenlace**.
      - ¡Muy importante! Sé original, no hagas el típico de encontrar algo eligiendo caminos, por ejemplo podría ser elegir opciones en un diálogo...
      - Puede darse el caso de que los personajes se encuentren con personajes secundarios que también deben tener nombre, pero no deben ser el foco principal de la historia.
+     - Cada personaje debe tener un género gramatical fijo (femenino, masculino o neutro) que se mantendrá igual en todo el cuento sin excepción; indícalo explícitamente en su descripción (por ejemplo: "es un dragón, refiérete a él siempre en masculino" o "es una dragona, refiérete a ella siempre en femenino").
      - La trama debe incluir decisiones importantes que lleven a diferentes caminos y nodos finales.
      - El cuento debe tener un mínimo de 3 nodos y un máximo de 8.
      - Cada decisión debe ofrecer un mínimo de 2 opciones y un máximo de 4.
@@ -46,7 +47,7 @@ function generateSceneContentPrompt({ age, history, summary, isEnding, character
     : 'Esta es la escena inicial del cuento, no hay nada previo que continuar.';
 
   const charactersText = characters.length > 0
-    ? `Personajes de la historia (manténlos coherentes con esta descripción durante toda la escena, tanto en personalidad como en forma de hablar):\n${characters.map(({ name, description }) => `- ${name}: ${description}`).join('\n')}`
+    ? `Personajes de la historia (manténlos coherentes con esta descripción durante toda la escena: personalidad, forma de hablar, y también el género gramatical exacto que se indica para cada uno, sin cambiarlo nunca aunque en otra escena se haya usado diferente):\n${characters.map(({ name, description }) => `- ${name}: ${description}`).join('\n')}`
     : '';
 
   return `Escribe el texto completo de esta escena de ${selectedAge.type} interactivo para ${selectedAge.people} de ${selectedAge.alias}.
@@ -59,10 +60,12 @@ function generateSceneContentPrompt({ age, history, summary, isEnding, character
 
   Instrucciones:
   - Escribe ${selectedAge.words}, con un lenguaje adecuado para ${selectedAge.people} de ${selectedAge.alias}.
+  - Escribe todo el texto en español, sin mezclar ninguna palabra ni expresión en otro idioma.
   - NO uses markdown, utiliza las etiquetas HTML <p>, <strong>, <em>... que hagan falta.
+  - Los diálogos deben ir siempre integrados en la narración, introducidos con raya (—), nunca en formato de guion de teatro o cine (no escribas "Nombre: texto").
   - ${isEnding
       ? 'Esta es una escena final: cierra la historia por completo, sin dejar la sensación de que puede continuar, e incluye una moraleja o reflexión sin remarcar explícitamente que lo es.'
-      : 'Termina la escena de forma que las opciones de navegación que vendrán a continuación tengan sentido natural.'}
+      : 'Termina la escena dejando la decisión planteada de forma natural dentro de la narración (por ejemplo, con una duda, una encrucijada o una pregunta). NO describas ni enumeres las opciones concretas en el texto (nada de "Opción A", "Opción B" ni listas de alternativas): esas opciones ya se muestran aparte, en botones, justo debajo del texto.'}
   - Genera también los metadatos SEO ("meta"): palabras clave, un título breve y una descripción atractiva del contenido de ESTA escena.`
 }
 
