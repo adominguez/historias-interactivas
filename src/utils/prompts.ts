@@ -63,6 +63,9 @@ function generateSceneContentPrompt({ age, history, summary, isEnding, character
   - Escribe todo el texto en español, sin mezclar ninguna palabra ni expresión en otro idioma.
   - NO uses markdown, utiliza las etiquetas HTML <p>, <strong>, <em>... que hagan falta.
   - Los diálogos deben ir siempre integrados en la narración, introducidos con raya (—), nunca en formato de guion de teatro o cine (no escribas "Nombre: texto").
+  - Prioriza SIEMPRE la claridad sobre el adorno poético. Evita metáforas o personificaciones vacías que no signifiquen nada concreto, del tipo "la hierba canta con la brisa", "el camino se siente claro", "una voz hecha de viento y campanillas" o "el Arco se inclina ante la paciencia". Si una frase suena bonita pero no podrías explicar con palabras sencillas qué significa o qué aporta a la historia, no la escribas: cuenta lo mismo de forma directa y concreta.
+  - Cuando un personaje hable, sus palabras deben decir algo claro y accionable (una idea, una pista, una decisión), nunca una frase ambigua tipo acertijo poético que no se entiende.
+  - No empieces la escena con una descripción genérica del paisaje fusionándose con el cielo o la naturaleza "cantando" o "respirando" (evita fórmulas como "el cielo parece derretirse en oro"). Empieza con algo concreto: una acción, un diálogo, o un detalle específico y distinto del lugar.
   - ${isEnding
       ? 'Esta es una escena final: cierra la historia por completo, sin dejar la sensación de que puede continuar, e incluye una moraleja o reflexión sin remarcar explícitamente que lo es.'
       : 'Termina la escena dejando la decisión planteada de forma natural dentro de la narración (por ejemplo, con una duda, una encrucijada o una pregunta). NO describas ni enumeres las opciones concretas en el texto (nada de "Opción A", "Opción B" ni listas de alternativas): esas opciones ya se muestran aparte, en botones, justo debajo del texto.'}

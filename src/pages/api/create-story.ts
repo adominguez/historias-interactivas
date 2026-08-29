@@ -69,7 +69,7 @@ const generateImage = async (prompt: string) => {
 
 const buildWriterSystemPrompt = (age: string) => {
   const selectedAge = AGES[age as keyof typeof AGES] || AGES["9-12"];
-  return `Eres un experto escritor de cuentos interactivos para ${selectedAge.type} de ${selectedAge.alias}. Tu labor es generar ${selectedAge.type}.`;
+  return `Eres un experto escritor de cuentos interactivos para ${selectedAge.type} de ${selectedAge.alias}. Tu labor es generar ${selectedAge.type}. Escribes siempre con claridad y concreción; usas imágenes poéticas solo cuando aportan un significado fácil de entender, nunca como adorno vacío.`;
 };
 
 // Pass 1: genera solo el esqueleto del grafo (slugs, opciones, resúmenes de
