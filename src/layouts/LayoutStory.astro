@@ -30,9 +30,10 @@ interface Props {
     title: string;
   };
   created: string;
+  modified?: string;
 }
 
-const { description, transition = 'fade', title, slug, options = [], optionSlug, backUrl, relatedStories, ratingCount, rating, ratingSlug, category, created } = Astro.props;
+const { description, transition = 'fade', title, slug, options = [], optionSlug, backUrl, relatedStories, ratingCount, rating, ratingSlug, category, created, modified = created } = Astro.props;
 
 const imageUrl = `https://res.cloudinary.com/${PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload/v1737579916/cuentos-interactivos/${slug}/${slug}`;
 
@@ -99,7 +100,7 @@ const breadcrumb = !backUrl ? [{
       "description": description,
       "image": imageUrl,
       "datePublished": created,
-      "dateModified": created,
+      "dateModified": modified,
       "genre": [genre],
       "keywords": keywords,
       "inLanguage": "es",

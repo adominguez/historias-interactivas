@@ -20,7 +20,8 @@ CREATE TABLE stories (
     age TEXT,                                       -- Edad recomendada
     duration TEXT,                                  -- Duración estimada
     rating REAL,                                    -- Calificación media
-    rating_count INTEGER DEFAULT 0                  -- Número de calificaciones
+    rating_count INTEGER DEFAULT 0,                 -- Número de calificaciones
+    updated_at DATETIME                             -- Última edición real (ver updateStoryText en src/turso.ts); se fija desde el código, no con un DEFAULT
 );
 
 CREATE TABLE nodes (
