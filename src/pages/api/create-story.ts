@@ -76,7 +76,7 @@ const buildWriterSystemPrompt = (age: string) => {
 // continuidad), sin texto completo. Es barato, y se valida ANTES de gastar en
 // texto e imagen: un cuento con enlaces rotos o nodos huérfanos se descarta
 // aquí sin haber generado ni una sola escena completa.
-const generateBlueprint = async ({ scenario, characters, category, age }: { scenario: string, characters: string[], category: string, age: string }) => {
+const generateBlueprint = async ({ scenario, characterOptions, category, age }: { scenario: string, characterOptions: string[], category: string, age: string }) => {
   console.log('Generando esqueleto del cuento...');
   const result = await generateObject({
     model: openai('gpt-5-nano'),
@@ -87,7 +87,7 @@ const generateBlueprint = async ({ scenario, characters, category, age }: { scen
       },
     },
     system: buildWriterSystemPrompt(age),
-    prompt: generateBlueprintPrompt({ scenario, characters, category, age }),
+    prompt: generateBlueprintPrompt({ scenario, characterOptions, category, age }),
     schema: blueprintSchema,
   });
   console.log('Esqueleto generado!!');
@@ -116,7 +116,7 @@ const generateSceneContent = async ({ age, history, summary, isEnding, isRoot, c
 
 const MAX_BLUEPRINT_ATTEMPTS = 3;
 
-const createStory = async ({ scenario, characters, category, age }: { scenario: string, characters: string[], category: string, age: string }) => {
+const createStory = async ({ scenario, characterOptions, category, age }: { scenario: string, characterOptions: string[], category: string, age: string }) => {
   // El esqueleto ya no puede tener enlaces rotos, slugs duplicados ni nodos
   // huérfanos (resolveBlueprint los descarta o los calcula de forma
   // determinista). Lo único que sigue siendo un fallo real de contenido —y
@@ -128,7 +128,7 @@ const createStory = async ({ scenario, characters, category, age }: { scenario: 
 
   while (attempt < MAX_BLUEPRINT_ATTEMPTS && !resolved) {
     attempt += 1;
-    const rawBlueprint = await generateBlueprint({ scenario, characters, category, age });
+    const rawBlueprint = await generateBlueprint({ scenario, characterOptions, category, age });
     const result = resolveBlueprint(rawBlueprint.story, rawBlueprint.nodes);
 
     console.log(`Esqueleto intento ${attempt}/${MAX_BLUEPRINT_ATTEMPTS}:`, result.ok ? { ok: true, nodos: result.nodes.length } : { ok: false, errors: result.errors });
@@ -269,11 +269,11 @@ export async function GET(request: Request) {
   console.log('Parámetros de la petición: ', paramCategory, paramAge);
 
   // Obtenemos la configuración del cuento
-  const { scenario, characters, category, age } = generateStorySetup(paramCategory, paramAge);
-  console.log('Configuración del cuento: ', scenario, characters, category, age);
+  const { scenario, characterOptions, category, age } = generateStorySetup(paramCategory, paramAge);
+  console.log('Configuración del cuento: ', scenario, characterOptions, category, age);
 
   // Creamos el cuento
-  const { status, story, nodes, error } = await createStory({ scenario, characters, category, age });
+  const { status, story, nodes, error } = await createStory({ scenario, characterOptions, category, age });
 
   // Devolvemos el resultado
   if (status === 200) {

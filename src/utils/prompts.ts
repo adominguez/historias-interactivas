@@ -3,16 +3,16 @@ import { AGES } from '@src/utils/characters';
 // Pass 1: solo la estructura del grafo (slugs, opciones, resúmenes de escena),
 // sin el texto final de cada nodo. Barato de generar y barato de validar antes
 // de gastar en texto completo e imagen.
-function generateBlueprintPrompt({ scenario, characters, category, age }: { scenario: string, characters: string[], category: string, age: string }) {
+function generateBlueprintPrompt({ scenario, characterOptions, category, age }: { scenario: string, characterOptions: string[], category: string, age: string }) {
   const formattedList = new Intl.ListFormat('es', { style: 'long', type: 'conjunction' });
-  const formattedCharacters = formattedList.format(characters);
+  const formattedOptions = formattedList.format(characterOptions);
 
   const selectedAge = AGES[age as keyof typeof AGES] || AGES["9-12"];
 
   return `Diseña el ESQUELETO de ${selectedAge.type} interactivo para ${selectedAge.people} de ${selectedAge.alias}. Todavía NO escribas el texto final de cada escena, solo su estructura y un resumen de lo que ocurre en cada una.
 
   1. **Estructura:**
-     - Los personajes principales son ${formattedCharacters}, pero si ves que pueden no tener sentido puedes modificar estos personajes.
+     - Estos son los personajes disponibles para este tipo de historia: ${formattedOptions}. Elige entre 2 y 3 que formen un elenco con sentido temático entre sí (el mismo tipo de mundo y de tono) y que encajen con el escenario propuesto. NO mezcles personajes de mundos claramente incompatibles solo porque ambos estaban en la lista (por ejemplo, evita juntar un ser espacial de ciencia ficción con un animal de un bosque mágico sin ninguna explicación). Si ves que ninguna combinación encaja bien, puedes ajustar ligeramente la descripción de alguno para que sí encaje.
      - El escenario del cuento es '${scenario}'.
      - La categoría del cuento es '${category}'.
      - El cuento debe estar dividido en un **inicio**, un **nudo** y un **desenlace**.

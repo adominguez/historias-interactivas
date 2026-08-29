@@ -77,15 +77,22 @@ function generateStorySetup(paramCategory: string | undefined, paramAge?: string
   const { scenarios, characters } = categories[category][age];
   const randomScenario = scenarios[Math.floor(Math.random() * scenarios.length)];
 
-  // Seleccionar entre 2 y 3 personajes compatibles
-  const selectedCharacters = characters
+  // No elegimos aquí los 2-3 personajes finales: elegir al azar entre una
+  // lista plana de arquetipos puede juntar cosas sin ninguna relación entre
+  // sí (p. ej. un conejo, un ser galáctico y un rayo parlante). En su lugar,
+  // le pasamos a la IA un grupo más amplio de candidatos y que sea ella
+  // quien elija un elenco con sentido temático entre sí (ver
+  // generateBlueprintPrompt).
+  const CANDIDATE_POOL_SIZE = 8;
+  const characterOptions = characters
     .sort(() => 0.5 - Math.random())
-    .slice(0, Math.random() < 0.5 ? 2 : 3);
+    .slice(0, Math.min(CANDIDATE_POOL_SIZE, characters.length));
+
   return {
     age,
     scenario: randomScenario,
     category,
-    characters: selectedCharacters
+    characterOptions
   };
 }
 
