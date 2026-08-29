@@ -16,12 +16,14 @@ function generateBlueprintPrompt({ scenario, characters, category, age }: { scen
      - El escenario del cuento es '${scenario}'.
      - La categoría del cuento es '${category}'.
      - El cuento debe estar dividido en un **inicio**, un **nudo** y un **desenlace**.
-     - ¡Muy importante! Sé original, no hagas el típico de encontrar algo eligiendo caminos, por ejemplo podría ser elegir opciones en un diálogo...
-     - Puede darse el caso de que los personajes se encuentren con personajes secundarios que también deben tener nombre, pero no deben ser el foco principal de la historia.
+     - ¡Muy importante! Sé original: evita que la única mecánica de decisión sea "un cruce con dos caminos físicos". Varía el tipo de decisión entre nodos: puede ser una elección dentro de un diálogo, un dilema moral (a quién ayudar, qué sacrificar), cómo repartir una tarea entre los personajes, a quién creer, o cuándo actuar y cuándo esperar.
+     - Puede darse el caso de que los personajes se encuentren con personajes secundarios que también deben tener nombre, pero no deben ser el foco principal de la historia. Si le das un nombre propio a un personaje secundario, usa siempre ESE mismo nombre para referirte a él en el resto del cuento; no le añadas después un apodo o título distinto (por ejemplo, no lo llames "Nimbo" en un resumen y "el Zorro Sabio" en otro, como si fueran cosas distintas).
      - Cada personaje debe tener un género gramatical fijo (femenino, masculino o neutro) que se mantendrá igual en todo el cuento sin excepción; indícalo explícitamente en su descripción (por ejemplo: "es un dragón, refiérete a él siempre en masculino" o "es una dragona, refiérete a ella siempre en femenino").
+     - Todo objeto, misterio o pista importante que introduzcas en el resumen de un nodo debe tener consecuencia más adelante en ESE MISMO camino: o bien se usa, se explica o se resuelve en un nodo posterior, o bien no lo introduzcas. No llenes la historia de elementos "de atrezo" que se mencionan una vez y luego desaparecen sin más: tú planificas el cuento entero de una vez, así que puedes asegurarte de que todo lo que plantas se cosecha.
      - La trama debe incluir decisiones importantes que lleven a diferentes caminos y nodos finales.
      - El cuento debe tener un mínimo de 3 nodos y un máximo de 8.
-     - Cada decisión debe ofrecer un mínimo de 2 opciones y un máximo de 4.
+     - Cada decisión debe ofrecer un mínimo de 2 opciones y un máximo de 4. MUY IMPORTANTE: las distintas opciones de una misma decisión deben llevar a nodos DIFERENTES entre sí (al menos dos destinos distintos). Nunca hagas que todas las opciones de un mismo nodo apunten al mismo índice: si el lector acaba en el mismo sitio elija lo que elija, la decisión no sirve de nada.
+     - Ningún nodo puede tener una opción cuyo 'next' sea su propio índice (un nodo nunca se referencia a sí mismo): eso dejaría al lector exactamente donde ya estaba.
 
   2. **Cómo referenciar los nodos (MUY IMPORTANTE, léelo con cuidado):**
      - NO inventes ningún identificador de texto para los nodos. Los nodos se identifican solo por su POSICIÓN dentro del array 'nodes'.
@@ -43,7 +45,7 @@ function generateSceneContentPrompt({ age, history, summary, isEnding, character
   const selectedAge = AGES[age as keyof typeof AGES] || AGES["9-12"];
 
   const historyText = history.length > 0
-    ? `Esto es lo que ya ha ocurrido en este camino de la historia, en orden:\n${history.map((line, index) => `${index + 1}. ${line}`).join('\n')}\n\nMantén coherencia total con estos hechos: no los contradigas, no hagas desaparecer objetos o personajes ya mencionados sin explicación, y continúa en el mismo escenario salvo que la trama indique explícitamente un cambio.`
+    ? `Esto es lo que ya ha ocurrido en este camino de la historia, en orden:\n${history.map((line, index) => `${index + 1}. ${line}`).join('\n')}\n\nMantén coherencia total con estos hechos: no los contradigas, no hagas desaparecer objetos o personajes ya mencionados sin explicación, y continúa en el mismo escenario salvo que la trama indique explícitamente un cambio. Muy importante: NO des por hecho ni menciones como si ya existiera ningún objeto, lugar o personaje que no esté explícitamente en esta lista o en el resumen de esta escena (nada de "la brújula que aún guardaban" si ninguna brújula ha aparecido antes). Si necesitas algo nuevo, preséntalo como algo que aparece ahora por primera vez.`
     : 'Esta es la escena inicial del cuento, no hay nada previo que continuar.';
 
   const charactersText = characters.length > 0
@@ -62,7 +64,8 @@ function generateSceneContentPrompt({ age, history, summary, isEnding, character
   - Escribe ${selectedAge.words}, con un lenguaje adecuado para ${selectedAge.people} de ${selectedAge.alias}.
   - Escribe todo el texto en español, sin mezclar ninguna palabra ni expresión en otro idioma.
   - NO uses markdown, utiliza las etiquetas HTML <p>, <strong>, <em>... que hagan falta.
-  - Los diálogos deben ir siempre integrados en la narración, introducidos con raya (—), nunca en formato de guion de teatro o cine (no escribas "Nombre: texto").
+  - Los diálogos deben ir siempre integrados en la narración, introducidos con raya (—). NUNCA uses comillas para marcar un diálogo, y NUNCA uses formato de guion de teatro o cine (nada de "Nombre: texto"). La única forma válida de escribir un diálogo es con raya.
+  - Usa solo palabras reales del español; si dudas de si una palabra existe, usa una más sencilla y común en su lugar.
   - Prioriza SIEMPRE la claridad sobre el adorno poético. Evita metáforas o personificaciones vacías que no signifiquen nada concreto, del tipo "la hierba canta con la brisa", "el camino se siente claro", "una voz hecha de viento y campanillas" o "el Arco se inclina ante la paciencia". Si una frase suena bonita pero no podrías explicar con palabras sencillas qué significa o qué aporta a la historia, no la escribas: cuenta lo mismo de forma directa y concreta.
   - Cuando un personaje hable, sus palabras deben decir algo claro y accionable (una idea, una pista, una decisión), nunca una frase ambigua tipo acertijo poético que no se entiende.
   - No empieces la escena con una descripción genérica del paisaje fusionándose con el cielo o la naturaleza "cantando" o "respirando" (evita fórmulas como "el cielo parece derretirse en oro"). Empieza con algo concreto: una acción, un diálogo, o un detalle específico y distinto del lugar.

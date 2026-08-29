@@ -152,6 +152,30 @@ function resolveBlueprint(story: RawStoryBlueprint, nodes: RawNodeBlueprint[]) {
     return { ok: false as const, errors: [{ type: "no-ending" }] };
   }
 
+  // Decisiones de mentira: varias opciones que llevan todas al mismo nodo no
+  // rompen el grafo, pero tampoco son una decisión real (el lector acaba en
+  // el mismo sitio elija lo que elija). No es un fallo que podamos arreglar
+  // solo con código (haría falta inventar un destino nuevo), así que lo
+  // tratamos como un fallo de contenido que hay que reintentar.
+  const isPointlessChoice = (options: RawIndexOption[]) =>
+    options.length > 1 && new Set(options.map(option => option.next)).size === 1;
+
+  if (isPointlessChoice(story.options)) {
+    return { ok: false as const, errors: [{ type: "pointless-choice", from: "story" }] };
+  }
+  const pointlessNode = order.find(index => isPointlessChoice(nodes[index].options));
+  if (pointlessNode !== undefined) {
+    return { ok: false as const, errors: [{ type: "pointless-choice", from: pointlessNode }] };
+  }
+
+  // Bucles: una opción de un nodo que apunta a sí mismo deja al lector
+  // exactamente donde ya estaba. Igual que la decisión de mentira, es un
+  // fallo de contenido que hay que reintentar, no algo que podamos reparar.
+  const selfLoopNode = order.find(index => nodes[index].options.some(option => option.next === index));
+  if (selfLoopNode !== undefined) {
+    return { ok: false as const, errors: [{ type: "self-loop", node: selfLoopNode }] };
+  }
+
   // Slugs deterministas a partir de los títulos, solo para lo alcanzable.
   const MAX_SLUG_LENGTH = 60;
   const usedSlugs = new Set<string>();
