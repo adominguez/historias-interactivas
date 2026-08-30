@@ -1,0 +1,26 @@
+---
+import BaseHead from '@components/BaseHead.astro';
+import CreateStoryForm from '@components/CreateStoryForm';
+import { generalCategories } from '@src/data/categories';
+import { ages, AGES } from '@src/utils/characters';
+
+export const prerender = false;
+
+const categories = generalCategories.map(({ name, title }) => ({ name, title }));
+const ageOptions = ages.map((age) => ({ value: age, label: AGES[age].alias }));
+---
+
+<!doctype html>
+<html lang="es">
+  <head>
+    <BaseHead title="Crear cuento (interno)" description="Herramienta interna para generar cuentos con IA." />
+    <meta name="robots" content="noindex" />
+  </head>
+  <body>
+    <main style="max-width: 640px; margin: 4rem auto; padding: 0 1rem; font-family: system-ui, sans-serif;">
+      <h1>Crear un nuevo cuento</h1>
+      <p>Genera un cuento nuevo con IA a partir de una categoría y una edad (o déjalas en "Aleatoria"). Puede tardar 1-2 minutos.</p>
+      <CreateStoryForm categories={categories} ages={ageOptions} client:load />
+    </main>
+  </body>
+</html>

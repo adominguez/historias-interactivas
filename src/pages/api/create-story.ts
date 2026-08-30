@@ -1,9 +1,9 @@
 import { createOpenAI } from "@ai-sdk/openai";
 import { generateObject } from "ai";
-import { fullSchema } from "@src/schemas";
+import { blueprintSchema, sceneContentSchema, storyContentSchema } from "@src/schemas";
 import { generateStorySetup } from "@src/utils/characters";
-import { truncateString, validateStoryIntegrity } from "@src/utils/functions";
-import { generateStoryPrompt } from "@src/utils/prompts";
+import { validateStoryIntegrity, resolveBlueprint } from "@src/utils/functions";
+import { generateBlueprintPrompt, generateSceneContentPrompt, generateImagePrompt } from "@src/utils/prompts";
 import OpenAI from "openai";
 import { v2 as cloudinary } from 'cloudinary'
 import { insertNewNodes, insertNewStory, getStoryBySlug } from "@src/turso";
@@ -48,112 +48,215 @@ const generateImage = async (prompt: string) => {
   try {
     console.log('Creando imagen con IA...');
     const aiResponse = await ia.images.generate({
-      model: "dall-e-3",
+      model: "gpt-image-1",
       prompt,
       n: 1,
-      size: "1792x1024",
+      size: "1536x1024",
+      quality: "high",
     });
     console.log('Imagen creada con IA!!');
-    const imageUrl = aiResponse.data[0].url as string;
+    const base64 = aiResponse.data?.[0]?.b64_json;
+    if (!base64) {
+      return { isGenerated: false, error: "La API no devolvió ninguna imagen" };
+    }
+    // gpt-image-1 ya no admite response_format: "url", siempre devuelve base64.
+    const imageUrl = `data:image/png;base64,${base64}`;
     return { imageUrl, isGenerated: true };
   } catch (error) {
     return { isGenerated: false, error };
   }
 };
 
-const createStory = async ({ scenario, characters, category, age }: { scenario: string, characters: string[], category: string, age: string }) => {
-  // Generamos el prompt para OpenAI
-  console.log('Generando cuento...');
-  const prompt = generateStoryPrompt({ scenario, characters, category, age });
+const buildWriterSystemPrompt = (age: string) => {
   const selectedAge = AGES[age as keyof typeof AGES] || AGES["9-12"];
-  const schema = fullSchema;
-  const result = await generateObject({
-    model: openai('o4-mini'),
-    temperature: 1,
-    system: `Eres un experto escritor de cuentos interactivos para ${AGES[age].type} de ${AGES[age].alias}. Tu labor es generar ${selectedAge.type}.
+  return `Eres un experto escritor de cuentos interactivos para ${selectedAge.type} de ${selectedAge.alias}. Tu labor es generar ${selectedAge.type}. Escribes siempre con claridad y concreción; usas imágenes poéticas solo cuando aportan un significado fácil de entender, nunca como adorno vacío.`;
+};
 
-    ### Instrucciones:
-    Cada nodo y la historia principal deben incluir un objeto "meta" con los siguientes campos:
-    - "keywords": Una lista de palabras clave relevantes al contenido.
-    - "title": Un título breve y descriptivo para SEO.
-    - "description": Una descripción atractiva que resuma el contenido.`,
-    prompt,
+// Pass 1: genera solo el esqueleto del grafo (slugs, opciones, resúmenes de
+// continuidad), sin texto completo. Es barato, y se valida ANTES de gastar en
+// texto e imagen: un cuento con enlaces rotos o nodos huérfanos se descarta
+// aquí sin haber generado ni una sola escena completa.
+const generateBlueprint = async ({ scenario, characterOptions, category, age }: { scenario: string, characterOptions: string[], category: string, age: string }) => {
+  console.log('Generando esqueleto del cuento...');
+  const result = await generateObject({
+    model: openai('gpt-5-nano'),
+    maxOutputTokens: 8000,
+    providerOptions: {
+      openai: {
+        reasoningEffort: "low",
+      },
+    },
+    system: buildWriterSystemPrompt(age),
+    prompt: generateBlueprintPrompt({ scenario, characterOptions, category, age }),
+    schema: blueprintSchema,
+  });
+  console.log('Esqueleto generado!!');
+  return result.object;
+};
+
+// Pass 2: genera el texto completo de UNA escena (la raíz o un nodo),
+// recibiendo el resumen de las escenas anteriores de su mismo camino como
+// contexto de continuidad.
+const generateSceneContent = async ({ age, history, summary, isEnding, isRoot, characters }: { age: string, history: string[], summary: string, isEnding: boolean, isRoot: boolean, characters: { name: string, description: string }[] }) => {
+  const schema = isRoot ? storyContentSchema : sceneContentSchema;
+  const result = await generateObject({
+    model: openai('gpt-5-nano'),
+    maxOutputTokens: 4000,
+    providerOptions: {
+      openai: {
+        reasoningEffort: "low",
+      },
+    },
+    system: buildWriterSystemPrompt(age),
+    prompt: generateSceneContentPrompt({ age, history, summary, isEnding, characters }),
     schema,
   });
+  return result.object;
+};
 
-  console.log('Cuento generado!!');
+// El esqueleto es la única pasada que se reintenta y es barata (nada de
+// texto completo ni imagen todavía). Hemos ido añadiendo más motivos
+// legítimos de rechazo (decisión de mentira, bucles, convergencia...), lo
+// que ha bajado la probabilidad de que un intento cualquiera pase todas las
+// comprobaciones a la vez; subimos el límite para compensarlo en vez de
+// relajar las propias comprobaciones.
+const MAX_BLUEPRINT_ATTEMPTS = 6;
 
-  const { story, nodes } = result.object;
+const createStory = async ({ scenario, characterOptions, category, age }: { scenario: string, characterOptions: string[], category: string, age: string }) => {
+  // El esqueleto ya no puede tener enlaces rotos, slugs duplicados ni nodos
+  // huérfanos (resolveBlueprint los descarta o los calcula de forma
+  // determinista). Lo único que sigue siendo un fallo real de contenido —y
+  // por tanto merece reintentar— es un índice fuera de rango, un cuento sin
+  // ningún nodo alcanzable, o un cuento que nunca termina.
+  let resolved: Extract<ReturnType<typeof resolveBlueprint>, { ok: true }> | undefined;
+  let lastErrors: any[] = [];
+  let attempt = 0;
 
-  // Comprobamos que no exista un cuento con el mismo slug
-  const storyBySlug = await getStoryBySlug(story.slug);
-  const isValidSlug = storyBySlug?.length === 0;
+  while (attempt < MAX_BLUEPRINT_ATTEMPTS && !resolved) {
+    attempt += 1;
+    const rawBlueprint = await generateBlueprint({ scenario, characterOptions, category, age });
+    const result = resolveBlueprint(rawBlueprint.story, rawBlueprint.nodes);
 
-  // Validamos la integridad del cuento
-  const { isValidated } = validateStoryIntegrity(nodes as unknown as Node[]);
+    console.log(`Esqueleto intento ${attempt}/${MAX_BLUEPRINT_ATTEMPTS}:`, result.ok ? { ok: true, nodos: result.nodes.length } : { ok: false, errors: result.errors });
 
-  console.log({ isValidated, isValidSlug });
-
-  if (isValidated && isValidSlug) {
-    const storyParams = [
-      story.title,
-      story.slug,
-      story.resume,
-      story.text,
-      JSON.stringify(story.options), // Convierte a JSON para almacenar en la base de datos
-      story.meta.description,
-      JSON.stringify(story.meta.keywords),
-      JSON.stringify([category]),
-      JSON.stringify(story.characters),
-      `cuentos-interactivos/${story.slug}/${story.slug}`,
-      age,
-      story.duration || '10-15 minutos',
-      0
-    ];
-
-    const selectedAge = AGES[age as keyof typeof AGES] || AGES["9-12"];
-
-    // comenzamos la creación de imágenes con IA
-    const imagePrompt = `${truncateString(
-      `I NEED to test how the tool works with extremely simple prompts. DO NOT add any detail, just use it AS-IS:
-    Ilustración 3D para ${selectedAge.people} de ${selectedAge.alias}, colores brillantes y texturas suaves, evita añadir texto. Este es el texto: ${story.text}.`, 700,)}. Personajes: ${story.characters.map(({ name, description }) => `${name}: ${description}`).join(", ")}.`
-
-    const { isGenerated, error, imageUrl } = await generateImage(imagePrompt);
-
-    if (isGenerated && imageUrl) {
-
-      // Subimos la imagen a cloudinary
-      const { isUploaded, error } = await uploadImage(imageUrl, story.slug);
-
-      if (isUploaded) {
-        // Guardamos el cuento en la base de datos
-        console.log('Guardando cuento en la base de datos...');
-        const { insertedId } = await insertNewStory(storyParams);
-        console.log('Guardando nodos en la base de datos...');
-        const nodesParams = nodes.map(({ slug, backSlug, text, meta, options }) => ([
-          insertedId,
-          slug,
-          story.slug,
-          backSlug,
-          text,
-          JSON.stringify(options),
-          meta.title,
-          meta.description,
-          JSON.stringify(story.meta.keywords)
-        ]));
-
-        insertNewNodes(nodesParams);
-        console.log('Cuento guardado en la base de datos!!');
-        return { status: 200, story, nodes };
-      } else {
-        return { status: 400, error };
-      }
+    if (result.ok) {
+      resolved = result;
     } else {
-      return { status: 400, error }
+      lastErrors = result.errors;
     }
-  } else {
-    return { status: 400, error: !isValidated ? "El cuento no ha pasado la validación de integridad" : "El slug del cuento ya existe" };
   }
+
+  if (!resolved) {
+    return { status: 400, error: { message: `El cuento no ha pasado la validación de integridad tras ${attempt} intentos`, errors: lastErrors } };
+  }
+
+  // El slug de la historia se deriva del título; si por casualidad ya existe
+  // (muy improbable, dos títulos distintos rara vez coinciden), lo
+  // desambiguamos con un sufijo en vez de descartar todo el esqueleto.
+  const originalStorySlug = resolved.story.slug;
+  let storySlug = originalStorySlug;
+  for (let suffix = 2; suffix <= 6; suffix++) {
+    const existing = await getStoryBySlug(storySlug);
+    if (!existing || existing.length === 0) break;
+    storySlug = `${originalStorySlug}-${suffix}`;
+  }
+
+  const storyBlueprint = { ...resolved.story, slug: storySlug };
+  const nodeBlueprints = resolved.nodes.map(node => ({
+    ...node,
+    backSlug: node.backSlug === originalStorySlug ? storySlug : node.backSlug,
+  }));
+  const historyBySlug = resolved.historyBySlug;
+
+  // Comprobación final de cordura: el grafo ya resuelto debería ser correcto
+  // por construcción. Si esto llega a fallar es un bug en resolveBlueprint,
+  // no un problema de la IA.
+  const sanityCheck = validateStoryIntegrity(
+    { slug: storyBlueprint.slug, options: storyBlueprint.options },
+    nodeBlueprints as unknown as Node[]
+  );
+  if (!sanityCheck.isValidated) {
+    console.error('El esqueleto resuelto no superó la comprobación de cordura final (bug interno):', sanityCheck.errors);
+    return { status: 500, error: { message: "Error interno al resolver el esqueleto del cuento", errors: sanityCheck.errors } };
+  }
+
+  console.log('Generando el texto completo de cada escena...');
+  const [storyContent, ...nodeContents] = await Promise.all([
+    generateSceneContent({ age, history: [], summary: storyBlueprint.summary, isEnding: false, isRoot: true, characters: storyBlueprint.characters }),
+    ...nodeBlueprints.map(node => generateSceneContent({
+      age,
+      history: historyBySlug.get(node.slug) ?? [],
+      summary: node.summary,
+      isEnding: node.options.length === 0,
+      isRoot: false,
+      characters: storyBlueprint.characters,
+    })),
+  ]);
+  console.log('Texto de todas las escenas generado!!');
+
+  const story = {
+    ...storyBlueprint,
+    text: (storyContent as typeof storyContent & { resume: string }).text,
+    resume: (storyContent as typeof storyContent & { resume: string }).resume,
+    meta: storyContent.meta,
+  };
+  const nodes = nodeBlueprints.map((node, index) => ({
+    ...node,
+    text: nodeContents[index].text,
+    meta: nodeContents[index].meta,
+  }));
+
+  const storyParams = [
+    story.title,
+    story.slug,
+    story.resume,
+    story.text,
+    JSON.stringify(story.options), // Convierte a JSON para almacenar en la base de datos
+    story.meta.description,
+    JSON.stringify(story.meta.keywords),
+    JSON.stringify([category]),
+    JSON.stringify(story.characters),
+    `cuentos-interactivos/${story.slug}/${story.slug}`,
+    age,
+    story.duration || '10-15 minutos',
+    0
+  ];
+
+  // comenzamos la creación de imágenes con IA
+  const imagePrompt = generateImagePrompt({ age, sceneText: story.text, characters: story.characters });
+
+  const { isGenerated, error, imageUrl } = await generateImage(imagePrompt);
+
+  if (!isGenerated || !imageUrl) {
+    return { status: 400, error };
+  }
+
+  // Subimos la imagen a cloudinary
+  const { isUploaded, error: uploadError } = await uploadImage(imageUrl, story.slug);
+
+  if (!isUploaded) {
+    return { status: 400, error: uploadError };
+  }
+
+  // Guardamos el cuento en la base de datos
+  console.log('Guardando cuento en la base de datos...');
+  const { insertedId } = await insertNewStory(storyParams);
+  console.log('Guardando nodos en la base de datos...');
+  const nodesParams = nodes.map(({ slug, backSlug, text, meta, options }) => ([
+    insertedId,
+    slug,
+    story.slug,
+    backSlug,
+    text,
+    JSON.stringify(options),
+    meta.title,
+    meta.description,
+    JSON.stringify(meta.keywords)
+  ]));
+
+  insertNewNodes(nodesParams);
+  console.log('Cuento guardado en la base de datos!!');
+  return { status: 200, story, nodes };
 };
 
 export async function GET(request: Request) {
@@ -169,11 +272,11 @@ export async function GET(request: Request) {
   console.log('Parámetros de la petición: ', paramCategory, paramAge);
 
   // Obtenemos la configuración del cuento
-  const { scenario, characters, category, age } = generateStorySetup(paramCategory, paramAge);
-  console.log('Configuración del cuento: ', scenario, characters, category, age);
+  const { scenario, characterOptions, category, age } = generateStorySetup(paramCategory, paramAge);
+  console.log('Configuración del cuento: ', scenario, characterOptions, category, age);
 
   // Creamos el cuento
-  const { status, story, nodes, error } = await createStory({ scenario, characters, category, age });
+  const { status, story, nodes, error } = await createStory({ scenario, characterOptions, category, age });
 
   // Devolvemos el resultado
   if (status === 200) {
@@ -182,4 +285,3 @@ export async function GET(request: Request) {
     return new Response(JSON.stringify({ message: "Ha ocurrido un error al crear el cuento", error }), { status });
   }
 }
-

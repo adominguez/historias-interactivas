@@ -5,6 +5,10 @@ interface ImportMetaEnv {
   readonly PUBLIC_CLOUDINARY_CLOUD_NAME: string;
   readonly PUBLIC_CLOUDINARY_API_KEY: string;
   readonly CLOUDINARY_API_SECRET: string;
+  readonly FACEBOOK_API_TOKEN: string;
+  readonly FACEBOOK_PAGE_ID: string;
+  readonly FACEBOOK_API_VERSION: string;
+  readonly INSTAGRAM_PAGE_ID: string;
   readonly SITE_URL: string;
 }
 

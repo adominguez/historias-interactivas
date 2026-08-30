@@ -40,9 +40,11 @@ const story = {
   ratingCount: storyData.rating_count,
   categories: storyData.categories,
   created: storyData.created_at,
+  age: storyData.age,
 } as unknown as Story;
 
 const date = new Date(storyData.created_at).toISOString().split('T')[0];
+const modifiedDate = new Date(storyData.updated_at || storyData.created_at).toISOString().split('T')[0];
 
 const parsedCategory = JSON.parse(story.categories)[0];
 const matchedCategory = generalCategories.find((cat) => cat.name === parsedCategory) || generalCategories[0];
@@ -55,6 +57,6 @@ const relatedStories = await getRelatedStoriesBySlug(story.slug);
 const title = `${story.title}`;
 ---
 
-<Layout title={title} description={story.description} slug={story.slug} options={story.options} optionSlug={story.slug} relatedStories={relatedStories} rating={story.rating} ratingCount={story.ratingCount} ratingSlug={story.slug} category={category} created={date} >
+<Layout title={title} description={story.description} slug={story.slug} options={story.options} optionSlug={story.slug} relatedStories={relatedStories} rating={story.rating} ratingCount={story.ratingCount} ratingSlug={story.slug} category={category} created={date} modified={modifiedDate} age={story.age}>
   <div set:html={story.text} />
 </Layout>

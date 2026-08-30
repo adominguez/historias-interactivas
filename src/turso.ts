@@ -9,8 +9,8 @@ export const turso = createClient({
 export const insertNewStory = async (storyParams: (string | number)[]) => {
   await turso.execute({
     sql: `
-      INSERT INTO stories (title, slug, resume, text, options, description, keywords, categories, characters, image, age, duration, rating)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+      INSERT INTO stories (title, slug, resume, text, options, description, keywords, categories, characters, image, age, duration, rating, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP);
     `,
     args: storyParams,
   });
@@ -360,9 +360,27 @@ export const updateStoryText = async (id: number, text: string) => {
   await turso.execute({
     sql: `
       UPDATE stories
-      SET text = ?
+      SET text = ?, updated_at = CURRENT_TIMESTAMP
       WHERE id = ?;
     `,
     args: [text, id],
+  });
+}
+
+export const deleteStory = async (id: number) => {
+  await turso.execute({
+    sql: `
+      DELETE FROM stories WHERE id = ?;
+    `,
+    args: [id],
+  });
+}
+
+export const deleteNodesByStoryId = async (storyId: number) => {
+  await turso.execute({
+    sql: `
+      DELETE FROM nodes WHERE story_id = ?;
+    `,
+    args: [storyId],
   });
 }
