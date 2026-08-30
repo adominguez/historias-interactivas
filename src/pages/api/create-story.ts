@@ -48,7 +48,7 @@ const generateImage = async (prompt: string) => {
   try {
     console.log('Creando imagen con IA...');
     const aiResponse = await ia.images.generate({
-      model: "gpt-image-1",
+      model: "gpt-image-2",
       prompt,
       n: 1,
       size: "1536x1024",
@@ -59,7 +59,7 @@ const generateImage = async (prompt: string) => {
     if (!base64) {
       return { isGenerated: false, error: "La API no devolvió ninguna imagen" };
     }
-    // gpt-image-1 ya no admite response_format: "url", siempre devuelve base64.
+    // Los modelos gpt-image-* no admiten response_format: "url", siempre devuelven base64.
     const imageUrl = `data:image/png;base64,${base64}`;
     return { imageUrl, isGenerated: true };
   } catch (error) {
@@ -169,8 +169,8 @@ const MAX_BLUEPRINT_ATTEMPTS = 10;
 // caso de 'regenerateStory', donde el slug ya está fijado de antemano
 // porque tiene que seguir siendo la misma URL (ver comentario allí). Si se
 // pasa 'skipImage', no se genera ni sube ninguna imagen nueva (la de
-// Cloudinary en esa misma ruta, si existe, se queda tal cual): gpt-image-1 en
-// calidad "high" es, con diferencia, la llamada más cara de todo el pipeline,
+// Cloudinary en esa misma ruta, si existe, se queda tal cual): la generación
+// de imagen en calidad "high" es, con diferencia, la llamada más cara de todo el pipeline,
 // y para reparar la estructura de un cuento ya publicado no hace falta arte
 // nuevo — regenerar 42 cuentos con imagen nueva salía por varios euros más de
 // lo necesario para un objetivo puramente estructural.
