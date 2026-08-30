@@ -1,5 +1,29 @@
 import { describe, it, expect } from 'vitest';
-import { validateStoryIntegrity, resolveBlueprint, truncateString } from './functions';
+import { validateStoryIntegrity, resolveBlueprint, truncateString, hasScreenplayStyleDialogue } from './functions';
+
+describe('hasScreenplayStyleDialogue', () => {
+  const names = ['Niña del océano', 'Corsario del viento', 'Delfín guardián'];
+
+  it('detecta "Nombre: texto"', () => {
+    expect(hasScreenplayStyleDialogue('— Niña del océano: vamos a avanzar despacio.', names)).toBe(true);
+  });
+
+  it('detecta "Nombre —" (etiqueta de hablante con raya)', () => {
+    expect(hasScreenplayStyleDialogue('<strong>Corsario del viento</strong> — Con la brasa en la mano...', names)).toBe(true);
+  });
+
+  it('detecta "Nombre dice: texto" (verbo de habla entre el nombre y los dos puntos)', () => {
+    expect(hasScreenplayStyleDialogue('— Niña del océano dice: Las plataformas ya están más fuertes.', names)).toBe(true);
+  });
+
+  it('no marca una frase narrativa normal que empieza por el nombre', () => {
+    expect(hasScreenplayStyleDialogue('El Corsario del viento asiente y ajusta las velas.', names)).toBe(false);
+  });
+
+  it('no marca un diálogo bien construido con raya y atribución natural', () => {
+    expect(hasScreenplayStyleDialogue('—Vamos a avanzar con calma —dijo la Niña del océano.', names)).toBe(false);
+  });
+});
 
 describe('validateStoryIntegrity', () => {
   it('detecta un enlace roto desde las opciones iniciales de la historia', () => {

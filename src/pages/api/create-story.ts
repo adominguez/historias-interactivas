@@ -2,7 +2,7 @@ import { createOpenAI } from "@ai-sdk/openai";
 import { generateObject } from "ai";
 import { blueprintSchema, sceneContentSchema, storyContentSchema } from "@src/schemas";
 import { generateStorySetup } from "@src/utils/characters";
-import { validateStoryIntegrity, resolveBlueprint } from "@src/utils/functions";
+import { validateStoryIntegrity, resolveBlueprint, hasScreenplayStyleDialogue } from "@src/utils/functions";
 import { generateBlueprintPrompt, generateSceneContentPrompt, generateImagePrompt } from "@src/utils/prompts";
 import OpenAI from "openai";
 import { v2 as cloudinary } from 'cloudinary'
@@ -114,6 +114,30 @@ const generateSceneContent = async ({ age, history, summary, isEnding, isRoot, c
   return result.object;
 };
 
+const MAX_SCENE_CONTENT_ATTEMPTS = 3;
+
+// Pese a pedirlo explícitamente en el prompt, el diálogo "disfrazado" de
+// guion de teatro/cine ha reaparecido con varias formas distintas en
+// sesiones de prueba anteriores ("Nombre: texto", "— Nombre — texto"...).
+// En vez de seguir puliendo el prompt, lo comprobamos de forma determinista
+// con los nombres reales de los personajes y, si aparece, regeneramos SOLO
+// esa escena (barato, un único nodo) en vez de todo el cuento.
+const generateSceneContentWithRetry = async (params: { age: string, history: string[], summary: string, isEnding: boolean, isRoot: boolean, characters: { name: string, description: string }[] }) => {
+  const characterNames = params.characters.map(({ name }) => name);
+  let result: Awaited<ReturnType<typeof generateSceneContent>> | undefined;
+
+  for (let attempt = 1; attempt <= MAX_SCENE_CONTENT_ATTEMPTS; attempt++) {
+    result = await generateSceneContent(params);
+    if (!hasScreenplayStyleDialogue(result.text, characterNames)) {
+      return result;
+    }
+    console.log(`Diálogo con formato de guion detectado, regenerando la escena (intento ${attempt}/${MAX_SCENE_CONTENT_ATTEMPTS})...`);
+  }
+
+  console.warn('No se pudo evitar el formato de diálogo tipo guion tras varios intentos; se usa la última versión generada.');
+  return result!;
+};
+
 // El esqueleto es la única pasada que se reintenta y es barata (nada de
 // texto completo ni imagen todavía). Hemos ido añadiendo más motivos
 // legítimos de rechazo (decisión de mentira, bucles, convergencia...), lo
@@ -184,8 +208,8 @@ const createStory = async ({ scenario, characterOptions, category, age }: { scen
   let storyContent, nodeContents;
   try {
     [storyContent, ...nodeContents] = await Promise.all([
-      generateSceneContent({ age, history: [], summary: storyBlueprint.summary, isEnding: false, isRoot: true, characters: storyBlueprint.characters }),
-      ...nodeBlueprints.map(node => generateSceneContent({
+      generateSceneContentWithRetry({ age, history: [], summary: storyBlueprint.summary, isEnding: false, isRoot: true, characters: storyBlueprint.characters }),
+      ...nodeBlueprints.map(node => generateSceneContentWithRetry({
         age,
         history: historyBySlug.get(node.slug) ?? [],
         summary: node.summary,

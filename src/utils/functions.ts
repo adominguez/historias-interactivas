@@ -1,5 +1,24 @@
 import { type Node, type Option } from "@types"
 
+// Detecta el diálogo "disfrazado" de guion de teatro/cine que hemos visto
+// reaparecer varias veces con formas distintas pese a pedir explícitamente
+// lo contrario en el prompt ("Nombre: texto", "— Nombre: texto",
+// "— Nombre — texto"...): el nombre de un personaje real de la historia
+// seguido directamente de ':' o '—', sin verbo de habla de por medio. Es una
+// comprobación determinista para no depender de que el prompt lo evite por
+// sí solo.
+const SPEECH_VERBS = "dice|dijo|pregunta|preguntó|responde|respondió|añade|añadió|explica|explicó|declara|declaró|afirma|afirmó|propone|propuso|comenta|comentó|advierte|advirtió";
+
+function hasScreenplayStyleDialogue(text: string, characterNames: string[]): boolean {
+  const plainText = text.replace(/<[^>]+>/g, " ");
+  return characterNames.some(name => {
+    const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    // Nombre pegado a ':'/'—' (etiqueta de guion), con o sin un verbo de
+    // habla de por medio ("Nombre:", "Nombre dice:"...).
+    return new RegExp(`${escaped}\\s*(?:${SPEECH_VERBS})?\\s*[:—]`, "i").test(plainText);
+  });
+}
+
 // Función para verificar la integridad narrativa del grafo generado por la IA
 // antes de persistirlo: enlaces rotos, nodos huérfanos, slugs duplicados y
 // ausencia de finales.
@@ -331,4 +350,4 @@ const removeRatedStory = (slug: string) => {
 
 
 
-export { truncateString, validateStoryIntegrity, resolveBlueprint, saveRatedStory, getRatedStories, removeRatedStory, getRatedStory };
+export { truncateString, validateStoryIntegrity, resolveBlueprint, hasScreenplayStyleDialogue, saveRatedStory, getRatedStories, removeRatedStory, getRatedStory };
