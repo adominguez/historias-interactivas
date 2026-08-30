@@ -1,4 +1,40 @@
 import { type Node, type Option } from "@types"
+import dictionary from "dictionary-es";
+import nspellFactory from "nspell";
+
+// Corrector ortográfico de español (Hunspell vía nspell). Se crea una sola
+// vez por proceso: cargar el diccionario tiene un coste, comprobar palabras
+// contra él no.
+// @types/nspell espera { aff, dic }: Buffer, pero dictionary-es (versión
+// actual) los tipa como Uint8Array; son compatibles en tiempo de ejecución
+// (Buffer extiende Uint8Array), es solo un desajuste entre paquetes de tipos
+// de terceros que no controlamos.
+const spellChecker = nspellFactory(dictionary as unknown as Parameters<typeof nspellFactory>[0]);
+
+// Detecta palabras que no existen en español (glitches de generación como
+// "otransportas", "moleado", "chroman", o palabras en otro idioma como
+// "fails" que se han colado en cuentos reales esta sesión, pese a pedir
+// explícitamente lo contrario en el prompt). Ignora deliberadamente las
+// palabras en mayúscula inicial (nombres propios de personajes y lugares
+// inventados, que nunca estarán en ningún diccionario) y las del propio
+// elenco de la historia.
+function findInvalidSpanishWords(text: string, characterNames: string[]): string[] {
+  const plainText = text.replace(/<[^>]+>/g, " ");
+  const nameWords = new Set(
+    characterNames.flatMap(name => name.toLowerCase().split(/\s+/))
+  );
+
+  const words = plainText.match(/[a-záéíóúüñ]+/gi) ?? [];
+
+  const invalid = words.filter(word => {
+    if (word.length <= 2) return false; // interjecciones, iniciales...
+    if (/^[A-ZÁÉÍÓÚÜÑ]/.test(word)) return false; // nombre propio o inicio de frase
+    if (nameWords.has(word.toLowerCase())) return false;
+    return !spellChecker.correct(word);
+  });
+
+  return [...new Set(invalid.map(word => word.toLowerCase()))];
+}
 
 // Detecta el diálogo "disfrazado" de guion de teatro/cine que hemos visto
 // reaparecer varias veces con formas distintas pese a pedir explícitamente
@@ -350,4 +386,4 @@ const removeRatedStory = (slug: string) => {
 
 
 
-export { truncateString, validateStoryIntegrity, resolveBlueprint, hasScreenplayStyleDialogue, saveRatedStory, getRatedStories, removeRatedStory, getRatedStory };
+export { truncateString, validateStoryIntegrity, resolveBlueprint, hasScreenplayStyleDialogue, findInvalidSpanishWords, saveRatedStory, getRatedStories, removeRatedStory, getRatedStory };

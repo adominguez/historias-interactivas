@@ -73,6 +73,20 @@ export default defineConfig({
   adapter: vercel({
     edgeMiddleware: true,
   }),
+  vite: {
+    ssr: {
+      // dictionary-es usa top-level await para leer sus ficheros (aff/dic)
+      // con node:fs/promises; solo se usa en servidor, así que dejamos que
+      // Node lo cargue de forma nativa en vez de que esbuild lo empaquete
+      // para un target de navegador que no soporta top-level await.
+      external: ['dictionary-es'],
+    },
+    optimizeDeps: {
+      // El pre-empaquetado de dependencias de Vite en dev usa esbuild con el
+      // mismo target de navegador y falla igual si no lo excluimos aquí también.
+      exclude: ['dictionary-es'],
+    },
+  },
   env: {
     schema: {
       TURSO_DATABASE_URL: envField.string({ context: "server", access: "secret" }),

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { validateStoryIntegrity, resolveBlueprint, truncateString, hasScreenplayStyleDialogue } from './functions';
+import { validateStoryIntegrity, resolveBlueprint, truncateString, hasScreenplayStyleDialogue, findInvalidSpanishWords } from './functions';
 
 describe('hasScreenplayStyleDialogue', () => {
   const names = ['Niña del océano', 'Corsario del viento', 'Delfín guardián'];
@@ -22,6 +22,28 @@ describe('hasScreenplayStyleDialogue', () => {
 
   it('no marca un diálogo bien construido con raya y atribución natural', () => {
     expect(hasScreenplayStyleDialogue('—Vamos a avanzar con calma —dijo la Niña del océano.', names)).toBe(false);
+  });
+});
+
+describe('findInvalidSpanishWords', () => {
+  const names = ['Flamenco elegante', 'Cometa travieso'];
+
+  it('detecta palabras inventadas/glitch reales vistas en producción', () => {
+    expect(findInvalidSpanishWords('el zumbido suave de las otransportas del oasis', names)).toContain('otransportas');
+    expect(findInvalidSpanishWords('mueve su cuerda de colores, moleado por la curiosidad', names)).toContain('moleado');
+    expect(findInvalidSpanishWords('Las luces chroman entre las palmeras', names)).toContain('chroman');
+  });
+
+  it('detecta una palabra en inglés colada en un texto en español', () => {
+    expect(findInvalidSpanishWords('Si fails, tendremos que buscar las piezas de hielo', names)).toContain('fails');
+  });
+
+  it('no marca los nombres propios de los personajes de la historia', () => {
+    expect(findInvalidSpanishWords('El Flamenco elegante y el Cometa travieso volaron juntos.', names)).toEqual([]);
+  });
+
+  it('no marca texto en español correcto y variado', () => {
+    expect(findInvalidSpanishWords('<p>Las corrientes del río llevaban a los tres amigos hacia la aventura.</p>', names)).toEqual([]);
   });
 });
 
