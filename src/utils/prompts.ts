@@ -1,4 +1,5 @@
 import { AGES } from '@src/utils/characters';
+import { truncateString } from '@src/utils/functions';
 
 // Pass 1: solo la estructura del grafo (slugs, opciones, resúmenes de escena),
 // sin el texto final de cada nodo. Barato de generar y barato de validar antes
@@ -75,4 +76,47 @@ function generateSceneContentPrompt({ age, history, summary, isEnding, character
   - Genera también los metadatos SEO ("meta"): palabras clave, un título breve y una descripción atractiva del contenido de ESTA escena.`
 }
 
-export { generateBlueprintPrompt, generateSceneContentPrompt };
+// Estilos de ilustración por franja de edad. Antes se usaba literalmente el
+// mismo estilo ("Ilustración 3D... colores brillantes y texturas suaves")
+// para TODAS las edades, incluida 18+ — de ahí que las portadas de historias
+// para adultos parecieran hechas para niños pequeños. Varios estilos por
+// franja, elegidos al azar, también evitan que todas las portadas de la
+// misma edad salgan con el mismo aspecto genérico de IA.
+const IMAGE_STYLES: Record<string, string[]> = {
+  "3-4": [
+    "ilustración de cuento infantil en acuarela suave, formas redondeadas y amigables, colores pastel cálidos",
+    "estilo diorama de fieltro y papel recortado (papercraft), texturas artesanales suaves, colores tiernos",
+    "ilustración digital estilo libro de cartón para bebés, trazos simples y limpios, colores vivos pero suaves",
+  ],
+  "5-8": [
+    "ilustración de cuento infantil con acuarela y tinta, colores vivos y alegres, personajes expresivos",
+    "ilustración 3D estilo animación familiar, colores brillantes, iluminación cálida y acogedora",
+    "estilo papercraft en capas (diorama de papel), luz cálida, colores saturados y divertidos",
+  ],
+  "9-12": [
+    "ilustración de aventuras estilo libro ilustrado juvenil, colores vívidos, composición dinámica",
+    "ilustración digital semirrealista con un toque de fantasía, iluminación dramática pero amigable",
+    "estilo cómic de aventuras clásico, líneas marcadas, paleta de color vibrante",
+  ],
+  "13-18": [
+    "ilustración digital estilo portada de novela juvenil (young adult), iluminación cinematográfica, paleta de color sofisticada y con contraste",
+    "arte estilo anime o manga moderno, composición dinámica, sombras marcadas",
+    "pintura digital semirrealista con atmósfera evocadora, colores profundos y saturados",
+  ],
+  "18+": [
+    "ilustración pictórica realista al estilo de portada de novela para adultos, iluminación cinematográfica dramática, atmósfera seria, sin ningún elemento infantil",
+    "pintura digital oscura y atmosférica, alto contraste, paleta de color madura y sobria, sin ningún elemento infantil",
+    "ilustración editorial sofisticada al estilo de una revista literaria, texturas ricas, tono serio y adulto, sin ningún elemento infantil",
+  ],
+};
+
+function generateImagePrompt({ age, sceneText, characters }: { age: string, sceneText: string, characters: { name: string, description: string }[] }) {
+  const styles = IMAGE_STYLES[age] ?? IMAGE_STYLES["9-12"];
+  const style = styles[Math.floor(Math.random() * styles.length)];
+  const plainSceneText = sceneText.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+  const charactersText = characters.map(({ name, description }) => `${name}: ${description}`).join(', ');
+
+  return `${style}. Evita añadir texto en la imagen. Escena: ${truncateString(plainSceneText, 900)}. Personajes: ${charactersText}.`;
+}
+
+export { generateBlueprintPrompt, generateSceneContentPrompt, generateImagePrompt };

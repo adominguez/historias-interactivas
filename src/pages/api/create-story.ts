@@ -2,8 +2,8 @@ import { createOpenAI } from "@ai-sdk/openai";
 import { generateObject } from "ai";
 import { blueprintSchema, sceneContentSchema, storyContentSchema } from "@src/schemas";
 import { generateStorySetup } from "@src/utils/characters";
-import { truncateString, validateStoryIntegrity, resolveBlueprint } from "@src/utils/functions";
-import { generateBlueprintPrompt, generateSceneContentPrompt } from "@src/utils/prompts";
+import { validateStoryIntegrity, resolveBlueprint } from "@src/utils/functions";
+import { generateBlueprintPrompt, generateSceneContentPrompt, generateImagePrompt } from "@src/utils/prompts";
 import OpenAI from "openai";
 import { v2 as cloudinary } from 'cloudinary'
 import { insertNewNodes, insertNewStory, getStoryBySlug } from "@src/turso";
@@ -216,11 +216,8 @@ const createStory = async ({ scenario, characterOptions, category, age }: { scen
     0
   ];
 
-  const selectedAge = AGES[age as keyof typeof AGES] || AGES["9-12"];
-
   // comenzamos la creación de imágenes con IA
-  const plainSceneText = story.text.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
-  const imagePrompt = `Ilustración 3D para ${selectedAge.people} de ${selectedAge.alias}, colores brillantes y texturas suaves, evita añadir texto en la imagen. Escena: ${truncateString(plainSceneText, 900)}. Personajes: ${story.characters.map(({ name, description }) => `${name}: ${description}`).join(", ")}.`
+  const imagePrompt = generateImagePrompt({ age, sceneText: story.text, characters: story.characters });
 
   const { isGenerated, error, imageUrl } = await generateImage(imagePrompt);
 
