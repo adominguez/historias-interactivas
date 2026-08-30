@@ -6,7 +6,7 @@ import { validateStoryIntegrity, resolveBlueprint, hasScreenplayStyleDialogue, f
 import { generateBlueprintPrompt, generateSceneContentPrompt, generateImagePrompt } from "@src/utils/prompts";
 import OpenAI from "openai";
 import { v2 as cloudinary } from 'cloudinary'
-import { insertNewNodes, insertNewStory, getStoryBySlug } from "@src/turso";
+import { insertNewNodes, insertNewStory, getStoryBySlug, updateStory, deleteNodesByStoryId } from "@src/turso";
 import { type Node } from "@types";
 import { AGES } from '@src/utils/characters';
 import { PUBLIC_CLOUDINARY_CLOUD_NAME, PUBLIC_CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET, OPENAI_API_KEY } from "astro:env/server";
@@ -154,10 +154,27 @@ const generateSceneContentWithRetry = async (params: { age: string, history: str
 // legítimos de rechazo (decisión de mentira, bucles, convergencia...), lo
 // que ha bajado la probabilidad de que un intento cualquiera pase todas las
 // comprobaciones a la vez; subimos el límite para compensarlo en vez de
-// relajar las propias comprobaciones.
-const MAX_BLUEPRINT_ATTEMPTS = 6;
+// relajar las propias comprobaciones. 'convergent-node' resultó ser, con
+// diferencia, el motivo de rechazo más frecuente al medirlo sobre un lote
+// real de 6 regeneraciones (ver prompt reforzado en generateBlueprintPrompt):
+// con 6 intentos, 4 de 6 cuentos agotaron el límite sin conseguir un esqueleto
+// válido. Subido a 10 mientras se comprueba si el prompt reforzado basta por
+// sí solo para bajar la tasa de fallo.
+const MAX_BLUEPRINT_ATTEMPTS = 10;
 
-const createStory = async ({ scenario, characterOptions, category, age }: { scenario: string, characterOptions: string[], category: string, age: string }) => {
+// Genera el esqueleto + contenido completo + imagen de un cuento (todo lo
+// que NO depende de si el resultado se inserta como cuento nuevo o
+// sustituye a uno ya existente). Si se pasa 'targetSlug', el cuento se
+// fuerza a usar exactamente ese slug en vez de derivarlo del título — es el
+// caso de 'regenerateStory', donde el slug ya está fijado de antemano
+// porque tiene que seguir siendo la misma URL (ver comentario allí). Si se
+// pasa 'skipImage', no se genera ni sube ninguna imagen nueva (la de
+// Cloudinary en esa misma ruta, si existe, se queda tal cual): gpt-image-1 en
+// calidad "high" es, con diferencia, la llamada más cara de todo el pipeline,
+// y para reparar la estructura de un cuento ya publicado no hace falta arte
+// nuevo — regenerar 42 cuentos con imagen nueva salía por varios euros más de
+// lo necesario para un objetivo puramente estructural.
+const generateStoryWithContent = async ({ scenario, characterOptions, category, age, targetSlug, skipImage }: { scenario: string, characterOptions: string[], category: string, age: string, targetSlug?: string, skipImage?: boolean }) => {
   // El esqueleto ya no puede tener enlaces rotos, slugs duplicados ni nodos
   // huérfanos (resolveBlueprint los descarta o los calcula de forma
   // determinista). Lo único que sigue siendo un fallo real de contenido —y
@@ -182,18 +199,22 @@ const createStory = async ({ scenario, characterOptions, category, age }: { scen
   }
 
   if (!resolved) {
-    return { status: 400, error: { message: `El cuento no ha pasado la validación de integridad tras ${attempt} intentos`, errors: lastErrors } };
+    return { status: 400 as const, error: { message: `El cuento no ha pasado la validación de integridad tras ${attempt} intentos`, errors: lastErrors } };
   }
 
-  // El slug de la historia se deriva del título; si por casualidad ya existe
-  // (muy improbable, dos títulos distintos rara vez coinciden), lo
-  // desambiguamos con un sufijo en vez de descartar todo el esqueleto.
   const originalStorySlug = resolved.story.slug;
   let storySlug = originalStorySlug;
-  for (let suffix = 2; suffix <= 6; suffix++) {
-    const existing = await getStoryBySlug(storySlug);
-    if (!existing || existing.length === 0) break;
-    storySlug = `${originalStorySlug}-${suffix}`;
+  if (targetSlug) {
+    storySlug = targetSlug;
+  } else {
+    // El slug de la historia se deriva del título; si por casualidad ya
+    // existe (muy improbable, dos títulos distintos rara vez coinciden), lo
+    // desambiguamos con un sufijo en vez de descartar todo el esqueleto.
+    for (let suffix = 2; suffix <= 6; suffix++) {
+      const existing = await getStoryBySlug(storySlug);
+      if (!existing || existing.length === 0) break;
+      storySlug = `${originalStorySlug}-${suffix}`;
+    }
   }
 
   const storyBlueprint = { ...resolved.story, slug: storySlug };
@@ -212,7 +233,7 @@ const createStory = async ({ scenario, characterOptions, category, age }: { scen
   );
   if (!sanityCheck.isValidated) {
     console.error('El esqueleto resuelto no superó la comprobación de cordura final (bug interno):', sanityCheck.errors);
-    return { status: 500, error: { message: "Error interno al resolver el esqueleto del cuento", errors: sanityCheck.errors } };
+    return { status: 500 as const, error: { message: "Error interno al resolver el esqueleto del cuento", errors: sanityCheck.errors } };
   }
 
   console.log('Generando el texto completo de cada escena...');
@@ -234,7 +255,7 @@ const createStory = async ({ scenario, characterOptions, category, age }: { scen
     // demasiado corto para alguna escena: mejor fallar aquí que persistir
     // un nodo en blanco (ha llegado a pasar en producción).
     console.error('Fallo generando el contenido de una escena:', error);
-    return { status: 400, error: { message: "No se ha podido generar el texto completo de todas las escenas" } };
+    return { status: 400 as const, error: { message: "No se ha podido generar el texto completo de todas las escenas" } };
   }
   console.log('Texto de todas las escenas generado!!');
 
@@ -249,6 +270,35 @@ const createStory = async ({ scenario, characterOptions, category, age }: { scen
     text: nodeContents[index].text,
     meta: nodeContents[index].meta,
   }));
+
+  if (!skipImage) {
+    // comenzamos la creación de imágenes con IA
+    const imagePrompt = generateImagePrompt({ age, category, sceneText: story.text, characters: story.characters });
+
+    const { isGenerated, error, imageUrl } = await generateImage(imagePrompt);
+
+    if (!isGenerated || !imageUrl) {
+      return { status: 400 as const, error };
+    }
+
+    // Subimos la imagen a cloudinary. El public_id se deriva de story.slug, así
+    // que si 'targetSlug' viene fijado (regenerar en el mismo sitio), esto
+    // sobrescribe la imagen anterior en la misma ruta en vez de crear una
+    // nueva: la URL de la imagen tampoco cambia.
+    const { isUploaded, error: uploadError } = await uploadImage(imageUrl, story.slug);
+
+    if (!isUploaded) {
+      return { status: 400 as const, error: uploadError };
+    }
+  }
+
+  return { status: 200 as const, story, nodes, category, age };
+};
+
+const createStory = async (params: { scenario: string, characterOptions: string[], category: string, age: string }) => {
+  const result = await generateStoryWithContent(params);
+  if (result.status !== 200) return result;
+  const { story, nodes, category, age } = result;
 
   const storyParams = [
     story.title,
@@ -265,22 +315,6 @@ const createStory = async ({ scenario, characterOptions, category, age }: { scen
     story.duration || '10-15 minutos',
     0
   ];
-
-  // comenzamos la creación de imágenes con IA
-  const imagePrompt = generateImagePrompt({ age, sceneText: story.text, characters: story.characters });
-
-  const { isGenerated, error, imageUrl } = await generateImage(imagePrompt);
-
-  if (!isGenerated || !imageUrl) {
-    return { status: 400, error };
-  }
-
-  // Subimos la imagen a cloudinary
-  const { isUploaded, error: uploadError } = await uploadImage(imageUrl, story.slug);
-
-  if (!isUploaded) {
-    return { status: 400, error: uploadError };
-  }
 
   // Guardamos el cuento en la base de datos
   console.log('Guardando cuento en la base de datos...');
@@ -300,7 +334,57 @@ const createStory = async ({ scenario, characterOptions, category, age }: { scen
 
   insertNewNodes(nodesParams);
   console.log('Cuento guardado en la base de datos!!');
-  return { status: 200, story, nodes };
+  return { status: 200 as const, story, nodes, error: undefined };
+};
+
+// Sustituye TODO el contenido de un cuento ya publicado (título, texto,
+// personajes, nodos, imagen) manteniendo exactamente el mismo slug/URL y el
+// mismo 'id' de fila. Pensado para cuentos con el grafo estructuralmente
+// roto (enlaces rotos, sin final...) que no se pueden reparar escena a
+// escena: en vez de borrar el cuento (lo que rompería la URL ya indexada en
+// buscadores) o redirigirlo a otra página (perdiendo ese contenido), se
+// genera un cuento nuevo desde cero para la misma categoría/edad y se coloca
+// en el mismo sitio exacto donde estaba el roto.
+const regenerateStory = async ({ storySlug, scenario, characterOptions, category, age }: { storySlug: string, scenario: string, characterOptions: string[], category: string, age: string }) => {
+  const [existing] = await getStoryBySlug(storySlug);
+  if (!existing) {
+    return { status: 404 as const, error: { message: "No se ha encontrado el cuento a regenerar" } };
+  }
+
+  const result = await generateStoryWithContent({ scenario, characterOptions, category, age, targetSlug: storySlug, skipImage: true });
+  if (result.status !== 200) return result;
+  const { story, nodes } = result;
+
+  console.log('Sustituyendo el cuento en la base de datos...');
+  await updateStory(existing.id as number, {
+    title: story.title,
+    resume: story.resume,
+    text: story.text,
+    options: JSON.stringify(story.options),
+    description: story.meta.description,
+    keywords: JSON.stringify(story.meta.keywords),
+    categories: JSON.stringify([category]),
+    characters: JSON.stringify(story.characters),
+    age,
+    duration: story.duration || '10-15 minutos',
+  });
+
+  await deleteNodesByStoryId(existing.id as number);
+  const nodesParams = nodes.map(({ slug, backSlug, text, meta, options }) => ([
+    existing.id,
+    slug,
+    story.slug,
+    backSlug,
+    text,
+    JSON.stringify(options),
+    meta.title,
+    meta.description,
+    JSON.stringify(meta.keywords)
+  ]));
+  insertNewNodes(nodesParams);
+  console.log('Cuento regenerado en el mismo slug!!');
+
+  return { status: 200 as const, story, nodes, error: undefined };
 };
 
 export async function GET(request: Request) {
@@ -329,3 +413,5 @@ export async function GET(request: Request) {
     return new Response(JSON.stringify({ message: "Ha ocurrido un error al crear el cuento", error }), { status });
   }
 }
+
+export { regenerateStory };

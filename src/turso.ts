@@ -376,6 +376,40 @@ export const updateStoryText = async (id: number, text: string) => {
   });
 }
 
+export const updateStory = async (id: number, fields: {
+  title: string;
+  resume: string;
+  text: string;
+  options: string;
+  description: string;
+  keywords: string;
+  categories: string;
+  characters: string;
+  age: string;
+  duration: string;
+}) => {
+  await turso.execute({
+    sql: `
+      UPDATE stories
+      SET title = ?, resume = ?, text = ?, options = ?, description = ?, keywords = ?, categories = ?, characters = ?, age = ?, duration = ?, updated_at = CURRENT_TIMESTAMP
+      WHERE id = ?;
+    `,
+    args: [
+      fields.title,
+      fields.resume,
+      fields.text,
+      fields.options,
+      fields.description,
+      fields.keywords,
+      fields.categories,
+      fields.characters,
+      fields.age,
+      fields.duration,
+      id,
+    ],
+  });
+}
+
 export const updateNodeText = async (id: number, text: string) => {
   await turso.execute({
     sql: `
