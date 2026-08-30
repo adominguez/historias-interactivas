@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { validateStoryIntegrity, resolveBlueprint, truncateString, hasScreenplayStyleDialogue, findInvalidSpanishWords } from './functions';
+import { validateStoryIntegrity, resolveBlueprint, truncateString, hasScreenplayStyleDialogue, findInvalidSpanishWords, diagnoseStory } from './functions';
 
 describe('hasScreenplayStyleDialogue', () => {
   const names = ['Niña del océano', 'Corsario del viento', 'Delfín guardián'];
@@ -44,6 +44,16 @@ describe('findInvalidSpanishWords', () => {
 
   it('no marca texto en español correcto y variado', () => {
     expect(findInvalidSpanishWords('<p>Las corrientes del río llevaban a los tres amigos hacia la aventura.</p>', names)).toEqual([]);
+  });
+
+  it('no marca verbos con pronombre enclítico (falsos positivos reales vistos en producción)', () => {
+    expect(findInvalidSpanishWords('Decidieron cruzarlo sin dudar.', names)).toEqual([]);
+    expect(findInvalidSpanishWords('El agua, purificándolo todo a su paso, siguió su curso.', names)).toEqual([]);
+    expect(findInvalidSpanishWords('—Guíenme hasta el templo —pidió el viajero.', names)).toEqual([]);
+  });
+
+  it('no marca diminutivos que el diccionario base no reconoce (falso positivo real visto en producción)', () => {
+    expect(findInvalidSpanishWords('Una caracolita se asomó entre las rocas.', names)).toEqual([]);
   });
 });
 
@@ -224,6 +234,40 @@ describe('resolveBlueprint', () => {
     expect(result.ok).toBe(false);
     if (result.ok) return;
     expect(result.errors[0].type).toBe('convergent-node');
+  });
+});
+
+describe('diagnoseStory', () => {
+  const names = ['Flamenco elegante'];
+
+  it('reporta problemas estructurales y de contenido a la vez, cada uno con su scope', () => {
+    const story = { slug: 'el-bosque', options: [{ text: 'Entrar', next: 'nodo-a' }] };
+    const nodes = [
+      { slug: 'nodo-a', text: '— Flamenco elegante: vamos a avanzar.', options: [] } as any,
+      { slug: 'nodo-huerfano', text: 'Las luces chroman entre las palmeras.', options: [] } as any,
+    ];
+    const contentTargets = [
+      { slug: 'story', text: 'Texto correcto de la escena inicial.' },
+      { slug: 'nodo-a', text: '— Flamenco elegante: vamos a avanzar.' },
+      { slug: 'nodo-huerfano', text: 'Las luces chroman entre las palmeras.' },
+    ];
+
+    const issues = diagnoseStory(story, nodes, contentTargets, names);
+
+    expect(issues).toContainEqual({ scope: 'structure', type: 'orphan-node', slug: 'nodo-huerfano' });
+    expect(issues).toContainEqual({ scope: 'content', type: 'screenplay-dialogue', slug: 'nodo-a' });
+    expect(issues).toContainEqual({ scope: 'content', type: 'invalid-words', slug: 'nodo-huerfano', words: ['chroman'] });
+  });
+
+  it('no reporta nada para un cuento válido y con texto correcto', () => {
+    const story = { slug: 'el-bosque', options: [{ text: 'Entrar', next: 'final' }] };
+    const nodes = [{ slug: 'final', text: 'Un final feliz y bien escrito.', options: [] } as any];
+    const contentTargets = [
+      { slug: 'story', text: 'Inicio correcto.' },
+      { slug: 'final', text: 'Un final feliz y bien escrito.' },
+    ];
+
+    expect(diagnoseStory(story, nodes, contentTargets, names)).toEqual([]);
   });
 });
 

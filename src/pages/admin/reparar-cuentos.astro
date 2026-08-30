@@ -1,0 +1,21 @@
+---
+import BaseHead from '@components/BaseHead.astro';
+import RepairStoriesPanel from '@components/RepairStoriesPanel';
+
+export const prerender = false;
+---
+
+<!doctype html>
+<html lang="es">
+  <head>
+    <BaseHead title="Reparar cuentos (interno)" description="Herramienta interna para diagnosticar y reparar cuentos ya publicados." />
+    <meta name="robots" content="noindex" />
+  </head>
+  <body>
+    <main style="max-width: 720px; margin: 4rem auto; padding: 0 1rem; font-family: system-ui, sans-serif;">
+      <h1>Reparar cuentos</h1>
+      <p>Analiza todos los cuentos publicados en busca de problemas estructurales (grafo roto) y de contenido (diálogo mal formateado, palabras inválidas), y permite reparar los de contenido con IA.</p>
+      <RepairStoriesPanel client:load />
+    </main>
+  </body>
+</html>

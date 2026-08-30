@@ -11,6 +11,45 @@ import nspellFactory from "nspell";
 // de terceros que no controlamos.
 const spellChecker = nspellFactory(dictionary as unknown as Parameters<typeof nspellFactory>[0]);
 
+// dictionary-es no genera todas las formas de verbo+pronombre enclítico
+// ("cruzarlo", "purificándolo", "guíenme") ni todos los diminutivos
+// ("caracolita") a partir de su raíz, así que spellChecker.correct() los
+// rechaza aunque sean español perfectamente correcto (confirmado con
+// ejemplos reales al probar diagnoseStory contra la base de datos). Antes de
+// dar una palabra por inválida, si termina en uno de estos sufijos muy
+// comunes probamos también la raíz sin el sufijo (y esa misma raíz sin su
+// última tilde, porque encliticizar a menudo desplaza el acento y añade una
+// tilde que no estaba en la forma base: "purificando" -> "purificándolo").
+const ENCLITIC_SUFFIXES = [
+  "selo", "sela", "selos", "selas",
+  "melo", "mela", "melos", "melas",
+  "telo", "tela", "telos", "telas",
+  "noslo", "nosla", "noslos", "noslas",
+  "oslo", "osla", "oslos", "oslas",
+  "lo", "la", "los", "las", "le", "les", "se", "me", "te", "nos", "os",
+];
+const DIMINUTIVE_SUFFIXES = ["ecito", "ecita", "ecitos", "ecitas", "cito", "cita", "citos", "citas", "ito", "ita", "itos", "itas"];
+
+const ACCENTED_VOWELS: Record<string, string> = { á: "a", é: "e", í: "i", ó: "o", ú: "u" };
+function removeLastAccent(word: string): string {
+  const lastAccentIndex = [...word].map(char => ACCENTED_VOWELS[char] !== undefined).lastIndexOf(true);
+  if (lastAccentIndex === -1) return word;
+  return word.slice(0, lastAccentIndex) + ACCENTED_VOWELS[word[lastAccentIndex]] + word.slice(lastAccentIndex + 1);
+}
+
+function isPlausibleSpanishWord(word: string): boolean {
+  if (spellChecker.correct(word)) return true;
+  if (spellChecker.correct(removeLastAccent(word))) return true;
+
+  for (const suffix of [...ENCLITIC_SUFFIXES, ...DIMINUTIVE_SUFFIXES]) {
+    if (word.length <= suffix.length + 2 || !word.endsWith(suffix)) continue;
+    const stem = word.slice(0, -suffix.length);
+    if (spellChecker.correct(stem) || spellChecker.correct(removeLastAccent(stem))) return true;
+  }
+
+  return false;
+}
+
 // Detecta palabras que no existen en español (glitches de generación como
 // "otransportas", "moleado", "chroman", o palabras en otro idioma como
 // "fails" que se han colado en cuentos reales esta sesión, pese a pedir
@@ -30,7 +69,7 @@ function findInvalidSpanishWords(text: string, characterNames: string[]): string
     if (word.length <= 2) return false; // interjecciones, iniciales...
     if (/^[A-ZÁÉÍÓÚÜÑ]/.test(word)) return false; // nombre propio o inicio de frase
     if (nameWords.has(word.toLowerCase())) return false;
-    return !spellChecker.correct(word);
+    return !isPlausibleSpanishWord(word.toLowerCase());
   });
 
   return [...new Set(invalid.map(word => word.toLowerCase()))];
@@ -122,6 +161,43 @@ function validateStoryIntegrity(story: { slug: string; options: Option[] }, node
   }
 
   return { isValidated, errors };
+}
+
+type ContentTarget = { slug: string; text: string };
+type StoryIssue =
+  | { scope: "structure"; type: string; [key: string]: unknown }
+  | { scope: "content"; type: "screenplay-dialogue"; slug: string }
+  | { scope: "content"; type: "invalid-words"; slug: string; words: string[] };
+
+// Diagnostica un cuento YA persistido en la base de datos, reutilizando las
+// mismas comprobaciones deterministas que se usan durante la generación
+// (validateStoryIntegrity para lo estructural, hasScreenplayStyleDialogue y
+// findInvalidSpanishWords por escena para el contenido). 'story' es el
+// destino con slug reservado "story" en 'contentTargets' (la raíz del
+// cuento no tiene un slug de nodo propio); el resto son los nodos reales.
+function diagnoseStory(
+  story: { slug: string; options: Option[] },
+  nodes: Node[],
+  contentTargets: ContentTarget[],
+  characterNames: string[]
+): StoryIssue[] {
+  const structural: StoryIssue[] = validateStoryIntegrity(story, nodes).errors.map(
+    error => ({ scope: "structure" as const, ...error })
+  );
+
+  const content: StoryIssue[] = contentTargets.flatMap(({ slug, text }) => {
+    const issues: StoryIssue[] = [];
+    if (hasScreenplayStyleDialogue(text, characterNames)) {
+      issues.push({ scope: "content", type: "screenplay-dialogue", slug });
+    }
+    const words = findInvalidSpanishWords(text, characterNames);
+    if (words.length > 0) {
+      issues.push({ scope: "content", type: "invalid-words", slug, words });
+    }
+    return issues;
+  });
+
+  return [...structural, ...content];
 }
 
 function slugify(text: string): string {
@@ -386,4 +462,4 @@ const removeRatedStory = (slug: string) => {
 
 
 
-export { truncateString, validateStoryIntegrity, resolveBlueprint, hasScreenplayStyleDialogue, findInvalidSpanishWords, saveRatedStory, getRatedStories, removeRatedStory, getRatedStory };
+export { truncateString, validateStoryIntegrity, resolveBlueprint, hasScreenplayStyleDialogue, findInvalidSpanishWords, diagnoseStory, saveRatedStory, getRatedStories, removeRatedStory, getRatedStory };

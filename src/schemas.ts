@@ -103,4 +103,11 @@ const storyContentSchema = sceneContentSchema.extend({
   resume: z.string().min(10).describe("Resumen atractivo del cuento completo, para mostrar en las tarjetas de la biblioteca"),
 });
 
-export { blueprintSchema, sceneContentSchema, storyContentSchema };
+// Reparación de una escena ya publicada: solo el texto corregido, sin tocar
+// metadatos SEO ni ningún otro campo (es una corrección puntual, no una
+// regeneración completa).
+const repairedTextSchema = z.object({
+  text: z.string().min(30).describe("Texto en formato HTML, usar etiquetas como <p>, <strong>, <em>... Todo lo que se necesite"),
+});
+
+export { blueprintSchema, sceneContentSchema, storyContentSchema, repairedTextSchema };

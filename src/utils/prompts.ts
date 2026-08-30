@@ -113,6 +113,35 @@ const IMAGE_STYLES: Record<string, string[]> = {
   ],
 };
 
+// Reparación puntual de una escena ya publicada que ha sido detectada con un
+// problema de contenido concreto (diálogo con formato de guion y/o palabras
+// inválidas). A diferencia de generateSceneContentPrompt, aquí NO se genera
+// contenido nuevo: se le da al modelo el texto original completo y se le
+// pide que lo reescriba corrigiendo solo lo señalado, preservando hechos,
+// personajes y estructura, para minimizar el riesgo de introducir una
+// inconsistencia nueva en un cuento que ya está publicado.
+function generateRepairPrompt({ age, text, characterNames, issues }: { age: string, text: string, characterNames: string[], issues: { invalidWords: string[], isScreenplayStyle: boolean } }) {
+  const selectedAge = AGES[age as keyof typeof AGES] || AGES["9-12"];
+
+  const reasons = [
+    issues.isScreenplayStyle && 'El diálogo está escrito con formato de guion de teatro/cine (el nombre de un personaje seguido directamente de ":" o "—"). Reescribe cada línea de diálogo integrada en la narración, introducida con raya (—), indicando quién habla UNA sola vez por línea (antes o después del diálogo, nunca las dos veces a la vez ni repetido al final).',
+    issues.invalidWords.length > 0 && `Contiene palabras que no existen en español o están en otro idioma: ${issues.invalidWords.join(', ')}. Sustitúyelas por palabras reales y sencillas en español que tengan sentido en ese punto de la frase.`,
+  ].filter(Boolean).join('\n  - ');
+
+  return `Esta es una escena ya publicada de ${selectedAge.type} interactivo para ${selectedAge.people} de ${selectedAge.alias} que tiene un problema concreto que hay que corregir:
+
+  - ${reasons}
+
+  Texto actual de la escena:
+  """
+  ${text}
+  """
+
+  Personajes de la historia (deben seguir apareciendo exactamente igual: mismo nombre y mismo género gramatical que ya tenían): ${characterNames.join(', ') || '(sin personajes con nombre propio en esta escena)'}.
+
+  Reescribe el texto COMPLETO de la escena corrigiendo SOLO el/los problema(s) indicado(s) arriba. Esto es una corrección puntual, no una reescritura creativa: mantén exactamente los mismos hechos, personajes, objetos, el contenido de los diálogos y la estructura narrativa del texto original, sin añadir ni eliminar ningún acontecimiento. Usa el mismo formato HTML (<p>, <strong>, <em>...) que el original. Escribe todo en español.`
+}
+
 function generateImagePrompt({ age, sceneText, characters }: { age: string, sceneText: string, characters: { name: string, description: string }[] }) {
   const styles = IMAGE_STYLES[age] ?? IMAGE_STYLES["9-12"];
   const style = styles[Math.floor(Math.random() * styles.length)];
@@ -122,4 +151,4 @@ function generateImagePrompt({ age, sceneText, characters }: { age: string, scen
   return `${style}. Evita añadir texto en la imagen. Escena: ${truncateString(plainSceneText, 900)}. Personajes: ${charactersText}.`;
 }
 
-export { generateBlueprintPrompt, generateSceneContentPrompt, generateImagePrompt };
+export { generateBlueprintPrompt, generateSceneContentPrompt, generateRepairPrompt, generateImagePrompt };
