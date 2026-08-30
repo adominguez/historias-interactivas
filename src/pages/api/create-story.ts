@@ -414,4 +414,4 @@ export async function GET(request: Request) {
   }
 }
 
-export { regenerateStory };
+export { regenerateStory, generateImage, uploadImage };
