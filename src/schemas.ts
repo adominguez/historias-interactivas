@@ -92,12 +92,22 @@ const blueprintSchema = z.object({
 // Pass 2 (contenido): el texto completo de una única escena, generado ya con
 // el esqueleto validado y el historial de resúmenes de su camino como contexto.
 const sceneContentSchema = z.object({
-  text: z.string().describe("Texto en formato HTML, usar etiquetas como <p>, <strong>, <em>... Todo lo que se necesite"),
+  // Mínimo defensivo: sin él, un texto vacío ("") pasa la validación de
+  // estructura sin problema y el nodo se persiste en blanco (ha pasado de
+  // verdad en producción). No garantiza calidad, solo que no esté vacío.
+  text: z.string().min(30).describe("Texto en formato HTML, usar etiquetas como <p>, <strong>, <em>... Todo lo que se necesite"),
   meta: metaSchema, // Metadatos de la escena, necesarios para SEO
 });
 
 const storyContentSchema = sceneContentSchema.extend({
-  resume: z.string().describe("Resumen atractivo del cuento completo, para mostrar en las tarjetas de la biblioteca"),
+  resume: z.string().min(10).describe("Resumen atractivo del cuento completo, para mostrar en las tarjetas de la biblioteca"),
 });
 
-export { blueprintSchema, sceneContentSchema, storyContentSchema };
+// Reparación de una escena ya publicada: solo el texto corregido, sin tocar
+// metadatos SEO ni ningún otro campo (es una corrección puntual, no una
+// regeneración completa).
+const repairedTextSchema = z.object({
+  text: z.string().min(30).describe("Texto en formato HTML, usar etiquetas como <p>, <strong>, <em>... Todo lo que se necesite"),
+});
+
+export { blueprintSchema, sceneContentSchema, storyContentSchema, repairedTextSchema };

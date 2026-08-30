@@ -50,6 +50,15 @@ export const getNodesByParentSlug = async (slug: string) => {
   return result.rows;
 }
 
+export const getNodeBySlugAndParent = async (slug: string, parentSlug: string) => {
+  const result = await turso.execute({
+    sql: "SELECT * FROM nodes WHERE slug = ? AND parent_slug = ?;",
+    args: [slug, parentSlug],
+  });
+
+  return result.rows;
+}
+
 export const getTotalNodes = async () => {
   const result = await turso.execute({
     sql: `
@@ -361,6 +370,17 @@ export const updateStoryText = async (id: number, text: string) => {
     sql: `
       UPDATE stories
       SET text = ?, updated_at = CURRENT_TIMESTAMP
+      WHERE id = ?;
+    `,
+    args: [text, id],
+  });
+}
+
+export const updateNodeText = async (id: number, text: string) => {
+  await turso.execute({
+    sql: `
+      UPDATE nodes
+      SET text = ?
       WHERE id = ?;
     `,
     args: [text, id],

@@ -21,6 +21,7 @@ function generateBlueprintPrompt({ scenario, characterOptions, category, age }: 
      - ¡Muy importante! Sé original: evita que la única mecánica de decisión sea "un cruce con dos caminos físicos". Varía el tipo de decisión entre nodos: puede ser una elección dentro de un diálogo, un dilema moral (a quién ayudar, qué sacrificar), cómo repartir una tarea entre los personajes, a quién creer, o cuándo actuar y cuándo esperar.
      - Puede darse el caso de que los personajes se encuentren con personajes secundarios que también deben tener nombre, pero no deben ser el foco principal de la historia. Si le das un nombre propio a un personaje secundario, usa siempre ESE mismo nombre para referirte a él en el resto del cuento; no le añadas después un apodo o título distinto (por ejemplo, no lo llames "Nimbo" en un resumen y "el Zorro Sabio" en otro, como si fueran cosas distintas).
      - Cada personaje debe tener un género gramatical fijo: femenino o masculino (el español no tiene una forma neutra real para sustantivos como "robot" o "dragón" — si un personaje no tiene género definido en tu cabeza, elige uno de los dos igualmente, no intentes dejarlo ambiguo, porque eso es lo que provoca que el texto alterne sin control entre "el" y "la"). Indícalo explícitamente en su descripción (por ejemplo: "es un dragón, refiérete a él siempre en masculino" o "es una dragona, refiérete a ella siempre en femenino"). Si el nombre del personaje incluye un adjetivo con género (por ejemplo "galáctico"/"galáctica", "misterioso"/"misteriosa"), ese adjetivo debe concordar con el género elegido y escribirse SIEMPRE de esa misma forma, nunca de la otra.
+     - Cuidado especial con sustantivos que cambian de significado según su género gramatical (por ejemplo "cometa": "la cometa" es el juguete de papel, "el cometa" es el objeto astronómico). Si usas una de estas palabras, dilo de forma explícita y sin contradicción en la descripción del personaje (por ejemplo "es el cometa, el objeto astronómico masculino, no la cometa de juguete") para no confundir dos personajes distintos en una sola palabra.
      - Todo objeto, misterio o pista importante que introduzcas en el resumen de un nodo debe tener consecuencia más adelante en ESE MISMO camino: o bien se usa, se explica o se resuelve en un nodo posterior, o bien no lo introduzcas. No llenes la historia de elementos "de atrezo" que se mencionan una vez y luego desaparecen sin más: tú planificas el cuento entero de una vez, así que puedes asegurarte de que todo lo que plantas se cosecha.
      - La trama debe incluir decisiones importantes que lleven a diferentes caminos y nodos finales.
      - El cuento debe tener un mínimo de 3 nodos y un máximo de 8.
@@ -67,7 +68,7 @@ function generateSceneContentPrompt({ age, history, summary, isEnding, character
   - Escribe ${selectedAge.words}, con un lenguaje adecuado para ${selectedAge.people} de ${selectedAge.alias}.
   - Escribe todo el texto en español, sin mezclar ninguna palabra ni expresión en otro idioma.
   - NO uses markdown, utiliza las etiquetas HTML <p>, <strong>, <em>... que hagan falta.
-  - Los diálogos deben ir siempre integrados en la narración, introducidos con raya (—). NUNCA uses comillas para marcar un diálogo, y NUNCA uses formato de guion de teatro o cine (nada de "Nombre: texto"). Usa SIEMPRE este único patrón, exactamente una vez por línea de diálogo: "—Texto del diálogo —dijo el personaje." (el diálogo primero, entre rayas; la atribución "dijo/preguntó/respondió + personaje" después, una sola vez). NUNCA repitas la atribución dos veces en la misma línea (nada de "—Texto —dijo Personaje. —dijo él." ni "—Personaje dijo que X—, comentó Personaje2").
+  - Los diálogos deben ir siempre integrados en la narración, introducidos con raya (—). NUNCA uses comillas para marcar un diálogo, y NUNCA uses formato de guion de teatro o cine (nombre seguido de dos puntos). Cada línea de diálogo lleva su raya, y quién habla se indica UNA sola vez por línea (puede ir antes o después del diálogo, como prefieras, pero nunca las dos veces a la vez ni repetida al final). Antes de dar una línea de diálogo por terminada, comprueba mentalmente que no has mencionado quién habla dos veces.
   - Usa solo palabras reales del español; si dudas de si una palabra existe, usa una más sencilla y común en su lugar.
   - Prioriza SIEMPRE la claridad sobre el adorno poético. Evita metáforas o personificaciones vacías que no signifiquen nada concreto, del tipo "la hierba canta con la brisa", "el camino se siente claro", "una voz hecha de viento y campanillas" o "el Arco se inclina ante la paciencia". Si una frase suena bonita pero no podrías explicar con palabras sencillas qué significa o qué aporta a la historia, no la escribas: cuenta lo mismo de forma directa y concreta.
   - Cuando un personaje hable, sus palabras deben decir algo claro y accionable (una idea, una pista, una decisión), nunca una frase ambigua tipo acertijo poético que no se entiende.
@@ -112,6 +113,35 @@ const IMAGE_STYLES: Record<string, string[]> = {
   ],
 };
 
+// Reparación puntual de una escena ya publicada que ha sido detectada con un
+// problema de contenido concreto (diálogo con formato de guion y/o palabras
+// inválidas). A diferencia de generateSceneContentPrompt, aquí NO se genera
+// contenido nuevo: se le da al modelo el texto original completo y se le
+// pide que lo reescriba corrigiendo solo lo señalado, preservando hechos,
+// personajes y estructura, para minimizar el riesgo de introducir una
+// inconsistencia nueva en un cuento que ya está publicado.
+function generateRepairPrompt({ age, text, characterNames, issues }: { age: string, text: string, characterNames: string[], issues: { invalidWords: string[], isScreenplayStyle: boolean } }) {
+  const selectedAge = AGES[age as keyof typeof AGES] || AGES["9-12"];
+
+  const reasons = [
+    issues.isScreenplayStyle && 'El diálogo está escrito con formato de guion de teatro/cine (el nombre de un personaje seguido directamente de ":" o "—"). Reescribe cada línea de diálogo integrada en la narración, introducida con raya (—), indicando quién habla UNA sola vez por línea (antes o después del diálogo, nunca las dos veces a la vez ni repetido al final).',
+    issues.invalidWords.length > 0 && `Contiene palabras que no existen en español o están en otro idioma: ${issues.invalidWords.join(', ')}. Sustitúyelas por palabras reales y sencillas en español que tengan sentido en ese punto de la frase.`,
+  ].filter(Boolean).join('\n  - ');
+
+  return `Esta es una escena ya publicada de ${selectedAge.type} interactivo para ${selectedAge.people} de ${selectedAge.alias} que tiene un problema concreto que hay que corregir:
+
+  - ${reasons}
+
+  Texto actual de la escena:
+  """
+  ${text}
+  """
+
+  Personajes de la historia (deben seguir apareciendo exactamente igual: mismo nombre y mismo género gramatical que ya tenían): ${characterNames.join(', ') || '(sin personajes con nombre propio en esta escena)'}.
+
+  Reescribe el texto COMPLETO de la escena corrigiendo SOLO el/los problema(s) indicado(s) arriba. Esto es una corrección puntual, no una reescritura creativa: mantén exactamente los mismos hechos, personajes, objetos, el contenido de los diálogos y la estructura narrativa del texto original, sin añadir ni eliminar ningún acontecimiento. Usa el mismo formato HTML (<p>, <strong>, <em>...) que el original. Escribe todo en español.`
+}
+
 function generateImagePrompt({ age, sceneText, characters }: { age: string, sceneText: string, characters: { name: string, description: string }[] }) {
   const styles = IMAGE_STYLES[age] ?? IMAGE_STYLES["9-12"];
   const style = styles[Math.floor(Math.random() * styles.length)];
@@ -121,4 +151,4 @@ function generateImagePrompt({ age, sceneText, characters }: { age: string, scen
   return `${style}. Evita añadir texto en la imagen. Escena: ${truncateString(plainSceneText, 900)}. Personajes: ${charactersText}.`;
 }
 
-export { generateBlueprintPrompt, generateSceneContentPrompt, generateImagePrompt };
+export { generateBlueprintPrompt, generateSceneContentPrompt, generateRepairPrompt, generateImagePrompt };
