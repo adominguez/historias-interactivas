@@ -181,17 +181,26 @@ const createStory = async ({ scenario, characterOptions, category, age }: { scen
   }
 
   console.log('Generando el texto completo de cada escena...');
-  const [storyContent, ...nodeContents] = await Promise.all([
-    generateSceneContent({ age, history: [], summary: storyBlueprint.summary, isEnding: false, isRoot: true, characters: storyBlueprint.characters }),
-    ...nodeBlueprints.map(node => generateSceneContent({
-      age,
-      history: historyBySlug.get(node.slug) ?? [],
-      summary: node.summary,
-      isEnding: node.options.length === 0,
-      isRoot: false,
-      characters: storyBlueprint.characters,
-    })),
-  ]);
+  let storyContent, nodeContents;
+  try {
+    [storyContent, ...nodeContents] = await Promise.all([
+      generateSceneContent({ age, history: [], summary: storyBlueprint.summary, isEnding: false, isRoot: true, characters: storyBlueprint.characters }),
+      ...nodeBlueprints.map(node => generateSceneContent({
+        age,
+        history: historyBySlug.get(node.slug) ?? [],
+        summary: node.summary,
+        isEnding: node.options.length === 0,
+        isRoot: false,
+        characters: storyBlueprint.characters,
+      })),
+    ]);
+  } catch (error) {
+    // Por ejemplo, sceneContentSchema rechazando un texto vacío o
+    // demasiado corto para alguna escena: mejor fallar aquí que persistir
+    // un nodo en blanco (ha llegado a pasar en producción).
+    console.error('Fallo generando el contenido de una escena:', error);
+    return { status: 400, error: { message: "No se ha podido generar el texto completo de todas las escenas" } };
+  }
   console.log('Texto de todas las escenas generado!!');
 
   const story = {
