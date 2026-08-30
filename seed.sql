@@ -38,6 +38,9 @@ CREATE TABLE nodes (
     FOREIGN KEY (story_id) REFERENCES stories (id)
 );
 
+CREATE INDEX idx_nodes_story_id ON nodes (story_id);
+CREATE INDEX idx_nodes_parent_slug_slug ON nodes (parent_slug, slug);
+
 CREATE TABLE categories (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     slug TEXT UNIQUE,
