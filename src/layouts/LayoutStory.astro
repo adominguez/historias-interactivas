@@ -12,6 +12,7 @@ import DownloadImageButton from '@components/DownloadImageButton';
 import Rating from '@components/Rating';
 import { getCldOgImageUrl } from 'astro-cloudinary/helpers';
 import { PUBLIC_CLOUDINARY_CLOUD_NAME } from "astro:env/server";
+import { AGES } from '@src/utils/characters';
 
 interface Props {
 	title: string;
@@ -31,9 +32,12 @@ interface Props {
   };
   created: string;
   modified?: string;
+  age?: string;
 }
 
-const { description, transition = 'fade', title, slug, options = [], optionSlug, backUrl, relatedStories, ratingCount, rating, ratingSlug, category, created, modified = created } = Astro.props;
+const { description, transition = 'fade', title, slug, options = [], optionSlug, backUrl, relatedStories, ratingCount, rating, ratingSlug, category, created, modified = created, age } = Astro.props;
+
+const selectedAge = age ? AGES[age] : undefined;
 
 const imageUrl = `https://res.cloudinary.com/${PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload/v1737579916/cuentos-interactivos/${slug}/${slug}`;
 
@@ -131,6 +135,16 @@ const breadcrumb = !backUrl ? [{
           )
         }
         <div class="mb-8">
+          <div class="flex flex-wrap items-center gap-2 mb-2 text-sm">
+            <a href={`/cuentos/${category.slug}`} class="uppercase tracking-wide text-gray-500 hover:text-primary font-medium">{category.title}</a>
+            {
+              selectedAge && (
+                <span class:list={['inline-block px-2 py-0.5 rounded-full text-white text-xs font-semibold', selectedAge.color]}>
+                  {selectedAge.alias}
+                </span>
+              )
+            }
+          </div>
           <h1 class="leading-tight text-balance">{title}</h1>
           <Rating
             totalStars={5}
