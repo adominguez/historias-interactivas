@@ -47,14 +47,18 @@ export const getCategories = async () => {
   return result.rows;
 }
 
-const stories = await getStoriesList();
-const nodes = await getTotalNodes();
-const categories = await getCategories();
-const customStories = stories.map(({ slug }) => `https://elarboldelashistorias.com/${slug}`);
-const customNodes = nodes.map(({ slug, parent_slug }) => `https://elarboldelashistorias.com/${parent_slug}/${slug}`);
-const customCategories = categories.map(({ slug }) => `https://elarboldelashistorias.com/cuentos/${slug}`);
-
-const customPages = [...customStories, ...customNodes, ...customCategories];
+let customPages: string[] = [];
+try {
+  const stories = await getStoriesList();
+  const nodes = await getTotalNodes();
+  const categories = await getCategories();
+  const customStories = stories.map(({ slug }) => `https://elarboldelashistorias.com/${slug}`);
+  const customNodes = nodes.map(({ slug, parent_slug }) => `https://elarboldelashistorias.com/${parent_slug}/${slug}`);
+  const customCategories = categories.map(({ slug }) => `https://elarboldelashistorias.com/cuentos/${slug}`);
+  customPages = [...customStories, ...customNodes, ...customCategories];
+} catch (error) {
+  console.warn("No se pudieron cargar las páginas dinámicas para el sitemap desde Turso, se omitirán en este build:", error);
+}
 
 // https://astro.build/config
 export default defineConfig({
