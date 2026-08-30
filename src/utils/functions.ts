@@ -128,8 +128,19 @@ function resolveBlueprint(story: RawStoryBlueprint, nodes: RawNodeBlueprint[]) {
   const order: number[] = [];
   const visited = new Set<number>();
 
+  const reachedBy = new Map<number, Set<"story" | number>>();
+
   const enqueue = (fromId: "story" | number, fromHistory: string[], options: RawIndexOption[]) => {
     options.forEach(option => {
+      // Un bucle sobre sí mismo (fromId === option.next) ya se rechaza aparte
+      // más abajo; no debe contar como una "fuente" extra para la comprobación
+      // de convergencia.
+      if (fromId === option.next) return;
+
+      const sources = reachedBy.get(option.next) ?? new Set();
+      sources.add(fromId);
+      reachedBy.set(option.next, sources);
+
       if (visited.has(option.next)) return;
       visited.add(option.next);
       parentOf.set(option.next, fromId);
@@ -150,6 +161,19 @@ function resolveBlueprint(story: RawStoryBlueprint, nodes: RawNodeBlueprint[]) {
   }
   if (!order.some(index => nodes[index].options.length === 0)) {
     return { ok: false as const, errors: [{ type: "no-ending" }] };
+  }
+
+  // Convergencia: si dos nodos distintos llevan al mismo nodo, ese nodo
+  // tendría dos historiales de continuidad diferentes según por dónde se
+  // llegue (p. ej. un objeto mencionado en un camino pero no en el otro), y
+  // su texto solo puede escribirse pensando en uno de los dos. Todo nuestro
+  // modelo (back_slug, historial de resúmenes) asume que cada nodo tiene un
+  // único camino de llegada, así que un cuento con convergencia real se
+  // rechaza y se reintenta en vez de generar un final que no encaje con
+  // alguno de los caminos que llevan a él.
+  const convergentNode = order.find(index => (reachedBy.get(index)?.size ?? 0) > 1);
+  if (convergentNode !== undefined) {
+    return { ok: false as const, errors: [{ type: "convergent-node", node: convergentNode }] };
   }
 
   // Decisiones de mentira: varias opciones que llevan todas al mismo nodo no

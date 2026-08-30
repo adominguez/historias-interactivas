@@ -164,6 +164,21 @@ describe('resolveBlueprint', () => {
     if (result.ok) return;
     expect(result.errors[0].type).toBe('self-loop');
   });
+
+  it('rechaza que varios caminos distintos confluyan en el mismo nodo', () => {
+    const result = resolveBlueprint(
+      { ...baseStory, title: 'Cuento', summary: 's', options: [{ text: 'A', next: 0 }, { text: 'B', next: 1 }, { text: 'C', next: 2 }] },
+      [
+        { title: 'Camino A', summary: 'a', options: [{ text: 'Ir', next: 3 }] },
+        { title: 'Camino B', summary: 'b', options: [{ text: 'Ir', next: 3 }] },
+        { title: 'Camino C', summary: 'c', options: [{ text: 'Ir', next: 3 }] },
+        { title: 'Final único', summary: 'f', options: [] },
+      ]
+    );
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.errors[0].type).toBe('convergent-node');
+  });
 });
 
 describe('truncateString', () => {
