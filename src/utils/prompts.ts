@@ -13,6 +13,7 @@ function generateBlueprintPrompt({ scenario, characterOptions, category, age }: 
   return `Diseña el ESQUELETO de ${selectedAge.type} interactivo para ${selectedAge.people} de ${selectedAge.alias}. Todavía NO escribas el texto final de cada escena, solo su estructura y un resumen de lo que ocurre en cada una.
 
   1. **Estructura:**
+     - Escribe todo (títulos, resúmenes y textos de las opciones) en español, sin mezclar ninguna palabra ni expresión en otro idioma.
      - Estos son los personajes disponibles para este tipo de historia: ${formattedOptions}. Elige entre 2 y 3 que formen un elenco con sentido temático entre sí (el mismo tipo de mundo y de tono) y que encajen con el escenario propuesto. NO mezcles personajes de mundos claramente incompatibles solo porque ambos estaban en la lista (por ejemplo, evita juntar un ser espacial de ciencia ficción con un animal de un bosque mágico sin ninguna explicación). Si ves que ninguna combinación encaja bien, puedes ajustar ligeramente la descripción de alguno para que sí encaje.
      - El escenario del cuento es '${scenario}'.
      - La categoría del cuento es '${category}'.
@@ -66,7 +67,7 @@ function generateSceneContentPrompt({ age, history, summary, isEnding, character
   - Escribe ${selectedAge.words}, con un lenguaje adecuado para ${selectedAge.people} de ${selectedAge.alias}.
   - Escribe todo el texto en español, sin mezclar ninguna palabra ni expresión en otro idioma.
   - NO uses markdown, utiliza las etiquetas HTML <p>, <strong>, <em>... que hagan falta.
-  - Los diálogos deben ir siempre integrados en la narración, introducidos con raya (—). NUNCA uses comillas para marcar un diálogo, y NUNCA uses formato de guion de teatro o cine (nada de "Nombre: texto"). La única forma válida de escribir un diálogo es con raya.
+  - Los diálogos deben ir siempre integrados en la narración, introducidos con raya (—). NUNCA uses comillas para marcar un diálogo, y NUNCA uses formato de guion de teatro o cine (nada de "Nombre: texto"). Usa SIEMPRE este único patrón, exactamente una vez por línea de diálogo: "—Texto del diálogo —dijo el personaje." (el diálogo primero, entre rayas; la atribución "dijo/preguntó/respondió + personaje" después, una sola vez). NUNCA repitas la atribución dos veces en la misma línea (nada de "—Texto —dijo Personaje. —dijo él." ni "—Personaje dijo que X—, comentó Personaje2").
   - Usa solo palabras reales del español; si dudas de si una palabra existe, usa una más sencilla y común en su lugar.
   - Prioriza SIEMPRE la claridad sobre el adorno poético. Evita metáforas o personificaciones vacías que no signifiquen nada concreto, del tipo "la hierba canta con la brisa", "el camino se siente claro", "una voz hecha de viento y campanillas" o "el Arco se inclina ante la paciencia". Si una frase suena bonita pero no podrías explicar con palabras sencillas qué significa o qué aporta a la historia, no la escribas: cuenta lo mismo de forma directa y concreta.
   - Cuando un personaje hable, sus palabras deben decir algo claro y accionable (una idea, una pista, una decisión), nunca una frase ambigua tipo acertijo poético que no se entiende.

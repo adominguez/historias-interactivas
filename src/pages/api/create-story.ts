@@ -114,7 +114,13 @@ const generateSceneContent = async ({ age, history, summary, isEnding, isRoot, c
   return result.object;
 };
 
-const MAX_BLUEPRINT_ATTEMPTS = 3;
+// El esqueleto es la única pasada que se reintenta y es barata (nada de
+// texto completo ni imagen todavía). Hemos ido añadiendo más motivos
+// legítimos de rechazo (decisión de mentira, bucles, convergencia...), lo
+// que ha bajado la probabilidad de que un intento cualquiera pase todas las
+// comprobaciones a la vez; subimos el límite para compensarlo en vez de
+// relajar las propias comprobaciones.
+const MAX_BLUEPRINT_ATTEMPTS = 6;
 
 const createStory = async ({ scenario, characterOptions, category, age }: { scenario: string, characterOptions: string[], category: string, age: string }) => {
   // El esqueleto ya no puede tener enlaces rotos, slugs duplicados ni nodos
