@@ -1,0 +1,28 @@
+---
+import BaseHead from '@components/BaseHead.astro';
+import RegenerateStoryGrid from '@components/RegenerateStoryGrid';
+import { getLittleStoriesList } from '@src/turso';
+import { PUBLIC_CLOUDINARY_CLOUD_NAME } from 'astro:env/server';
+
+export const prerender = false;
+
+const rows = await getLittleStoriesList();
+const stories = rows
+  .map((row) => ({ id: row.id as number, slug: row.slug as string, title: row.title as string, age: row.age as string, imageVersion: row.image_version as number | null }))
+  .sort((a, b) => a.title.localeCompare(b.title, 'es'));
+---
+
+<!doctype html>
+<html lang="es">
+  <head>
+    <BaseHead title="Regenerar cuento (interno)" description="Herramienta interna para sustituir por completo el contenido de un cuento ya publicado." />
+    <meta name="robots" content="noindex" />
+  </head>
+  <body>
+    <main style="max-width: 1100px; margin: 4rem auto; padding: 0 1rem; font-family: system-ui, sans-serif;">
+      <h1>Regenerar cuento completo</h1>
+      <p>Sustituye TODO el contenido de un cuento (título, texto, grafo, personajes) por uno nuevo desde cero, para la misma categoría y edad. Pensado para cuentos con la estructura rota que "Reparar cuentos" no puede arreglar escena a escena. La URL se mantiene si el título nuevo genera el mismo slug; si cambia, queda una redirección automática desde la antigua.</p>
+      <RegenerateStoryGrid stories={stories} cloudName={PUBLIC_CLOUDINARY_CLOUD_NAME} client:load />
+    </main>
+  </body>
+</html>

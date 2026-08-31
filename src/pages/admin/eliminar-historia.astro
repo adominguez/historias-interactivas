@@ -1,0 +1,28 @@
+---
+import BaseHead from '@components/BaseHead.astro';
+import DeleteStoryGrid from '@components/DeleteStoryGrid';
+import { getLittleStoriesList } from '@src/turso';
+import { PUBLIC_CLOUDINARY_CLOUD_NAME } from 'astro:env/server';
+
+export const prerender = false;
+
+const rows = await getLittleStoriesList();
+const stories = rows
+  .map((row) => ({ id: row.id as number, slug: row.slug as string, title: row.title as string, age: row.age as string, imageVersion: row.image_version as number | null }))
+  .sort((a, b) => a.title.localeCompare(b.title, 'es'));
+---
+
+<!doctype html>
+<html lang="es">
+  <head>
+    <BaseHead title="Eliminar cuento (interno)" description="Herramienta interna para borrar un cuento ya publicado." />
+    <meta name="robots" content="noindex" />
+  </head>
+  <body>
+    <main style="max-width: 1100px; margin: 4rem auto; padding: 0 1rem; font-family: system-ui, sans-serif;">
+      <h1>Eliminar cuento</h1>
+      <p>Borra un cuento, todos sus nodos y su imagen de Cloudinary. <strong>Esta acción no se puede deshacer.</strong> Antes de eliminar por una URL ya indexada, considera si "Regenerar cuento completo" no es una opción mejor (mantiene o redirige la URL).</p>
+      <DeleteStoryGrid stories={stories} cloudName={PUBLIC_CLOUDINARY_CLOUD_NAME} client:load />
+    </main>
+  </body>
+</html>

@@ -7,7 +7,7 @@ test.describe('/admin', () => {
     await expect(page.locator('main h1')).toHaveText('Admin');
     await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', 'noindex');
 
-    for (const href of ['/admin/crear-historia', '/admin/editar-historia', '/admin/reparar-cuentos', '/admin/regenerar-imagen']) {
+    for (const href of ['/admin/crear-historia', '/admin/editar-historia', '/admin/reparar-cuentos', '/admin/regenerar-imagen', '/admin/regenerar-historia', '/admin/eliminar-historia']) {
       await expect(page.locator(`a[href="${href}"]`)).toBeVisible();
     }
   });

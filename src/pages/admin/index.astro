@@ -24,18 +24,15 @@ const tools = [
     title: 'Regenerar imágenes',
     description: 'Repasa de un vistazo la portada de todos los cuentos y regenera solo las que no encajen con su edad o categoría.',
   },
-];
-
-const apiOnlyTools = [
   {
-    title: 'Regenerar un cuento entero',
-    detail: '/api/regenerate-story?storySlug=slug-del-cuento',
-    description: 'Sustituye todo el contenido de un cuento (título, grafo, texto, personajes) manteniendo su misma URL — para cuentos con la estructura rota que "Reparar cuentos" no puede arreglar automáticamente.',
+    href: '/admin/regenerar-historia',
+    title: 'Regenerar cuento completo',
+    description: 'Sustituye TODO el contenido de un cuento (título, grafo, texto, personajes) por uno nuevo — para cuentos con la estructura rota que "Reparar cuentos" no puede arreglar solo.',
   },
   {
-    title: 'Eliminar un cuento',
-    detail: '/api/delete-story?url=slug-del-cuento',
-    description: 'Borra un cuento y todos sus nodos de la base de datos, y su imagen de Cloudinary. Irreversible.',
+    href: '/admin/eliminar-historia',
+    title: 'Eliminar cuento',
+    description: 'Borra un cuento, todos sus nodos y su imagen de Cloudinary. Irreversible.',
   },
 ];
 ---
@@ -57,17 +54,6 @@ const apiOnlyTools = [
             <strong>{title}</strong>
             <p style="margin: 0.25rem 0 0; color: #555; font-size: 0.9rem;">{description}</p>
           </a>
-        ))}
-      </div>
-
-      <h2 style="margin-top: 2.5rem;">Solo por URL (sin página propia todavía)</h2>
-      <div style="display: flex; flex-direction: column; gap: 1rem;">
-        {apiOnlyTools.map(({ title, detail, description }) => (
-          <div style="border: 1px dashed #ccc; border-radius: 8px; padding: 1rem;">
-            <strong>{title}</strong>
-            <p style="margin: 0.25rem 0; font-family: monospace; font-size: 0.85rem; color: #333;">{detail}</p>
-            <p style="margin: 0; color: #555; font-size: 0.9rem;">{description}</p>
-          </div>
         ))}
       </div>
     </main>
