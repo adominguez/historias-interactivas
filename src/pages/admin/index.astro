@@ -1,0 +1,75 @@
+---
+import BaseHead from '@components/BaseHead.astro';
+
+export const prerender = false;
+
+const tools = [
+  {
+    href: '/admin/crear-historia',
+    title: 'Crear cuento',
+    description: 'Genera un cuento nuevo desde cero con IA, eligiendo categoría y edad (o al azar).',
+  },
+  {
+    href: '/admin/editar-historia',
+    title: 'Editar cuento',
+    description: 'Busca un cuento ya publicado y corrige a mano el título o el texto de cualquier escena, sin IA.',
+  },
+  {
+    href: '/admin/reparar-cuentos',
+    title: 'Reparar cuentos',
+    description: 'Diagnostica todos los cuentos (enlaces rotos, diálogo mal formateado, palabras inválidas) y repara con IA los problemas de contenido escena por escena.',
+  },
+  {
+    href: '/admin/regenerar-imagen',
+    title: 'Regenerar imágenes',
+    description: 'Repasa de un vistazo la portada de todos los cuentos y regenera solo las que no encajen con su edad o categoría.',
+  },
+];
+
+const apiOnlyTools = [
+  {
+    title: 'Regenerar un cuento entero',
+    detail: '/api/regenerate-story?storySlug=slug-del-cuento',
+    description: 'Sustituye todo el contenido de un cuento (título, grafo, texto, personajes) manteniendo su misma URL — para cuentos con la estructura rota que "Reparar cuentos" no puede arreglar automáticamente.',
+  },
+  {
+    title: 'Eliminar un cuento',
+    detail: '/api/delete-story?url=slug-del-cuento',
+    description: 'Borra un cuento y todos sus nodos de la base de datos, y su imagen de Cloudinary. Irreversible.',
+  },
+];
+---
+
+<!doctype html>
+<html lang="es">
+  <head>
+    <BaseHead title="Admin (interno)" description="Panel interno con las herramientas de administración del sitio." />
+    <meta name="robots" content="noindex" />
+  </head>
+  <body>
+    <main style="max-width: 720px; margin: 4rem auto; padding: 0 1rem; font-family: system-ui, sans-serif;">
+      <h1>Admin</h1>
+      <p>Herramientas internas para gestionar el contenido del sitio.</p>
+
+      <div style="display: flex; flex-direction: column; gap: 1rem; margin-top: 1.5rem;">
+        {tools.map(({ href, title, description }) => (
+          <a href={href} style="display: block; border: 1px solid #ddd; border-radius: 8px; padding: 1rem; text-decoration: none; color: inherit;">
+            <strong>{title}</strong>
+            <p style="margin: 0.25rem 0 0; color: #555; font-size: 0.9rem;">{description}</p>
+          </a>
+        ))}
+      </div>
+
+      <h2 style="margin-top: 2.5rem;">Solo por URL (sin página propia todavía)</h2>
+      <div style="display: flex; flex-direction: column; gap: 1rem;">
+        {apiOnlyTools.map(({ title, detail, description }) => (
+          <div style="border: 1px dashed #ccc; border-radius: 8px; padding: 1rem;">
+            <strong>{title}</strong>
+            <p style="margin: 0.25rem 0; font-family: monospace; font-size: 0.85rem; color: #333;">{detail}</p>
+            <p style="margin: 0; color: #555; font-size: 0.9rem;">{description}</p>
+          </div>
+        ))}
+      </div>
+    </main>
+  </body>
+</html>
