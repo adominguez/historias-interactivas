@@ -64,5 +64,6 @@ export interface LittleStory {
   resume: string,
   age: string,
   rating: number,
-  rating_count: number
+  rating_count: number,
+  image_version?: number | null
 }

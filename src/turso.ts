@@ -6,11 +6,11 @@ export const turso = createClient({
   authToken: TURSO_AUTH_TOKEN,
 });
 
-export const insertNewStory = async (storyParams: (string | number)[]) => {
+export const insertNewStory = async (storyParams: (string | number | null)[]) => {
   await turso.execute({
     sql: `
-      INSERT INTO stories (title, slug, resume, text, options, description, keywords, categories, characters, image, age, duration, rating, updated_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP);
+      INSERT INTO stories (title, slug, resume, text, options, description, keywords, categories, characters, image, age, duration, rating, image_version, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP);
     `,
     args: storyParams,
   });
@@ -128,7 +128,7 @@ export const getStoryOrderByDate = async () => {
 
 export const getLittleStoriesList = async () => {
   const result = await turso.execute({
-    sql: 'SELECT id, slug, title, description, created_at, resume, rating, rating_count, age FROM stories;',
+    sql: 'SELECT id, slug, title, description, created_at, resume, rating, rating_count, age, image_version FROM stories;',
     args: [],
   });
   return result.rows;
@@ -223,7 +223,8 @@ export const getStoriesByCategory = async (category: string) => {
       s.resume,
       s.age,
       s.rating,
-      s.rating_count
+      s.rating_count,
+      s.image_version
     FROM
       stories s,
       json_each(json(s.categories)) c
@@ -258,7 +259,8 @@ export const getStoriesByAge = async (ages: string | string[]) => {
       s.resume,
       s.age,
       s.rating,
-      s.rating_count
+      s.rating_count,
+      s.image_version
     FROM
       stories s
     WHERE
@@ -387,11 +389,12 @@ export const updateStory = async (id: number, fields: {
   characters: string;
   age: string;
   duration: string;
+  imageVersion: number | null;
 }) => {
   await turso.execute({
     sql: `
       UPDATE stories
-      SET title = ?, resume = ?, text = ?, options = ?, description = ?, keywords = ?, categories = ?, characters = ?, age = ?, duration = ?, updated_at = CURRENT_TIMESTAMP
+      SET title = ?, resume = ?, text = ?, options = ?, description = ?, keywords = ?, categories = ?, characters = ?, age = ?, duration = ?, image_version = ?, updated_at = CURRENT_TIMESTAMP
       WHERE id = ?;
     `,
     args: [
@@ -405,8 +408,20 @@ export const updateStory = async (id: number, fields: {
       fields.characters,
       fields.age,
       fields.duration,
+      fields.imageVersion,
       id,
     ],
+  });
+}
+
+export const updateStoryImageVersion = async (id: number, imageVersion: number | null) => {
+  await turso.execute({
+    sql: `
+      UPDATE stories
+      SET image_version = ?
+      WHERE id = ?;
+    `,
+    args: [imageVersion, id],
   });
 }
 

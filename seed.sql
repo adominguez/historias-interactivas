@@ -21,7 +21,8 @@ CREATE TABLE stories (
     duration TEXT,                                  -- Duración estimada
     rating REAL,                                    -- Calificación media
     rating_count INTEGER DEFAULT 0,                 -- Número de calificaciones
-    updated_at DATETIME                             -- Última edición real (ver updateStoryText en src/turso.ts); se fija desde el código, no con un DEFAULT
+    updated_at DATETIME,                            -- Última edición real (ver updateStoryText en src/turso.ts); se fija desde el código, no con un DEFAULT
+    image_version INTEGER                           -- Versión real de Cloudinary de 'image' (para construir una URL que cambie de verdad al regenerar la imagen); NULL en filas antiguas
 );
 
 CREATE TABLE nodes (

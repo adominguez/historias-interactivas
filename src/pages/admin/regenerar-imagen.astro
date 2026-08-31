@@ -8,7 +8,7 @@ export const prerender = false;
 
 const rows = await getLittleStoriesList();
 const stories = rows
-  .map((row) => ({ slug: row.slug as string, title: row.title as string, age: row.age as string }))
+  .map((row) => ({ slug: row.slug as string, title: row.title as string, age: row.age as string, imageVersion: row.image_version as number | null }))
   .sort((a, b) => a.title.localeCompare(b.title, 'es'));
 ---
 

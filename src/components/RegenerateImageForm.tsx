@@ -4,6 +4,7 @@ interface Story {
   slug: string;
   title: string;
   age: string;
+  imageVersion: number | null;
 }
 
 interface RegenerateImageFormProps {
@@ -19,13 +20,25 @@ const RegenerateImageForm = ({ stories, cloudName }: RegenerateImageFormProps) =
   const [inputValue, setInputValue] = useState('');
   const [status, setStatus] = useState<Status>('idle');
   const [message, setMessage] = useState('');
+  // Se inicializa con la versión ya guardada del cuento elegido, y se
+  // actualiza con la versión real que devuelve la API al regenerar — así la
+  // vista previa siempre usa la versión de Cloudinary correcta (ver
+  // migración 0004), en vez de un truco de caché en el propio navegador.
+  const [displayedVersion, setDisplayedVersion] = useState<number | null>(null);
 
-  const labelToSlug = new Map(stories.map(story => [labelFor(story), story.slug]));
-  const selectedSlug = labelToSlug.get(inputValue);
+  const labelToStory = new Map(stories.map(story => [labelFor(story), story]));
+  const selectedStory = labelToStory.get(inputValue);
+
+  const handleSelect = (value: string) => {
+    setInputValue(value);
+    setStatus('idle');
+    setMessage('');
+    setDisplayedVersion(labelToStory.get(value)?.imageVersion ?? null);
+  };
 
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
-    if (!selectedSlug) {
+    if (!selectedStory) {
       setStatus('error');
       setMessage('Elige un cuento de la lista (empieza a escribir el título para buscar).');
       return;
@@ -35,21 +48,21 @@ const RegenerateImageForm = ({ stories, cloudName }: RegenerateImageFormProps) =
     setMessage('');
 
     try {
-      const response = await fetch(`/api/regenerate-image?storySlug=${encodeURIComponent(selectedSlug)}`);
+      const response = await fetch(`/api/regenerate-image?storySlug=${encodeURIComponent(selectedStory.slug)}`);
       const data = await response.json();
       setStatus(response.ok ? 'success' : 'error');
       setMessage(data.message || data.error || 'Respuesta inesperada de la API');
+      if (response.ok && typeof data.version === 'number') {
+        setDisplayedVersion(data.version);
+      }
     } catch (error) {
       setStatus('error');
       setMessage(`Error de red: ${error}`);
     }
   };
 
-  // Parámetro solo para que el navegador no reutilice su propia caché al
-  // enseñar el resultado aquí mismo; la caché de la CDN de Cloudinary ya se
-  // invalida sola al subir (ver uploadImage en create-story.ts).
-  const previewUrl = selectedSlug
-    ? `https://res.cloudinary.com/${cloudName}/image/upload/cuentos-interactivos/${selectedSlug}/${selectedSlug}?t=${status === 'success' ? Date.now() : 0}`
+  const previewUrl = selectedStory
+    ? `https://res.cloudinary.com/${cloudName}/image/upload/${displayedVersion ? `v${displayedVersion}/` : ''}cuentos-interactivos/${selectedStory.slug}/${selectedStory.slug}`
     : undefined;
 
   return (
@@ -59,7 +72,7 @@ const RegenerateImageForm = ({ stories, cloudName }: RegenerateImageFormProps) =
         <input
           list="stories-datalist"
           value={inputValue}
-          onChange={(event) => { setInputValue(event.target.value); setStatus('idle'); setMessage(''); }}
+          onChange={(event) => handleSelect(event.target.value)}
           placeholder="Escribe para buscar por título..."
           autoComplete="off"
         />
@@ -70,23 +83,22 @@ const RegenerateImageForm = ({ stories, cloudName }: RegenerateImageFormProps) =
         </datalist>
       </label>
 
-      <button type="submit" disabled={status === 'loading' || !selectedSlug}>
+      {previewUrl && (
+        <div>
+          <p>{status === 'success' ? 'Imagen nueva (ya regenerada):' : 'Imagen actual (compruébala antes de decidir si hace falta regenerar):'}</p>
+          <img src={previewUrl} alt="" style={{ maxWidth: '100%', borderRadius: '8px' }} />
+        </div>
+      )}
+
+      <button type="submit" disabled={status === 'loading' || !selectedStory}>
         {status === 'loading' ? 'Regenerando imagen... (puede tardar 1-2 minutos)' : 'Regenerar imagen'}
       </button>
 
       {status === 'error' && <p style={{ color: '#b00020' }}>{message}</p>}
-      {status === 'success' && <p style={{ color: '#1a7a1a' }}>{message}</p>}
-
-      {previewUrl && (
-        <div>
-          <p>{status === 'success' ? 'Imagen nueva:' : 'Imagen actual:'}</p>
-          <img src={previewUrl} alt="" style={{ maxWidth: '100%', borderRadius: '8px' }} />
-          {selectedSlug && (
-            <p>
-              <a href={`/${selectedSlug}`} target="_blank" rel="noreferrer">Ver el cuento →</a>
-            </p>
-          )}
-        </div>
+      {status === 'success' && (
+        <p style={{ color: '#1a7a1a' }}>
+          {message} — <a href={`/${selectedStory?.slug}`} target="_blank" rel="noreferrer">Ver el cuento →</a>
+        </p>
       )}
     </form>
   );

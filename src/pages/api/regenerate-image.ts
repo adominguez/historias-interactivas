@@ -1,14 +1,15 @@
 import { generateImage, uploadImage } from "./create-story";
 import { generateImagePrompt } from "@src/utils/prompts";
-import { getStoryBySlug } from "@src/turso";
+import { getStoryBySlug, updateStoryImageVersion } from "@src/turso";
 
 // Regenera SOLO la imagen de portada de un cuento ya publicado, sin tocar ni
 // el texto ni el grafo. Útil para volver a generar imágenes con un prompt o
 // modelo mejor (ver generateImagePrompt/gpt-image-2) sin pagar de nuevo por
 // blueprint+contenido, que es lo que hace 'regenerate-story'. Sube la nueva
 // imagen al mismo public_id de Cloudinary (derivado del slug), así que
-// sobrescribe la anterior en la misma ruta: la URL de la imagen no cambia y
-// no hace falta tocar la fila de la base de datos.
+// sobrescribe la anterior en la misma ruta: la URL de la imagen no cambia,
+// pero sí actualizamos 'image_version' para que la URL que se sirve al
+// lector sí refleje el cambio (ver migración 0004).
 export async function GET(request: Request) {
   const url = new URL(request.url);
   const storySlug = url.searchParams.get("storySlug") || undefined;
@@ -45,7 +46,7 @@ export async function GET(request: Request) {
     });
   }
 
-  const { isUploaded, error: uploadError } = await uploadImage(imageUrl, storySlug);
+  const { isUploaded, error: uploadError, version } = await uploadImage(imageUrl, storySlug);
 
   if (!isUploaded) {
     return new Response(JSON.stringify({ message: "No se ha podido subir la imagen", error: uploadError }), {
@@ -54,8 +55,10 @@ export async function GET(request: Request) {
     });
   }
 
+  await updateStoryImageVersion(story.id as number, version ?? null);
+
   console.log(`Imagen de "${storySlug}" regenerada correctamente.`);
-  return new Response(JSON.stringify({ message: "Imagen regenerada correctamente", storySlug }), {
+  return new Response(JSON.stringify({ message: "Imagen regenerada correctamente", storySlug, version }), {
     status: 200,
     headers: { "Content-Type": "application/json" },
   });

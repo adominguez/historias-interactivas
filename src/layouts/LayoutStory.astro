@@ -33,13 +33,22 @@ interface Props {
   created: string;
   modified?: string;
   age?: string;
+  imageVersion?: number | null;
 }
 
-const { description, transition = 'fade', title, slug, options = [], optionSlug, backUrl, relatedStories, ratingCount, rating, ratingSlug, category, created, modified = created, age } = Astro.props;
+const { description, transition = 'fade', title, slug, options = [], optionSlug, backUrl, relatedStories, ratingCount, rating, ratingSlug, category, created, modified = created, age, imageVersion } = Astro.props;
 
 const selectedAge = age ? AGES[age] : undefined;
 
-const imageUrl = `https://res.cloudinary.com/${PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload/v1737579916/cuentos-interactivos/${slug}/${slug}`;
+// La versión real de Cloudinary (guardada por historia, ver migración 0004)
+// hace que la URL cambie de verdad cuando se regenera la imagen; antes
+// llevaba un número fijo (v1737579916) igual para las 175 historias, así que
+// la URL nunca reflejaba una imagen nueva por sí sola. Si una historia aún
+// no tiene versión guardada (regenerada antes de la migración), se sirve sin
+// segmento de versión — Cloudinary la sirve igual, solo pierde el
+// cache-busting instantáneo hasta la próxima regeneración.
+const versionSegment = imageVersion ? `v${imageVersion}/` : '';
+const imageUrl = `https://res.cloudinary.com/${PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload/${versionSegment}cuentos-interactivos/${slug}/${slug}`;
 
 const ogImageUrl = getCldOgImageUrl({ src: `cuentos-interactivos/${slug}/${slug}` });
 
@@ -163,7 +172,7 @@ const breadcrumb = !backUrl ? [{
             )
           }
         </div>
-        <DownloadImageButton slug={slug} imageUrl={`https://res.cloudinary.com/dnxab4qma/image/upload/v1737579916/cuentos-interactivos/${slug}/${slug}`} client:visible />
+        <DownloadImageButton slug={slug} imageUrl={imageUrl} client:visible />
         <slot />
         <Options options={options} slug={optionSlug} />
       </section>

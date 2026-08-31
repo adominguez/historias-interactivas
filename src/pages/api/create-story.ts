@@ -29,7 +29,7 @@ const ia = new OpenAI({
 const uploadImage = async (imageUrl: string, slug: string) => {
   console.log('Subiendo imagen a cloudinary...');
   try {
-    await cloudinary.uploader
+    const result = await cloudinary.uploader
       .upload(imageUrl, {
         public_id: slug,
         quality_analysis: true,
@@ -43,7 +43,12 @@ const uploadImage = async (imageUrl: string, slug: string) => {
         invalidate: true,
       });
     console.log('Imagen subida a cloudinary!!');
-    return { isUploaded: true };
+    // 'version' es el número real que cambia con cada subida a este mismo
+    // public_id; se guarda en stories.image_version para poder construir una
+    // URL que cambie de verdad (en vez del número fijo que había antes en
+    // los layouts), sin depender de que la invalidación de la CDN llegue a
+    // tiempo.
+    return { isUploaded: true, version: result.version as number };
   } catch (error) {
     console.log('Error al subir la imagen a cloudinary:', error);
     return { isUploaded: false, error };
@@ -277,6 +282,8 @@ const generateStoryWithContent = async ({ scenario, characterOptions, category, 
     meta: nodeContents[index].meta,
   }));
 
+  let imageVersion: number | undefined;
+
   if (!skipImage) {
     // comenzamos la creación de imágenes con IA
     const imagePrompt = generateImagePrompt({ age, category, sceneText: story.text, characters: story.characters });
@@ -290,21 +297,22 @@ const generateStoryWithContent = async ({ scenario, characterOptions, category, 
     // Subimos la imagen a cloudinary. El public_id se deriva de story.slug, así
     // que si 'targetSlug' viene fijado (regenerar en el mismo sitio), esto
     // sobrescribe la imagen anterior en la misma ruta en vez de crear una
-    // nueva: la URL de la imagen tampoco cambia.
-    const { isUploaded, error: uploadError } = await uploadImage(imageUrl, story.slug);
+    // nueva: la URL de la imagen tampoco cambia, pero su versión sí.
+    const { isUploaded, error: uploadError, version } = await uploadImage(imageUrl, story.slug);
 
     if (!isUploaded) {
       return { status: 400 as const, error: uploadError };
     }
+    imageVersion = version;
   }
 
-  return { status: 200 as const, story, nodes, category, age };
+  return { status: 200 as const, story, nodes, category, age, imageVersion };
 };
 
 const createStory = async (params: { scenario: string, characterOptions: string[], category: string, age: string }) => {
   const result = await generateStoryWithContent(params);
   if (result.status !== 200) return result;
-  const { story, nodes, category, age } = result;
+  const { story, nodes, category, age, imageVersion } = result;
 
   const storyParams = [
     story.title,
@@ -319,7 +327,8 @@ const createStory = async (params: { scenario: string, characterOptions: string[
     `cuentos-interactivos/${story.slug}/${story.slug}`,
     age,
     story.duration || '10-15 minutos',
-    0
+    0,
+    imageVersion ?? null,
   ];
 
   // Guardamos el cuento en la base de datos
@@ -359,7 +368,7 @@ const regenerateStory = async ({ storySlug, scenario, characterOptions, category
 
   const result = await generateStoryWithContent({ scenario, characterOptions, category, age, targetSlug: storySlug, skipImage: true });
   if (result.status !== 200) return result;
-  const { story, nodes } = result;
+  const { story, nodes, imageVersion } = result;
 
   console.log('Sustituyendo el cuento en la base de datos...');
   await updateStory(existing.id as number, {
@@ -373,6 +382,11 @@ const regenerateStory = async ({ storySlug, scenario, characterOptions, category
     characters: JSON.stringify(story.characters),
     age,
     duration: story.duration || '10-15 minutos',
+    // skipImage:true de arriba significa que 'imageVersion' siempre viene
+    // undefined aquí; se deja explícito por si algún día regenerateStory
+    // deja de forzar skipImage, para no perder la versión existente por
+    // accidente.
+    imageVersion: imageVersion ?? (existing.image_version as number | null),
   });
 
   await deleteNodesByStoryId(existing.id as number);
