@@ -34,7 +34,13 @@ const uploadImage = async (imageUrl: string, slug: string) => {
         public_id: slug,
         quality_analysis: true,
         colors: true,
-        folder: `cuentos-interactivos/${slug}`
+        folder: `cuentos-interactivos/${slug}`,
+        // Al reutilizar el mismo public_id (crear un cuento nuevo es la
+        // única vez que es realmente nuevo; regenerar imagen/cuento siempre
+        // sube encima del mismo), sin esto la CDN de Cloudinary sigue
+        // sirviendo la copia vieja en cache un buen rato tras la
+        // sobrescritura, aunque el asset en Cloudinary ya sea el nuevo.
+        invalidate: true,
       });
     console.log('Imagen subida a cloudinary!!');
     return { isUploaded: true };
