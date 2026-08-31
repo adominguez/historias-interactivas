@@ -10,6 +10,11 @@ const rows = await getLittleStoriesList();
 const stories = rows
   .map((row) => ({ slug: row.slug as string, title: row.title as string, age: row.age as string, imageVersion: row.image_version as number | null }))
   .sort((a, b) => a.title.localeCompare(b.title, 'es'));
+
+// Permite abrir el editor ya puesto en una historia (y opcionalmente una
+// escena) concreta, para el enlace "Editar" de la propia página del cuento.
+const initialSlug = Astro.url.searchParams.get('storySlug') || undefined;
+const initialNode = Astro.url.searchParams.get('node') || undefined;
 ---
 
 <!doctype html>
@@ -22,7 +27,7 @@ const stories = rows
     <main style="max-width: 1100px; margin: 4rem auto; padding: 0 1rem; font-family: system-ui, sans-serif;">
       <h1>Editar cuento</h1>
       <p>Elige un cuento de la lista, luego la escena inicial o cualquiera de sus nodos, y corrige el título o el texto a mano. Se guarda directamente, sin IA de por medio.</p>
-      <EditStoryForm stories={stories} cloudName={PUBLIC_CLOUDINARY_CLOUD_NAME} client:load />
+      <EditStoryForm stories={stories} cloudName={PUBLIC_CLOUDINARY_CLOUD_NAME} initialSlug={initialSlug} initialNode={initialNode} client:load />
     </main>
   </body>
 </html>

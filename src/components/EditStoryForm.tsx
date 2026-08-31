@@ -16,6 +16,11 @@ interface NodeContent {
 interface EditStoryFormProps {
   stories: StoryOption[];
   cloudName: string;
+  // Para abrir el editor directamente en una historia (y de paso una
+  // escena concreta) desde el enlace "Editar" que aparece en la propia
+  // página del cuento cuando ya estás logado — ver LayoutStory.astro.
+  initialSlug?: string;
+  initialNode?: string;
 }
 
 type SaveStatus = 'idle' | 'saving' | 'saved' | 'error';
@@ -77,15 +82,19 @@ const EditableSection = ({ storySlug, target, initialTitle, initialText }: { sto
   );
 };
 
-const EditStoryForm = ({ stories, cloudName }: EditStoryFormProps) => {
+const EditStoryForm = ({ stories, cloudName, initialSlug, initialNode }: EditStoryFormProps) => {
   const [filter, setFilter] = useState('');
-  const [selectedSlug, setSelectedSlug] = useState<string | null>(null);
+  const [selectedSlug, setSelectedSlug] = useState<string | null>(initialSlug ?? null);
   const [loadStatus, setLoadStatus] = useState<'idle' | 'loading' | 'error'>('idle');
   const [loadError, setLoadError] = useState('');
   const [storyContent, setStoryContent] = useState<{ title: string; text: string } | null>(null);
   const [nodes, setNodes] = useState<NodeContent[]>([]);
   const [selectedNodeSlug, setSelectedNodeSlug] = useState<string>('__story__');
   const editorRef = useRef<HTMLDivElement>(null);
+  // Solo se aplica el nodo inicial (de la URL) la primera vez que carga esa
+  // historia concreta; a partir de ahí, cambiar de escena es cosa del
+  // desplegable, no de este valor recordado.
+  const pendingInitialNodeRef = useRef(initialNode);
 
   useEffect(() => {
     if (!selectedSlug) return;
@@ -104,6 +113,12 @@ const EditStoryForm = ({ stories, cloudName }: EditStoryFormProps) => {
         setStoryContent(data.story);
         setNodes(data.nodes);
         setLoadStatus('idle');
+
+        const pendingNode = pendingInitialNodeRef.current;
+        pendingInitialNodeRef.current = undefined;
+        if (pendingNode && (data.nodes as NodeContent[]).some((node) => node.slug === pendingNode)) {
+          setSelectedNodeSlug(pendingNode);
+        }
       })
       .catch((error) => {
         setLoadStatus('error');

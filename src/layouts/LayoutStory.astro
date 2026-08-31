@@ -34,9 +34,13 @@ interface Props {
   modified?: string;
   age?: string;
   imageVersion?: number | null;
+  isAdmin?: boolean;
+  currentNodeSlug?: string;
 }
 
-const { description, transition = 'fade', title, slug, options = [], optionSlug, backUrl, relatedStories, ratingCount, rating, ratingSlug, category, created, modified = created, age, imageVersion } = Astro.props;
+const { description, transition = 'fade', title, slug, options = [], optionSlug, backUrl, relatedStories, ratingCount, rating, ratingSlug, category, created, modified = created, age, imageVersion, isAdmin, currentNodeSlug } = Astro.props;
+
+const editHref = `/admin/editar-historia?storySlug=${encodeURIComponent(slug)}${currentNodeSlug ? `&node=${encodeURIComponent(currentNodeSlug)}` : ''}`;
 
 const selectedAge = age ? AGES[age] : undefined;
 
@@ -138,6 +142,13 @@ const breadcrumb = !backUrl ? [{
         loading="eager"
       />
       <Breadcrumb breadcrumb={breadcrumb} />
+      {
+        isAdmin && (
+          <div class="px-4">
+            <a href={editHref} class="inline-block text-sm px-3 py-1 rounded-full bg-gray-800 text-white hover:bg-gray-700">✎ Editar este cuento</a>
+          </div>
+        )
+      }
       <section id="contenido" class="px-4 py-8 pb-20">
         {
           backUrl && (

@@ -3,6 +3,7 @@ import Layout from "@layouts/LayoutStory.astro";
 import { getStoryBySlug, getRelatedStoriesBySlug, getRedirectTargetSlug } from "@src/turso";
 import { type Story } from "@types";
 import { generalCategories } from "@src/data/categories";
+import { isAuthorized } from "@src/utils/auth";
 export const prerender = false;
 
 const { slug } = Astro.params;
@@ -63,8 +64,9 @@ const category = {
 const relatedStories = await getRelatedStoriesBySlug(story.slug);
 
 const title = `${story.title}`;
+const isAdmin = isAuthorized(Astro.request);
 ---
 
-<Layout title={title} description={story.description} slug={story.slug} options={story.options} optionSlug={story.slug} relatedStories={relatedStories} rating={story.rating} ratingCount={story.ratingCount} ratingSlug={story.slug} category={category} created={date} modified={modifiedDate} age={story.age} imageVersion={storyData.image_version}>
+<Layout title={title} description={story.description} slug={story.slug} options={story.options} optionSlug={story.slug} relatedStories={relatedStories} rating={story.rating} ratingCount={story.ratingCount} ratingSlug={story.slug} category={category} created={date} modified={modifiedDate} age={story.age} imageVersion={storyData.image_version} isAdmin={isAdmin}>
   <div set:html={story.text} />
 </Layout>
