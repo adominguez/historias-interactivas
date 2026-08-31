@@ -77,3 +77,21 @@ CREATE TABLE slug_redirects (
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (story_id) REFERENCES stories (id)
 );
+
+-- El grafo real del cuento (ver migrations/0006_add_edges_table.sql):
+-- reemplaza el JSON en stories.options/nodes.options con filas de verdad y
+-- claves foráneas que SQLite/Turso sí comprueba. from_node_id es NULL para
+-- las opciones iniciales del propio cuento (la raíz no es una fila de
+-- 'nodes'). 'position' conserva el orden de las opciones.
+CREATE TABLE edges (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    story_id INTEGER NOT NULL,
+    from_node_id INTEGER,
+    to_node_id INTEGER NOT NULL,
+    text TEXT NOT NULL,
+    position INTEGER NOT NULL,
+    FOREIGN KEY (story_id) REFERENCES stories (id),
+    FOREIGN KEY (from_node_id) REFERENCES nodes (id),
+    FOREIGN KEY (to_node_id) REFERENCES nodes (id)
+);
+CREATE INDEX idx_edges_from ON edges (story_id, from_node_id);

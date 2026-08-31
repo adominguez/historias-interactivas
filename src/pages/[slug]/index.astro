@@ -1,7 +1,7 @@
 ---
 import Layout from "@layouts/LayoutStory.astro";
 import InlineEditableContent from "@components/InlineEditableContent";
-import { getStoryBySlug, getRelatedStoriesBySlug, getRedirectTargetSlug } from "@src/turso";
+import { getStoryBySlug, getRelatedStoriesBySlug, getRedirectTargetSlug, getStoryOptions } from "@src/turso";
 import { type Story } from "@types";
 import { generalCategories } from "@src/data/categories";
 import { isAuthorized } from "@src/utils/auth";
@@ -39,11 +39,13 @@ if (!storyData) {
   });
 }
 
+const storyOptions = await getStoryOptions(storyData.id);
+
 const story = {
   id: storyData.id,
   slug: storyData.slug,
   text: storyData.text,
-  options: JSON.parse(storyData.options),
+  options: storyOptions,
   title: storyData.title,
   description: storyData.description,
   rating: storyData.rating,

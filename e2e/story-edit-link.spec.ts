@@ -1,5 +1,14 @@
 import { test, expect } from '@playwright/test';
 
+// No fijamos un slug de historia a mano: los admins de esta suite regeneran
+// contenido real y pueden cambiarle el slug a cualquier cuento (ver
+// slug_redirects). Cogemos el primero que la portada enlace en cada momento.
+const getFirstStorySlug = async (page: import('@playwright/test').Page) => {
+  await page.goto('/');
+  const href = await page.locator('a[href^="/"]:not([href^="/cuentos"]):not([href="/"]):not([href="/sobre-mi"])').first().getAttribute('href');
+  return (href ?? '').replace(/^\//, '');
+};
+
 // El enlace "Editar este cuento" en la propia página del cuento solo debe
 // verse si el visitante ya está logado como admin (ver isAuthorized en
 // src/utils/auth.ts, usado también por LayoutStory.astro).
@@ -7,7 +16,8 @@ test.describe('Enlace de edición en la página del cuento', () => {
   test.use({ httpCredentials: undefined });
 
   test('no aparece para un visitante sin autenticar', async ({ page }) => {
-    await page.goto('/lago-brillante');
+    const slug = await getFirstStorySlug(page);
+    await page.goto(`/${slug}`);
     await expect(page.getByRole('link', { name: /Editar este cuento/ })).toHaveCount(0);
   });
 });
@@ -22,9 +32,10 @@ test.describe('Enlace de edición en la página del cuento (logado)', () => {
     // 401 primero, así que hay que "activar" esa caché visitando antes una
     // página de admin.
     await page.goto('/admin');
-    await page.goto('/lago-brillante');
+    const slug = await getFirstStorySlug(page);
+    await page.goto(`/${slug}`);
     const editLink = page.getByRole('link', { name: /Editar este cuento/ });
     await expect(editLink).toBeVisible();
-    await expect(editLink).toHaveAttribute('href', '/admin/editar-historia?storySlug=lago-brillante');
+    await expect(editLink).toHaveAttribute('href', `/admin/editar-historia?storySlug=${slug}`);
   });
 });

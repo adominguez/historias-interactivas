@@ -2,7 +2,7 @@
 import Layout from "@layouts/LayoutStory.astro";
 import InlineEditableContent from "@components/InlineEditableContent";
 import { turso } from "@src/turso";
-import { getRelatedStoriesBySlug, getRatingStoryBySlug, getStoryBySlug, getRedirectTargetSlug } from "@src/turso";
+import { getRelatedStoriesBySlug, getRatingStoryBySlug, getStoryBySlug, getRedirectTargetSlug, getStoryOptions, getNodeOptions } from "@src/turso";
 import { type Node, type Story } from "@types";
 import { generalCategories } from "@src/data/categories";
 import { isAuthorized } from "@src/utils/auth";
@@ -50,7 +50,7 @@ const node = {
   id: nodeData.id,
   slug: nodeData.slug,
   text: nodeData.text,
-  options: JSON.parse(nodeData.options),
+  options: await getNodeOptions(nodeData.id),
   title: nodeData.title,
   description: nodeData.description,
   parentSlug: nodeData.parent_slug,
@@ -65,7 +65,7 @@ const story = {
   id: storyData.id,
   slug: storyData.slug,
   text: storyData.text,
-  options: JSON.parse(storyData.options),
+  options: await getStoryOptions(storyData.id),
   title: storyData.title,
   description: storyData.description,
   rating: storyData.rating,

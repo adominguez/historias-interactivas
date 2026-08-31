@@ -7,36 +7,109 @@ export const turso = createClient({
 });
 
 export const insertNewStory = async (storyParams: (string | number | null)[]) => {
-  await turso.execute({
+  // RETURNING en vez de una consulta separada a last_insert_rowid(): así el
+  // id viene garantizado de la MISMA sentencia que hizo el insert, sin
+  // depender de que una consulta aparte se resuelva en la misma sesión (con
+  // el transporte HTTP de Turso, eso no está garantizado).
+  const result = await turso.execute({
     sql: `
       INSERT INTO stories (title, slug, resume, text, options, description, keywords, categories, characters, image, age, duration, rating, image_version, updated_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP);
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+      RETURNING id;
     `,
     args: storyParams,
   });
 
-  // Obtén el ID del último registro insertado
-  const result = await turso.execute({
-    sql: `
-      SELECT last_insert_rowid() as id;
-    `,
-    args: [],
-  });
-
-  const insertedId = result.rows[0]?.id;
+  const insertedId = result.rows[0]?.id as number;
   return { insertedId };
 }
 
-export const insertNewNodes = async (records: any[]) => {
+// Devuelve los id reales insertados, en el mismo orden que 'records', para
+// poder construir después las filas de 'edges' (que referencian nodos por
+// su id, no por su slug). RETURNING en vez de last_insert_rowid() por el
+// mismo motivo que en insertNewStory.
+export const insertNewNodes = async (records: any[]): Promise<number[]> => {
+  const insertedIds: number[] = [];
   for (const record of records) {
-    await turso.execute({
+    const result = await turso.execute({
       sql: `
         INSERT INTO nodes (story_id, slug, parent_slug, back_slug, text, options, title, description, keywords)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        RETURNING id;
       `,
       args: record,
     });
+    insertedIds.push(result.rows[0].id as number);
   }
+  return insertedIds;
+}
+
+// El grafo real de un cuento (ver migrations/0006_add_edges_table.sql):
+// 'edges' es [storyId, fromNodeId (null = raíz del cuento), toNodeId, text,
+// position]. Se hace en una transacción porque, si un solo edge fallara a
+// mitad (p. ej. una foreign key rota), no queremos dejar el grafo del
+// cuento a medio guardar.
+export const insertEdges = async (edges: [number, number | null, number, string, number][]) => {
+  const statements = edges.map(([storyId, fromNodeId, toNodeId, text, position]) => ({
+    sql: "INSERT INTO edges (story_id, from_node_id, to_node_id, text, position) VALUES (?, ?, ?, ?, ?);",
+    args: [storyId, fromNodeId, toNodeId, text, position],
+  }));
+  if (statements.length > 0) {
+    await turso.batch(statements, "write");
+  }
+}
+
+// Las opciones iniciales de un cuento (la raíz no es una fila de 'nodes'),
+// resueltas a Option[] ({text, next: slug}) para que el resto de la
+// aplicación (Options.astro, LayoutStory.astro...) siga trabajando igual
+// que cuando venían de JSON.parse(stories.options).
+export const getStoryOptions = async (storyId: number) => {
+  const result = await turso.execute({
+    sql: `
+      SELECT e.text AS text, n.slug AS next
+      FROM edges e
+      JOIN nodes n ON n.id = e.to_node_id
+      WHERE e.story_id = ? AND e.from_node_id IS NULL
+      ORDER BY e.position;
+    `,
+    args: [storyId],
+  });
+  return result.rows as unknown as { text: string; next: string }[];
+}
+
+// Las opciones de un nodo concreto, resueltas igual que getStoryOptions.
+export const getNodeOptions = async (nodeId: number) => {
+  const result = await turso.execute({
+    sql: `
+      SELECT e.text AS text, n.slug AS next
+      FROM edges e
+      JOIN nodes n ON n.id = e.to_node_id
+      WHERE e.from_node_id = ?
+      ORDER BY e.position;
+    `,
+    args: [nodeId],
+  });
+  return result.rows as unknown as { text: string; next: string }[];
+}
+
+// Trae TODAS las edges de golpe (con el slug de destino ya resuelto), para
+// el diagnóstico masivo (diagnose-stories.ts): evita tener que hacer una
+// consulta por cada nodo/historia de las 175 que hay.
+export const getAllEdgesResolved = async () => {
+  const result = await turso.execute(`
+    SELECT e.story_id AS story_id, e.from_node_id AS from_node_id, e.text AS text, n.slug AS next, e.position AS position
+    FROM edges e
+    JOIN nodes n ON n.id = e.to_node_id
+    ORDER BY e.story_id, e.from_node_id, e.position;
+  `);
+  return result.rows as unknown as { story_id: number; from_node_id: number | null; text: string; next: string; position: number }[];
+}
+
+export const deleteEdgesByStoryId = async (storyId: number) => {
+  await turso.execute({
+    sql: "DELETE FROM edges WHERE story_id = ?;",
+    args: [storyId],
+  });
 }
 
 export const getNodesByParentSlug = async (slug: string) => {

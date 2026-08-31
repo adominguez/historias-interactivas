@@ -1,4 +1,4 @@
-import { getStoriesList, getTotalNodes } from "@src/turso";
+import { getStoriesList, getTotalNodes, getAllEdgesResolved } from "@src/turso";
 import { diagnoseStory } from "@src/utils/functions";
 import { type Node, type Option } from "@types";
 
@@ -6,7 +6,7 @@ import { type Node, type Option } from "@types";
 // deterministas (grafo, regex, diccionario), sin ninguna llamada a IA, así
 // que se puede analizar la base de datos entera de golpe sin coste.
 export async function GET() {
-  const [storyRows, nodeRows] = await Promise.all([getStoriesList(), getTotalNodes()]);
+  const [storyRows, nodeRows, edgeRows] = await Promise.all([getStoriesList(), getTotalNodes(), getAllEdgesResolved()]);
 
   const nodesByStoryId = new Map<number, typeof nodeRows>();
   nodeRows.forEach(row => {
@@ -14,6 +14,15 @@ export async function GET() {
     const list = nodesByStoryId.get(storyId) ?? [];
     list.push(row);
     nodesByStoryId.set(storyId, list);
+  });
+
+  // key: `${story_id}:${from_node_id ?? 'root'}` -> Option[]
+  const optionsByOwner = new Map<string, Option[]>();
+  edgeRows.forEach(edge => {
+    const key = `${edge.story_id}:${edge.from_node_id ?? "root"}`;
+    const list = optionsByOwner.get(key) ?? [];
+    list.push({ text: edge.text, next: edge.next });
+    optionsByOwner.set(key, list);
   });
 
   const results = storyRows
@@ -29,11 +38,11 @@ export async function GET() {
         parentSlug: node.parent_slug as string,
         backSlug: node.back_slug as string | undefined,
         text: node.text as string,
-        options: JSON.parse(node.options as string),
+        options: optionsByOwner.get(`${storyId}:${node.id}`) ?? [],
         storyId,
       }));
 
-      const storyOptions: Option[] = JSON.parse(story.options as string);
+      const storyOptions: Option[] = optionsByOwner.get(`${storyId}:root`) ?? [];
       const characters = JSON.parse(story.characters as string) as { name: string; description: string }[];
       const characterNames = characters.map(({ name }) => name);
 

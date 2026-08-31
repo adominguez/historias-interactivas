@@ -6,7 +6,7 @@ import { validateStoryIntegrity, resolveBlueprint, hasScreenplayStyleDialogue, f
 import { generateBlueprintPrompt, generateSceneContentPrompt, generateImagePrompt } from "@src/utils/prompts";
 import OpenAI from "openai";
 import { v2 as cloudinary } from 'cloudinary'
-import { insertNewNodes, insertNewStory, getStoryBySlug, updateStory, deleteNodesByStoryId, insertSlugRedirect } from "@src/turso";
+import { insertNewNodes, insertNewStory, getStoryBySlug, updateStory, deleteNodesByStoryId, insertSlugRedirect, insertEdges, deleteEdgesByStoryId } from "@src/turso";
 import { type Node } from "@types";
 import { AGES } from '@src/utils/characters';
 import { PUBLIC_CLOUDINARY_CLOUD_NAME, PUBLIC_CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET, OPENAI_API_KEY } from "astro:env/server";
@@ -319,7 +319,9 @@ const createStory = async (params: { scenario: string, characterOptions: string[
     story.slug,
     story.resume,
     story.text,
-    JSON.stringify(story.options), // Convierte a JSON para almacenar en la base de datos
+    // El grafo real ya no vive aquí (ver 'edges' más abajo); esta columna
+    // queda como placeholder mientras se retira del todo (migración 0006).
+    "[]",
     story.meta.description,
     JSON.stringify(story.meta.keywords),
     JSON.stringify([category]),
@@ -335,19 +337,32 @@ const createStory = async (params: { scenario: string, characterOptions: string[
   console.log('Guardando cuento en la base de datos...');
   const { insertedId } = await insertNewStory(storyParams);
   console.log('Guardando nodos en la base de datos...');
-  const nodesParams = nodes.map(({ slug, backSlug, text, meta, options }) => ([
+  const nodesParams = nodes.map(({ slug, backSlug, text, meta }) => ([
     insertedId,
     slug,
     story.slug,
     backSlug,
     text,
-    JSON.stringify(options),
+    null,
     meta.title,
     meta.description,
     JSON.stringify(meta.keywords)
   ]));
 
-  insertNewNodes(nodesParams);
+  const nodeIds = await insertNewNodes(nodesParams);
+  const nodeIdBySlug = new Map(nodes.map((node, index) => [node.slug, nodeIds[index]]));
+
+  console.log('Guardando el grafo del cuento (edges)...');
+  const edges: [number, number | null, number, string, number][] = [
+    ...story.options.map(({ text, next }, position): [number, number | null, number, string, number] => [
+      insertedId as number, null, nodeIdBySlug.get(next) as number, text, position,
+    ]),
+    ...nodes.flatMap((node) => node.options.map(({ text, next }, position): [number, number | null, number, string, number] => [
+      insertedId as number, nodeIdBySlug.get(node.slug) as number, nodeIdBySlug.get(next) as number, text, position,
+    ])),
+  ];
+  await insertEdges(edges);
+
   console.log('Cuento guardado en la base de datos!!');
   return { status: 200 as const, story, nodes, error: undefined };
 };
@@ -382,7 +397,8 @@ const regenerateStory = async ({ storySlug, scenario, characterOptions, category
     title: story.title,
     resume: story.resume,
     text: story.text,
-    options: JSON.stringify(story.options),
+    // El grafo real ya no vive aquí (ver 'edges' más abajo).
+    options: "[]",
     description: story.meta.description,
     keywords: JSON.stringify(story.meta.keywords),
     categories: JSON.stringify([category]),
@@ -400,19 +416,34 @@ const regenerateStory = async ({ storySlug, scenario, characterOptions, category
     await insertSlugRedirect(storySlug, existing.id as number);
   }
 
+  // Las 'edges' viejas referencian (por foreign key) los nodos viejos, así
+  // que hay que borrarlas ANTES de poder borrar esos nodos.
+  await deleteEdgesByStoryId(existing.id as number);
   await deleteNodesByStoryId(existing.id as number);
-  const nodesParams = nodes.map(({ slug, backSlug, text, meta, options }) => ([
+  const nodesParams = nodes.map(({ slug, backSlug, text, meta }) => ([
     existing.id,
     slug,
     story.slug,
     backSlug,
     text,
-    JSON.stringify(options),
+    null,
     meta.title,
     meta.description,
     JSON.stringify(meta.keywords)
   ]));
-  insertNewNodes(nodesParams);
+  const nodeIds = await insertNewNodes(nodesParams);
+  const nodeIdBySlug = new Map(nodes.map((node, index) => [node.slug, nodeIds[index]]));
+
+  const edges: [number, number | null, number, string, number][] = [
+    ...story.options.map(({ text, next }, position): [number, number | null, number, string, number] => [
+      existing.id as number, null, nodeIdBySlug.get(next) as number, text, position,
+    ]),
+    ...nodes.flatMap((node) => node.options.map(({ text, next }, position): [number, number | null, number, string, number] => [
+      existing.id as number, nodeIdBySlug.get(node.slug) as number, nodeIdBySlug.get(next) as number, text, position,
+    ])),
+  ];
+  await insertEdges(edges);
+
   console.log('Cuento regenerado!!');
 
   return { status: 200 as const, story, nodes, error: undefined };
