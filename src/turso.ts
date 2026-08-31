@@ -378,6 +378,20 @@ export const updateStoryText = async (id: number, text: string) => {
   });
 }
 
+// Edición manual desde /admin/editar-historia: a diferencia de las
+// reparaciones con IA (que solo tocan 'text'), aquí la persona también
+// puede corregir el título a mano.
+export const updateStoryTitleAndText = async (id: number, title: string, text: string) => {
+  await turso.execute({
+    sql: `
+      UPDATE stories
+      SET title = ?, text = ?, updated_at = CURRENT_TIMESTAMP
+      WHERE id = ?;
+    `,
+    args: [title, text, id],
+  });
+}
+
 export const updateStory = async (id: number, fields: {
   title: string;
   resume: string;
@@ -433,6 +447,18 @@ export const updateNodeText = async (id: number, text: string) => {
       WHERE id = ?;
     `,
     args: [text, id],
+  });
+}
+
+// Edición manual desde /admin/editar-historia (ver updateStoryTitleAndText).
+export const updateNodeTitleAndText = async (id: number, title: string, text: string) => {
+  await turso.execute({
+    sql: `
+      UPDATE nodes
+      SET title = ?, text = ?
+      WHERE id = ?;
+    `,
+    args: [title, text, id],
   });
 }
 

@@ -124,7 +124,10 @@ function generateRepairPrompt({ age, text, characterNames, issues }: { age: stri
   const selectedAge = AGES[age as keyof typeof AGES] || AGES["9-12"];
 
   const reasons = [
-    issues.isScreenplayStyle && 'El diálogo está escrito con formato de guion de teatro/cine (el nombre de un personaje seguido directamente de ":" o "—"). Reescribe cada línea de diálogo integrada en la narración, introducida con raya (—), indicando quién habla UNA sola vez por línea (antes o después del diálogo, nunca las dos veces a la vez ni repetido al final).',
+    issues.isScreenplayStyle && `El diálogo está escrito con formato de guion de teatro/cine (el nombre de un personaje seguido directamente de ":" o "—"). Reescribe cada línea de diálogo integrada en la narración, introducida con raya (—), indicando SIEMPRE quién habla con su NOMBRE REAL, una sola vez por línea. Ejemplo correcto (con un personaje de ejemplo llamado Elena): "—Vamos hacia el norte —dijo Elena, señalando el camino." Dos errores muy comunes que debes evitar al corregir esto, ambos igual de mal que el original:
+  (1) Pegar el nombre al principio del diálogo sin verbo ni puntuación que lo separe: "—Elena vamos hacia el norte" (mal, sigue siendo formato de guion, solo que sin los dos puntos).
+  (2) Quitar el nombre del personaje por completo y dejar el verbo sin sujeto: "—Vamos hacia el norte —dijo, señalando el camino" (mal, ahora no se sabe quién habla).
+  El nombre real del personaje tiene que aparecer, y tiene que ir DESPUÉS del verbo de habla (nunca pegado al inicio de la raya).`,
     issues.invalidWords.length > 0 && `Contiene palabras que no existen en español o están en otro idioma: ${issues.invalidWords.join(', ')}. Sustitúyelas por palabras reales y sencillas en español que tengan sentido en ese punto de la frase.`,
   ].filter(Boolean).join('\n  - ');
 
