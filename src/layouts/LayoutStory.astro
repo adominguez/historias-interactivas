@@ -129,7 +129,8 @@ const breadcrumb = !backUrl ? [{
     <main class="flex pt-24 flex-col gap-8 mx-auto max-w-5xl" transition:animate={transition}>
       <CldImage
         transition:name={slug}
-        src={imageUrl}
+        src={`cuentos-interactivos/${slug}/${slug}`}
+        version={imageVersion ?? undefined}
         width={1024}
         height={512}
         alt={title}
