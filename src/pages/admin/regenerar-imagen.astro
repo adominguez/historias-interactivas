@@ -1,6 +1,6 @@
 ---
 import BaseHead from '@components/BaseHead.astro';
-import RegenerateImageForm from '@components/RegenerateImageForm';
+import RegenerateImagesGrid from '@components/RegenerateImagesGrid';
 import { getLittleStoriesList } from '@src/turso';
 import { PUBLIC_CLOUDINARY_CLOUD_NAME } from 'astro:env/server';
 
@@ -15,14 +15,14 @@ const stories = rows
 <!doctype html>
 <html lang="es">
   <head>
-    <BaseHead title="Regenerar imagen (interno)" description="Herramienta interna para regenerar solo la imagen de portada de un cuento." />
+    <BaseHead title="Regenerar imágenes (interno)" description="Herramienta interna para revisar de un vistazo y regenerar las imágenes de portada de los cuentos." />
     <meta name="robots" content="noindex" />
   </head>
   <body>
-    <main style="max-width: 640px; margin: 4rem auto; padding: 0 1rem; font-family: system-ui, sans-serif;">
-      <h1>Regenerar imagen de un cuento</h1>
-      <p>Busca un cuento por título y regenera solo su imagen de portada (sin tocar el texto ni el grafo). Puede tardar 1-2 minutos.</p>
-      <RegenerateImageForm stories={stories} cloudName={PUBLIC_CLOUDINARY_CLOUD_NAME} client:load />
+    <main style="max-width: 1100px; margin: 4rem auto; padding: 0 1rem; font-family: system-ui, sans-serif;">
+      <h1>Regenerar imágenes</h1>
+      <p>Repasa las portadas de todos los cuentos y regenera solo las que no encajen (sin tocar el texto ni el grafo). Cada regeneración puede tardar 1-2 minutos.</p>
+      <RegenerateImagesGrid stories={stories} cloudName={PUBLIC_CLOUDINARY_CLOUD_NAME} client:load />
     </main>
   </body>
 </html>
