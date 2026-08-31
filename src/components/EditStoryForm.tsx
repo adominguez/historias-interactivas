@@ -1,9 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
 interface StoryOption {
   slug: string;
   title: string;
   age: string;
+  imageVersion: number | null;
 }
 
 interface NodeContent {
@@ -14,11 +15,15 @@ interface NodeContent {
 
 interface EditStoryFormProps {
   stories: StoryOption[];
+  cloudName: string;
 }
 
 type SaveStatus = 'idle' | 'saving' | 'saved' | 'error';
 
-const labelFor = (story: StoryOption) => `${story.title} (${story.age}) — ${story.slug}`;
+// Miniatura pequeña, igual que en /admin/regenerar-imagen: con 175 cuentos a
+// la vez cargar la imagen original de cada uno sería muy pesado.
+const thumbnailUrl = (cloudName: string, slug: string, version: number | null) =>
+  `https://res.cloudinary.com/${cloudName}/image/upload/c_fill,w_320,h_180/${version ? `v${version}/` : ''}cuentos-interactivos/${slug}/${slug}`;
 
 // Un bloque editable (la raíz del cuento, o uno de sus nodos): título, texto
 // y su propio botón de guardar independiente.
@@ -27,9 +32,6 @@ const EditableSection = ({ storySlug, target, initialTitle, initialText }: { sto
   const [text, setText] = useState(initialText);
   const [status, setStatus] = useState<SaveStatus>('idle');
   const [message, setMessage] = useState('');
-
-  // Si se cambia de escena/cuento, el bloque se vuelve a montar (key en el
-  // padre) así que no hace falta sincronizar aquí manualmente.
 
   const handleSave = async () => {
     setStatus('saving');
@@ -75,16 +77,15 @@ const EditableSection = ({ storySlug, target, initialTitle, initialText }: { sto
   );
 };
 
-const EditStoryForm = ({ stories }: EditStoryFormProps) => {
-  const [inputValue, setInputValue] = useState('');
+const EditStoryForm = ({ stories, cloudName }: EditStoryFormProps) => {
+  const [filter, setFilter] = useState('');
+  const [selectedSlug, setSelectedSlug] = useState<string | null>(null);
   const [loadStatus, setLoadStatus] = useState<'idle' | 'loading' | 'error'>('idle');
   const [loadError, setLoadError] = useState('');
   const [storyContent, setStoryContent] = useState<{ title: string; text: string } | null>(null);
   const [nodes, setNodes] = useState<NodeContent[]>([]);
   const [selectedNodeSlug, setSelectedNodeSlug] = useState<string>('__story__');
-
-  const labelToSlug = new Map(stories.map((story) => [labelFor(story), story.slug]));
-  const selectedSlug = labelToSlug.get(inputValue);
+  const editorRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!selectedSlug) return;
@@ -94,6 +95,7 @@ const EditStoryForm = ({ stories }: EditStoryFormProps) => {
     setStoryContent(null);
     setNodes([]);
     setSelectedNodeSlug('__story__');
+    editorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
     fetch(`/api/story-content?storySlug=${encodeURIComponent(selectedSlug)}`)
       .then((response) => response.json().then((data) => ({ ok: response.ok, data })))
@@ -110,65 +112,79 @@ const EditStoryForm = ({ stories }: EditStoryFormProps) => {
   }, [selectedSlug]);
 
   const selectedNode = nodes.find((node) => node.slug === selectedNodeSlug);
+  const filtered = stories.filter((story) => story.title.toLowerCase().includes(filter.toLowerCase()));
 
   return (
     <div>
-      <label style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', marginBottom: '1rem' }}>
-        Cuento
-        <input
-          list="edit-stories-datalist"
-          value={inputValue}
-          onChange={(event) => setInputValue(event.target.value)}
-          placeholder="Escribe para buscar por título..."
-          autoComplete="off"
-        />
-        <datalist id="edit-stories-datalist">
-          {stories.map((story) => (
-            <option key={story.slug} value={labelFor(story)} />
-          ))}
-        </datalist>
-      </label>
+      <div ref={editorRef}>
+        {selectedSlug && loadStatus === 'loading' && <p>Cargando cuento...</p>}
+        {selectedSlug && loadStatus === 'error' && <p style={{ color: '#b00020' }}>{loadError}</p>}
 
-      {loadStatus === 'loading' && <p>Cargando cuento...</p>}
-      {loadStatus === 'error' && <p style={{ color: '#b00020' }}>{loadError}</p>}
+        {selectedSlug && storyContent && (
+          <div style={{ border: '2px solid #333', borderRadius: '8px', padding: '1rem', marginBottom: '1.5rem' }}>
+            <p style={{ marginTop: 0 }}>
+              Editando: <strong>{storyContent.title}</strong> — <a href={`/${selectedSlug}`} target="_blank" rel="noreferrer">ver el cuento →</a>
+            </p>
 
-      {storyContent && (
-        <>
-          <p>
-            <a href={`/${selectedSlug}`} target="_blank" rel="noreferrer">Ver el cuento →</a>
-          </p>
+            <label style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', marginBottom: '1rem' }}>
+              Escena a editar
+              <select value={selectedNodeSlug} onChange={(event) => setSelectedNodeSlug(event.target.value)}>
+                <option value="__story__">Escena inicial (raíz del cuento)</option>
+                {nodes.map((node) => (
+                  <option key={node.slug} value={node.slug}>{node.title || node.slug}</option>
+                ))}
+              </select>
+            </label>
 
-          <label style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', marginBottom: '1rem' }}>
-            Escena a editar
-            <select value={selectedNodeSlug} onChange={(event) => setSelectedNodeSlug(event.target.value)}>
-              <option value="__story__">Escena inicial (raíz del cuento)</option>
-              {nodes.map((node) => (
-                <option key={node.slug} value={node.slug}>{node.title || node.slug}</option>
-              ))}
-            </select>
-          </label>
+            {selectedNodeSlug === '__story__' && (
+              <EditableSection
+                key={`${selectedSlug}-story`}
+                storySlug={selectedSlug}
+                target="story"
+                initialTitle={storyContent.title}
+                initialText={storyContent.text}
+              />
+            )}
 
-          {selectedNodeSlug === '__story__' && (
-            <EditableSection
-              key={`${selectedSlug}-story`}
-              storySlug={selectedSlug as string}
-              target="story"
-              initialTitle={storyContent.title}
-              initialText={storyContent.text}
+            {selectedNode && (
+              <EditableSection
+                key={`${selectedSlug}-${selectedNode.slug}`}
+                storySlug={selectedSlug}
+                target={selectedNode.slug}
+                initialTitle={selectedNode.title}
+                initialText={selectedNode.text}
+              />
+            )}
+          </div>
+        )}
+      </div>
+
+      <input
+        type="text"
+        value={filter}
+        onChange={(event) => setFilter(event.target.value)}
+        placeholder="Filtrar por título..."
+        style={{ width: '100%', padding: '0.5rem', marginBottom: '0.5rem', boxSizing: 'border-box' }}
+      />
+      <p style={{ color: '#666', fontSize: '0.9rem' }}>{filtered.length} de {stories.length} cuentos</p>
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '1rem' }}>
+        {filtered.map((story) => (
+          <div key={story.slug} style={{ border: story.slug === selectedSlug ? '2px solid #333' : '1px solid #ddd', borderRadius: '8px', padding: '0.75rem' }}>
+            <img
+              src={thumbnailUrl(cloudName, story.slug, story.imageVersion)}
+              alt=""
+              loading="lazy"
+              style={{ width: '100%', height: '140px', objectFit: 'cover', borderRadius: '4px', display: 'block' }}
             />
-          )}
-
-          {selectedNode && (
-            <EditableSection
-              key={`${selectedSlug}-${selectedNode.slug}`}
-              storySlug={selectedSlug as string}
-              target={selectedNode.slug}
-              initialTitle={selectedNode.title}
-              initialText={selectedNode.text}
-            />
-          )}
-        </>
-      )}
+            <p style={{ margin: '0.5rem 0 0.15rem', fontWeight: 'bold', fontSize: '0.9rem', lineHeight: 1.3 }}>{story.title}</p>
+            <p style={{ margin: '0 0 0.5rem', fontSize: '0.8rem', color: '#666' }}>{story.age}</p>
+            <button onClick={() => setSelectedSlug(story.slug)} style={{ width: '100%' }}>
+              Editar
+            </button>
+          </div>
+        ))}
+      </div>
     </div>
   );
 };
