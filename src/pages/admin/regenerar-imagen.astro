@@ -1,0 +1,28 @@
+---
+import BaseHead from '@components/BaseHead.astro';
+import RegenerateImageForm from '@components/RegenerateImageForm';
+import { getLittleStoriesList } from '@src/turso';
+import { PUBLIC_CLOUDINARY_CLOUD_NAME } from 'astro:env/server';
+
+export const prerender = false;
+
+const rows = await getLittleStoriesList();
+const stories = rows
+  .map((row) => ({ slug: row.slug as string, title: row.title as string, age: row.age as string }))
+  .sort((a, b) => a.title.localeCompare(b.title, 'es'));
+---
+
+<!doctype html>
+<html lang="es">
+  <head>
+    <BaseHead title="Regenerar imagen (interno)" description="Herramienta interna para regenerar solo la imagen de portada de un cuento." />
+    <meta name="robots" content="noindex" />
+  </head>
+  <body>
+    <main style="max-width: 640px; margin: 4rem auto; padding: 0 1rem; font-family: system-ui, sans-serif;">
+      <h1>Regenerar imagen de un cuento</h1>
+      <p>Busca un cuento por título y regenera solo su imagen de portada (sin tocar el texto ni el grafo). Puede tardar 1-2 minutos.</p>
+      <RegenerateImageForm stories={stories} cloudName={PUBLIC_CLOUDINARY_CLOUD_NAME} client:load />
+    </main>
+  </body>
+</html>
