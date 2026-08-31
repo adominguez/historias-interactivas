@@ -6,7 +6,7 @@ import { validateStoryIntegrity, resolveBlueprint, hasScreenplayStyleDialogue, f
 import { generateBlueprintPrompt, generateSceneContentPrompt, generateImagePrompt } from "@src/utils/prompts";
 import OpenAI from "openai";
 import { v2 as cloudinary } from 'cloudinary'
-import { insertNewNodes, insertNewStory, getStoryBySlug, updateStory, deleteNodesByStoryId } from "@src/turso";
+import { insertNewNodes, insertNewStory, getStoryBySlug, updateStory, deleteNodesByStoryId, insertSlugRedirect } from "@src/turso";
 import { type Node } from "@types";
 import { AGES } from '@src/utils/characters';
 import { PUBLIC_CLOUDINARY_CLOUD_NAME, PUBLIC_CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET, OPENAI_API_KEY } from "astro:env/server";
@@ -175,17 +175,16 @@ const MAX_BLUEPRINT_ATTEMPTS = 10;
 
 // Genera el esqueleto + contenido completo + imagen de un cuento (todo lo
 // que NO depende de si el resultado se inserta como cuento nuevo o
-// sustituye a uno ya existente). Si se pasa 'targetSlug', el cuento se
-// fuerza a usar exactamente ese slug en vez de derivarlo del título — es el
-// caso de 'regenerateStory', donde el slug ya está fijado de antemano
-// porque tiene que seguir siendo la misma URL (ver comentario allí). Si se
-// pasa 'skipImage', no se genera ni sube ninguna imagen nueva (la de
-// Cloudinary en esa misma ruta, si existe, se queda tal cual): la generación
-// de imagen en calidad "high" es, con diferencia, la llamada más cara de todo el pipeline,
-// y para reparar la estructura de un cuento ya publicado no hace falta arte
-// nuevo — regenerar 42 cuentos con imagen nueva salía por varios euros más de
-// lo necesario para un objetivo puramente estructural.
-const generateStoryWithContent = async ({ scenario, characterOptions, category, age, targetSlug, skipImage }: { scenario: string, characterOptions: string[], category: string, age: string, targetSlug?: string, skipImage?: boolean }) => {
+// sustituye a uno ya existente). El slug siempre se deriva del título aquí
+// —tanto para un cuento nuevo como para uno regenerado—, nunca se fuerza a
+// uno concreto: si 'regenerateStory' necesita registrar una redirección
+// porque el slug cambió, lo hace ella misma después, comparando el slug de
+// entrada con 'story.slug' del resultado. Si se pasa 'skipImage', no se
+// genera ni sube ninguna imagen nueva (la de Cloudinary en esa misma ruta,
+// si existe, se queda tal cual): la generación de imagen en calidad "high"
+// es, con diferencia, la llamada más cara de todo el pipeline, y para
+// reparar la estructura de un cuento ya publicado no hace falta arte nuevo.
+const generateStoryWithContent = async ({ scenario, characterOptions, category, age, skipImage, excludeStoryId }: { scenario: string, characterOptions: string[], category: string, age: string, skipImage?: boolean, excludeStoryId?: number }) => {
   // El esqueleto ya no puede tener enlaces rotos, slugs duplicados ni nodos
   // huérfanos (resolveBlueprint los descarta o los calcula de forma
   // determinista). Lo único que sigue siendo un fallo real de contenido —y
@@ -215,17 +214,18 @@ const generateStoryWithContent = async ({ scenario, characterOptions, category, 
 
   const originalStorySlug = resolved.story.slug;
   let storySlug = originalStorySlug;
-  if (targetSlug) {
-    storySlug = targetSlug;
-  } else {
-    // El slug de la historia se deriva del título; si por casualidad ya
-    // existe (muy improbable, dos títulos distintos rara vez coinciden), lo
-    // desambiguamos con un sufijo en vez de descartar todo el esqueleto.
-    for (let suffix = 2; suffix <= 6; suffix++) {
-      const existing = await getStoryBySlug(storySlug);
-      if (!existing || existing.length === 0) break;
-      storySlug = `${originalStorySlug}-${suffix}`;
-    }
+  // El slug se deriva del título; si por casualidad ya existe (muy
+  // improbable, dos títulos distintos rara vez coinciden), lo desambiguamos
+  // con un sufijo en vez de descartar todo el esqueleto. 'excludeStoryId' es
+  // para cuando esto es una regeneración: si el título nuevo generase por
+  // casualidad el mismo slug que la propia historia ya tenía (con su fila
+  // todavía sin actualizar en este punto), no debe contar como colisión
+  // consigo misma.
+  for (let suffix = 2; suffix <= 6; suffix++) {
+    const existing = await getStoryBySlug(storySlug);
+    const hasRealCollision = existing.some(row => row.id !== excludeStoryId);
+    if (!hasRealCollision) break;
+    storySlug = `${originalStorySlug}-${suffix}`;
   }
 
   const storyBlueprint = { ...resolved.story, slug: storySlug };
@@ -353,25 +353,32 @@ const createStory = async (params: { scenario: string, characterOptions: string[
 };
 
 // Sustituye TODO el contenido de un cuento ya publicado (título, texto,
-// personajes, nodos, imagen) manteniendo exactamente el mismo slug/URL y el
-// mismo 'id' de fila. Pensado para cuentos con el grafo estructuralmente
-// roto (enlaces rotos, sin final...) que no se pueden reparar escena a
-// escena: en vez de borrar el cuento (lo que rompería la URL ya indexada en
-// buscadores) o redirigirlo a otra página (perdiendo ese contenido), se
-// genera un cuento nuevo desde cero para la misma categoría/edad y se coloca
-// en el mismo sitio exacto donde estaba el roto.
+// personajes, nodos) manteniendo el mismo 'id' de fila. Pensado para cuentos
+// con el grafo estructuralmente roto (enlaces rotos, sin final...) que no se
+// pueden reparar escena a escena.
+//
+// El slug SÍ puede cambiar: se deriva del título nuevo (como en createStory),
+// no se fuerza al de antes. Congelar el slug para siempre hacía que la URL
+// dejara de tener relación con el contenido real tras regenerar (p. ej.
+// "El Templo de Zeus" pasó a ser "El Faro del Fénix" pero siguió viviendo en
+// /el-templo-de-zeus). En vez de eso, se registra una redirección 301
+// permanente del slug viejo al nuevo (slug_redirects) — es la práctica
+// habitual para "el contenido de esta URL ha cambiado de verdad": conserva
+// la mayor parte del valor SEO acumulado sin dejar una URL que ya no
+// describe lo que hay.
 const regenerateStory = async ({ storySlug, scenario, characterOptions, category, age }: { storySlug: string, scenario: string, characterOptions: string[], category: string, age: string }) => {
   const [existing] = await getStoryBySlug(storySlug);
   if (!existing) {
     return { status: 404 as const, error: { message: "No se ha encontrado el cuento a regenerar" } };
   }
 
-  const result = await generateStoryWithContent({ scenario, characterOptions, category, age, targetSlug: storySlug, skipImage: true });
+  const result = await generateStoryWithContent({ scenario, characterOptions, category, age, skipImage: true, excludeStoryId: existing.id as number });
   if (result.status !== 200) return result;
   const { story, nodes, imageVersion } = result;
 
-  console.log('Sustituyendo el cuento en la base de datos...');
+  console.log(`Sustituyendo el cuento en la base de datos (slug: "${storySlug}" -> "${story.slug}")...`);
   await updateStory(existing.id as number, {
+    slug: story.slug,
     title: story.title,
     resume: story.resume,
     text: story.text,
@@ -389,6 +396,10 @@ const regenerateStory = async ({ storySlug, scenario, characterOptions, category
     imageVersion: imageVersion ?? (existing.image_version as number | null),
   });
 
+  if (story.slug !== storySlug) {
+    await insertSlugRedirect(storySlug, existing.id as number);
+  }
+
   await deleteNodesByStoryId(existing.id as number);
   const nodesParams = nodes.map(({ slug, backSlug, text, meta, options }) => ([
     existing.id,
@@ -402,7 +413,7 @@ const regenerateStory = async ({ storySlug, scenario, characterOptions, category
     JSON.stringify(meta.keywords)
   ]));
   insertNewNodes(nodesParams);
-  console.log('Cuento regenerado en el mismo slug!!');
+  console.log('Cuento regenerado!!');
 
   return { status: 200 as const, story, nodes, error: undefined };
 };

@@ -79,6 +79,36 @@ export const getStoryBySlug = async (slug: string) => {
   return result.rows;
 }
 
+// Registra que 'oldSlug' ya no es el slug real de esta historia (ver
+// regenerateStory en create-story.ts, que cambia el slug para que coincida
+// con el título nuevo tras una regeneración).
+export const insertSlugRedirect = async (oldSlug: string, storyId: number) => {
+  await turso.execute({
+    sql: `
+      INSERT INTO slug_redirects (old_slug, story_id)
+      VALUES (?, ?)
+      ON CONFLICT (old_slug) DO UPDATE SET story_id = excluded.story_id;
+    `,
+    args: [oldSlug, storyId],
+  });
+}
+
+// Dado un slug que ya no existe como historia real, busca a qué slug actual
+// hay que redirigir (301). Devuelve undefined si no hay redirección
+// registrada para ese slug.
+export const getRedirectTargetSlug = async (oldSlug: string): Promise<string | undefined> => {
+  const result = await turso.execute({
+    sql: `
+      SELECT s.slug AS current_slug
+      FROM slug_redirects r
+      JOIN stories s ON s.id = r.story_id
+      WHERE r.old_slug = ?;
+    `,
+    args: [oldSlug],
+  });
+  return result.rows[0]?.current_slug as string | undefined;
+}
+
 export const getStoriesList = async () => {
   const result = await turso.execute({
     sql: `
@@ -393,6 +423,7 @@ export const updateStoryTitleAndText = async (id: number, title: string, text: s
 }
 
 export const updateStory = async (id: number, fields: {
+  slug: string;
   title: string;
   resume: string;
   text: string;
@@ -408,10 +439,11 @@ export const updateStory = async (id: number, fields: {
   await turso.execute({
     sql: `
       UPDATE stories
-      SET title = ?, resume = ?, text = ?, options = ?, description = ?, keywords = ?, categories = ?, characters = ?, age = ?, duration = ?, image_version = ?, updated_at = CURRENT_TIMESTAMP
+      SET slug = ?, title = ?, resume = ?, text = ?, options = ?, description = ?, keywords = ?, categories = ?, characters = ?, age = ?, duration = ?, image_version = ?, updated_at = CURRENT_TIMESTAMP
       WHERE id = ?;
     `,
     args: [
+      fields.slug,
       fields.title,
       fields.resume,
       fields.text,

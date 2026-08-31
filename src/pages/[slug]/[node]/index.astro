@@ -1,7 +1,7 @@
 ---
 import Layout from "@layouts/LayoutStory.astro";
 import { turso } from "@src/turso";
-import { getRelatedStoriesBySlug, getRatingStoryBySlug, getStoryBySlug } from "@src/turso";
+import { getRelatedStoriesBySlug, getRatingStoryBySlug, getStoryBySlug, getRedirectTargetSlug } from "@src/turso";
 import { type Node, type Story } from "@types";
 import { generalCategories } from "@src/data/categories";
 export const prerender = false;
@@ -22,6 +22,15 @@ const nodeResponse = await turso.execute({
 });
 
 if (!nodeResponse.rows.length) {
+  // Si el cuento se regeneró con un slug nuevo (ver regenerateStory en
+  // create-story.ts), el grafo entero es distinto: no existe un nodo
+  // "equivalente" al que se pedía, así que redirigimos a la raíz del cuento
+  // nuevo en vez de intentar adivinar un nodo concreto.
+  const targetSlug = await getRedirectTargetSlug(parentSlug);
+  if (targetSlug) {
+    return Astro.redirect(`/${targetSlug}`, 301);
+  }
+
   return new Response(null, {
     status: 404,
     statusText: "Not found",

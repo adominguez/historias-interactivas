@@ -1,6 +1,6 @@
 ---
 import Layout from "@layouts/LayoutStory.astro";
-import { getStoryBySlug, getRelatedStoriesBySlug } from "@src/turso";
+import { getStoryBySlug, getRelatedStoriesBySlug, getRedirectTargetSlug } from "@src/turso";
 import { type Story } from "@types";
 import { generalCategories } from "@src/data/categories";
 export const prerender = false;
@@ -16,6 +16,14 @@ if (!slug) {
 const storyResponse = await getStoryBySlug(slug);
 
 if (!storyResponse.length) {
+  // El cuento pudo regenerarse con un slug nuevo (ver regenerateStory en
+  // create-story.ts): antes de dar un 404 comprobamos si hay una
+  // redirección permanente registrada para este slug antiguo.
+  const targetSlug = await getRedirectTargetSlug(slug);
+  if (targetSlug) {
+    return Astro.redirect(`/${targetSlug}`, 301);
+  }
+
   return new Response(null, {
     status: 404,
     statusText: "Not found",

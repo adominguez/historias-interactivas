@@ -66,3 +66,14 @@ CREATE TABLE schema_migrations (
     name TEXT PRIMARY KEY,
     applied_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
+
+-- Redirecciones 301 permanentes desde un slug de historia antiguo hacia la
+-- historia actual (ver migrations/0005_add_slug_redirects.sql): se rellena
+-- cuando regenerate-story cambia el slug de una historia para que coincida
+-- con su título nuevo.
+CREATE TABLE slug_redirects (
+    old_slug TEXT PRIMARY KEY,
+    story_id INTEGER NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (story_id) REFERENCES stories (id)
+);
