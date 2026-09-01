@@ -13,8 +13,8 @@ export const insertNewStory = async (storyParams: (string | number | null)[]) =>
   // el transporte HTTP de Turso, eso no está garantizado).
   const result = await turso.execute({
     sql: `
-      INSERT INTO stories (title, slug, resume, text, options, description, keywords, categories, characters, image, age, duration, rating, image_version, updated_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+      INSERT INTO stories (title, slug, resume, text, description, keywords, categories, characters, image, age, duration, rating, image_version, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
       RETURNING id;
     `,
     args: storyParams,
@@ -33,8 +33,8 @@ export const insertNewNodes = async (records: any[]): Promise<number[]> => {
   for (const record of records) {
     const result = await turso.execute({
       sql: `
-        INSERT INTO nodes (story_id, slug, parent_slug, back_slug, text, options, title, description, keywords)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO nodes (story_id, slug, parent_slug, back_slug, text, title, description, keywords)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         RETURNING id;
       `,
       args: record,
@@ -500,7 +500,6 @@ export const updateStory = async (id: number, fields: {
   title: string;
   resume: string;
   text: string;
-  options: string;
   description: string;
   keywords: string;
   categories: string;
@@ -512,7 +511,7 @@ export const updateStory = async (id: number, fields: {
   await turso.execute({
     sql: `
       UPDATE stories
-      SET slug = ?, title = ?, resume = ?, text = ?, options = ?, description = ?, keywords = ?, categories = ?, characters = ?, age = ?, duration = ?, image_version = ?, updated_at = CURRENT_TIMESTAMP
+      SET slug = ?, title = ?, resume = ?, text = ?, description = ?, keywords = ?, categories = ?, characters = ?, age = ?, duration = ?, image_version = ?, updated_at = CURRENT_TIMESTAMP
       WHERE id = ?;
     `,
     args: [
@@ -520,7 +519,6 @@ export const updateStory = async (id: number, fields: {
       fields.title,
       fields.resume,
       fields.text,
-      fields.options,
       fields.description,
       fields.keywords,
       fields.categories,

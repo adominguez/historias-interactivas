@@ -11,7 +11,6 @@ CREATE TABLE stories (
     description TEXT,                               -- Descripción del cuento
     keywords TEXT,                                  -- JSON con palabras clave
     text TEXT NOT NULL,                             -- Texto del nodo principal en formato HTML
-    options TEXT NOT NULL,                          -- JSON con las opciones iniciales
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,  -- Fecha de creación
     categories TEXT,                                -- JSON con las categorías (fuente de verdad; ver nota abajo)
     resume TEXT,                                    -- Resumen del cuento
@@ -32,7 +31,6 @@ CREATE TABLE nodes (
     parent_slug TEXT,      -- Slug de la historia a la que pertenece el nodo
     back_slug TEXT,        -- Slug del nodo anterior en el camino
     text TEXT NOT NULL,
-    options TEXT,          -- JSON con las opciones de navegación
     title TEXT,
     description TEXT,
     keywords TEXT,          -- JSON con palabras clave
@@ -78,11 +76,12 @@ CREATE TABLE slug_redirects (
     FOREIGN KEY (story_id) REFERENCES stories (id)
 );
 
--- El grafo real del cuento (ver migrations/0006_add_edges_table.sql):
--- reemplaza el JSON en stories.options/nodes.options con filas de verdad y
--- claves foráneas que SQLite/Turso sí comprueba. from_node_id es NULL para
--- las opciones iniciales del propio cuento (la raíz no es una fila de
--- 'nodes'). 'position' conserva el orden de las opciones.
+-- El grafo real del cuento (ver migrations/0006_add_edges_table.sql y
+-- 0007_drop_options_columns.sql, que retiró las columnas JSON viejas
+-- stories.options/nodes.options): filas de verdad con claves foráneas que
+-- SQLite/Turso sí comprueba. from_node_id es NULL para las opciones
+-- iniciales del propio cuento (la raíz no es una fila de 'nodes').
+-- 'position' conserva el orden de las opciones.
 CREATE TABLE edges (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     story_id INTEGER NOT NULL,

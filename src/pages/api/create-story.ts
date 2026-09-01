@@ -319,9 +319,6 @@ const createStory = async (params: { scenario: string, characterOptions: string[
     story.slug,
     story.resume,
     story.text,
-    // El grafo real ya no vive aquí (ver 'edges' más abajo); esta columna
-    // queda como placeholder mientras se retira del todo (migración 0006).
-    "[]",
     story.meta.description,
     JSON.stringify(story.meta.keywords),
     JSON.stringify([category]),
@@ -343,7 +340,6 @@ const createStory = async (params: { scenario: string, characterOptions: string[
     story.slug,
     backSlug,
     text,
-    null,
     meta.title,
     meta.description,
     JSON.stringify(meta.keywords)
@@ -397,8 +393,6 @@ const regenerateStory = async ({ storySlug, scenario, characterOptions, category
     title: story.title,
     resume: story.resume,
     text: story.text,
-    // El grafo real ya no vive aquí (ver 'edges' más abajo).
-    options: "[]",
     description: story.meta.description,
     keywords: JSON.stringify(story.meta.keywords),
     categories: JSON.stringify([category]),
@@ -426,7 +420,6 @@ const regenerateStory = async ({ storySlug, scenario, characterOptions, category
     story.slug,
     backSlug,
     text,
-    null,
     meta.title,
     meta.description,
     JSON.stringify(meta.keywords)
