@@ -54,7 +54,7 @@ const selectedAge = age ? AGES[age] : undefined;
 const versionSegment = imageVersion ? `v${imageVersion}/` : '';
 const imageUrl = `https://res.cloudinary.com/${PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload/${versionSegment}cuentos-interactivos/${slug}/${slug}`;
 
-const ogImageUrl = getCldOgImageUrl({ src: `cuentos-interactivos/${slug}/${slug}` });
+const ogImageUrl = getCldOgImageUrl({ src: `cuentos-interactivos/${slug}/${slug}`, version: imageVersion ?? undefined });
 
 const url = new URL(Astro.url.pathname, Astro.site);
 
