@@ -3,9 +3,22 @@ import Globo from '@components/Globo.astro'
 import Planet from '@components/Planet.astro'
 import Search from '@components/Search'
 import Stars from '@components/Stars.astro'
+import Button from '@components/Button.astro'
 ---
 
 <section class="hero w-full h-svh top-0 left-0 relative overflow-hidden">
+  <img
+    src="/decorative/corner-ornament-large.png"
+    alt=""
+    aria-hidden="true"
+    class="pointer-events-none absolute top-0 left-0 w-40 md:w-56 h-auto z-40 opacity-90"
+  />
+  <img
+    src="/decorative/corner-ornament-large.png"
+    alt=""
+    aria-hidden="true"
+    class="pointer-events-none absolute bottom-0 right-0 w-40 md:w-56 h-auto z-40 opacity-90 rotate-180"
+  />
   <div class="wall w-full h-[70svh] relative flex items-center flex-col-reverse gap-32">
     <div class="portal absolute overflow-hidden bottom-0 margin-auto max-w-xl rounded-tl-full rounded-tr-full h-[90%] w-5/6 z-10">
       <Stars />
@@ -45,6 +58,7 @@ import Stars from '@components/Stars.astro'
         <span class="title font-thin text-center text-balance leading-none">¿Qué camino eliges?</span>
       </div>
       <Search client:visible />
+      <Button href="#categorias" variant="solid">Explorar historias</Button>
     </div>
   </div>
 </section>
@@ -59,25 +73,30 @@ import Stars from '@components/Stars.astro'
   }
 
   .pretitle {
-    color: #fff;
-    text-shadow: 1px 1px 2px #4e4e4e;
+    color: #C9A227;
+    text-shadow: 1px 1px 2px #0B120D;
     font-size: clamp(.5em,4vw + .5em,1em);
   }
 
   .title {
-    color: #fff;
-    text-shadow: 1px 1px 2px #4e4e4e;
+    font-family: 'Playfair Display Variable', serif;
+    color: #F6EEDD;
+    text-shadow: 1px 1px 3px #0B120D;
     font-size: clamp(1.5em,4vw + .5em,3em);
   }
 
   .wall {
     position: relative;
-    background-image: radial-gradient(ellipse 50% 100% at center, rgba(209, 198, 181, 1) 39%, rgba(179, 163, 162, 1) 80%);
+    background-image: radial-gradient(ellipse 50% 100% at center, rgba(28, 53, 36, 0.55) 0%, rgba(11, 18, 13, 0.9) 80%), url('/decorative/bg-forest-texture.png');
+    background-size: cover, cover;
+    background-position: center, center;
   }
 
   .hero::after {
     content: '';
-    background-image: radial-gradient(circle at center,rgba(254,249,226,1) 0%,rgba(232,220,199,1) 39%,rgb(177 168 168) 80%);
+    background-image: radial-gradient(circle at center, rgba(28,53,36,0.5) 0%, rgba(18,35,26,0.7) 39%, rgba(11,18,13,0.9) 80%), url('/decorative/bg-forest-texture.png');
+    background-size: cover, cover;
+    background-position: center, center;
     transform-origin: top;
     transform-style: preserve-3d;
     transform: rotateX(70deg);
@@ -87,7 +106,7 @@ import Stars from '@components/Stars.astro'
   }
 
   .portal {
-    background-image: radial-gradient(ellipse at bottom, #1b2735 0%, #090a0f 100%);
+    background-image: radial-gradient(ellipse at bottom, #12231A 0%, #0B120D 100%);
   }
 
   .right-ornament-shine,

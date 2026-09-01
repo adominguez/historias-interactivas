@@ -32,6 +32,12 @@ importers:
       '@astrojs/vercel':
         specifier: ^9.0.5
         version: 9.0.5(astro@5.2.0(@types/node@22.20.1)(jiti@1.21.6)(rollup@4.27.4)(typescript@5.7.2)(yaml@2.6.1))(react@19.0.0)(rollup@4.27.4)
+      '@fontsource-variable/eb-garamond':
+        specifier: ^5.3.0
+        version: 5.3.0
+      '@fontsource-variable/playfair-display':
+        specifier: ^5.3.0
+        version: 5.3.0
       '@fontsource-variable/ysabeau-infant':
         specifier: ^5.1.0
         version: 5.1.0
@@ -792,6 +798,12 @@ packages:
     engines: {node: '>=18'}
     cpu: [x64]
     os: [win32]
+
+  '@fontsource-variable/eb-garamond@5.3.0':
+    resolution: {integrity: sha512-656OJsA9Vv24yhqRZFEzXnzS2AYgKdEILLgHJYLzzXndgcWFKfSXFqzbRI5/6Yk1Yt7UfWrUeppE5nRQPQMwlQ==}
+
+  '@fontsource-variable/playfair-display@5.3.0':
+    resolution: {integrity: sha512-IHdzTvE8eGIXHteZql7KXoqdc3Gfm+Zs1u4XlSC3MeplkwviT3sx/P6gI0tLwg/xIYLF4ZJYveZ5V+bl9cnDwA==}
 
   '@fontsource-variable/ysabeau-infant@5.1.0':
     resolution: {integrity: sha512-EOl9vYYu/2Ty3n535TW0oMjm6xhpTENBRfU3mfqoyr1VVda+PZlSxIPAx81wekOHaLAay4BZ47UU9O7MQNOFeA==}
@@ -4246,6 +4258,10 @@ snapshots:
 
   '@esbuild/win32-x64@0.25.12':
     optional: true
+
+  '@fontsource-variable/eb-garamond@5.3.0': {}
+
+  '@fontsource-variable/playfair-display@5.3.0': {}
 
   '@fontsource-variable/ysabeau-infant@5.1.0': {}
 

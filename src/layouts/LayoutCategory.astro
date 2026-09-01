@@ -92,18 +92,6 @@ const url = new URL(Astro.url.pathname, Astro.site);
 </html>
 
 <style is:global>
-	:root {
-		--accent: 136, 58, 234;
-		--accent-light: 224, 204, 250;
-		--accent-dark: 49, 10, 101;
-		--accent-gradient: linear-gradient(
-			45deg,
-			rgb(var(--accent)),
-			rgb(var(--accent-light)) 30%,
-			white 60%
-		);
-	}
-
   h1 {
     font-size: clamp(2em,4vw + .5em,3em);
   }

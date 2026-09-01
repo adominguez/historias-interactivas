@@ -6,39 +6,41 @@ const { slug, title, resume, age, rating, ratingCount } = Astro.props;
 const { color, alias } = AGES[age as keyof typeof AGES];
 ---
 
-<article class="aspect-[300/450] shadow-md flex flex-col p-4 relative group border border-gray-200" id={slug}>
-  <!-- <a href={`/${slug}`}> -->
-    <div class="border-2 border-slate-800 overflow-hidden relative">
-      <div class:list={[
-        'w-5 h-5 absolute top-4 right-4 z-10 rounded-full border-2 border-white',
-        color
-      ]} title={alias} />
-      <CldImage
-        transition:name={slug}
-        src={`cuentos-interactivos/${slug}/${slug}`}
-        width={600}
-        height={700}
-        alt={title}
-        sizes="100vw"
-        class="group-hover:scale-110 transition-transform"
-      />
-    </div>
-    <a href={`/${slug}`} class="absolute flex flex-col justify-end left-0 top-0 w-full h-full" title={title}>
-      <h3 class="text-xl line-clamp-1 m-0 px-4">{title}</h3>
-      <Rating
-        totalStars={5}
-        initialRating={rating}
-        ratingCount={ratingCount}
-        size={16}
-        color="#FFD700"
-        slug={slug}
-        className='px-4'
-      />
-      <p class="text-sm line-clamp-2 m-0 mx-4 mb-4">{resume}</p>
-    </a>
-  <!-- </a> -->
+<article
+  class="aspect-[300/450] flex flex-col relative group rounded-sm overflow-hidden border border-gold-600/40
+         shadow-[inset_3px_0_0_0_rgba(0,0,0,0.35),0_4px_10px_rgba(0,0,0,0.4)]"
+  id={slug}
+>
+  <div class:list={[
+    'w-5 h-5 absolute top-3 right-3 z-10 rounded-full border-2 border-parchment-100',
+    color
+  ]} title={alias} />
+  <CldImage
+    transition:name={slug}
+    src={`cuentos-interactivos/${slug}/${slug}`}
+    width={600}
+    height={700}
+    alt={title}
+    sizes="100vw"
+    class="group-hover:scale-110 transition-transform duration-300"
+  />
+  <a
+    href={`/${slug}`}
+    class="absolute flex flex-col justify-end left-0 top-0 w-full h-full
+           bg-gradient-to-t from-forest-950/90 via-forest-950/20 to-transparent
+           px-4 pb-4 pt-10 text-parchment-100"
+    title={title}
+  >
+    <h3 class="font-display text-xl line-clamp-1 m-0 text-gold-400">{title}</h3>
+    <Rating
+      totalStars={5}
+      initialRating={rating}
+      ratingCount={ratingCount}
+      size={16}
+      color="#C9A227"
+      slug={slug}
+      className='my-1'
+    />
+    <p class="font-serif-story text-sm line-clamp-2 m-0 text-parchment-100/90">{resume}</p>
+  </a>
 </article>
-
-<style>
-  
-</style>
