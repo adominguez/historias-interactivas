@@ -44,14 +44,14 @@ const url = new URL(Astro.url.pathname, Astro.site);
       "hasPart": {
         "@type": "ItemList",
         "name": title,
-        "itemListElement": stories.map(({title, slug, description}, index) => ({
+        "itemListElement": stories.map(({title, slug, description, image_version}, index) => ({
           "@type": "ListItem",
           "position": index + 1,
           "item": {
             "@type": "CreativeWork",
             "name": title,
             "url": new URL(slug, Astro.site),
-            "image": `https://res.cloudinary.com/${PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload/v1737579916/cuentos-interactivos/${slug}/${slug}`,
+            "image": `https://res.cloudinary.com/${PUBLIC_CLOUDINARY_CLOUD_NAME}/image/upload/${image_version ? `v${image_version}/` : ''}cuentos-interactivos/${slug}/${slug}`,
             "author": {
               "@type": "Organization",
               "name": "El Árbol de las Historias"
@@ -77,7 +77,7 @@ const url = new URL(Astro.url.pathname, Astro.site);
         current: true,
       }]} />
       <CldImage
-        src={imageUrl}
+        src={`cuentos-interactivos/categories/hero-${name}`}
         width={1024}
         height={512}
         alt={title}

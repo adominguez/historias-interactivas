@@ -82,15 +82,29 @@ function findInvalidSpanishWords(text: string, characterNames: string[]): string
 // seguido directamente de ':' o '—', sin verbo de habla de por medio. Es una
 // comprobación determinista para no depender de que el prompt lo evite por
 // sí solo.
-const SPEECH_VERBS = "dice|dijo|pregunta|preguntó|responde|respondió|añade|añadió|explica|explicó|declara|declaró|afirma|afirmó|propone|propuso|comenta|comentó|advierte|advirtió";
+const SPEECH_VERBS = "dice|dijo|pregunta|preguntó|responde|respondió|añade|añadió|explica|explicó|declara|declaró|afirma|afirmó|propone|propuso|comenta|comentó|advierte|advirtió|susurra|susurró|murmura|murmuró|aporta|aportó|interviene|intervino|anuncia|anunció|exclama|exclamó|menciona|mencionó";
+// Preposiciones/conjunciones que delatan que el nombre es objeto o
+// complemento de la frase anterior, no quien habla ("liberar a Lía —dijo
+// Tula.", "un reto a Priscila: —¿Qué tal...?").
+const OBJECT_MARKERS = "a|al|para|con|de|del|y|o";
 
 function hasScreenplayStyleDialogue(text: string, characterNames: string[]): boolean {
   const plainText = text.replace(/<[^>]+>/g, " ");
   return characterNames.some(name => {
     const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
     // Nombre pegado a ':'/'—' (etiqueta de guion), con o sin un verbo de
-    // habla de por medio ("Nombre:", "Nombre dice:"...).
-    return new RegExp(`${escaped}\\s*(?:${SPEECH_VERBS})?\\s*[:—]`, "i").test(plainText);
+    // habla de por medio ("Nombre:", "Nombre dice:"...). Los dos lookbehind
+    // descartan el caso en que ese mismo guion en realidad cierra la
+    // atribución de OTRO personaje ("responde el Ángel—", "—dijo Tula.") o
+    // el nombre es solo el objeto de la frase anterior ("a Lía —dijo
+    // Tula."): en ambos casos hay un verbo de habla (con artículo opcional
+    // de por medio) o una preposición/conjunción justo antes del nombre, en
+    // vez de venir el nombre en posición de sujeto de su propia etiqueta.
+    const re = new RegExp(
+      `(?<!\\b(?:${SPEECH_VERBS})\\s+(?:(?:el|la|los|las)\\s+)?)(?<!\\b(?:${OBJECT_MARKERS})\\s+)${escaped}\\s*(?:${SPEECH_VERBS})?\\s*[:—]`,
+      "iu"
+    );
+    return re.test(plainText);
   });
 }
 
@@ -462,4 +476,4 @@ const removeRatedStory = (slug: string) => {
 
 
 
-export { truncateString, validateStoryIntegrity, resolveBlueprint, hasScreenplayStyleDialogue, findInvalidSpanishWords, diagnoseStory, saveRatedStory, getRatedStories, removeRatedStory, getRatedStory };
+export { truncateString, validateStoryIntegrity, resolveBlueprint, hasScreenplayStyleDialogue, findInvalidSpanishWords, diagnoseStory, slugify, saveRatedStory, getRatedStories, removeRatedStory, getRatedStory };

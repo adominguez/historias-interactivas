@@ -23,6 +23,19 @@ describe('hasScreenplayStyleDialogue', () => {
   it('no marca un diálogo bien construido con raya y atribución natural', () => {
     expect(hasScreenplayStyleDialogue('—Vamos a avanzar con calma —dijo la Niña del océano.', names)).toBe(false);
   });
+
+  it('no marca al nombre cuando es objeto/complemento de la frase, no quien habla', () => {
+    // "Delfín guardián" es a quien hay que ayudar, no quien dice la frase.
+    expect(hasScreenplayStyleDialogue('si nos ayudas a liberar a Delfín guardián —dijo Corsario del viento.', names)).toBe(false);
+  });
+
+  it('no marca al nombre cuando el guion cierra la atribución de OTRO personaje', () => {
+    expect(hasScreenplayStyleDialogue('—Esto es antiguo —responde el Corsario del viento—. Sigamos.', names)).toBe(false);
+  });
+
+  it('sí marca "Nombre verbo: texto" aunque el nombre lleve artículo delante', () => {
+    expect(hasScreenplayStyleDialogue('La Niña del océano responde: —Vamos a avanzar.', names)).toBe(true);
+  });
 });
 
 describe('findInvalidSpanishWords', () => {

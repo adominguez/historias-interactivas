@@ -29,23 +29,31 @@ const repairSceneText = async ({ text, characterNames, age }: { text: string, ch
 
   while (attempts < MAX_REPAIR_ATTEMPTS) {
     attempts += 1;
-    const result = await generateObject({
-      model: openai('gpt-5-nano'),
-      maxOutputTokens: 4000,
-      providerOptions: {
-        openai: {
-          reasoningEffort: "low",
+    try {
+      const result = await generateObject({
+        model: openai('gpt-5-nano'),
+        maxOutputTokens: 4000,
+        providerOptions: {
+          openai: {
+            reasoningEffort: "low",
+          },
         },
-      },
-      prompt: generateRepairPrompt({ age, text: current, characterNames, issues }),
-      schema: repairedTextSchema,
-    });
+        prompt: generateRepairPrompt({ age, text: current, characterNames, issues }),
+        schema: repairedTextSchema,
+      });
 
-    current = result.object.text;
-    issues = detectContentIssues(current, characterNames);
+      current = result.object.text;
+      issues = detectContentIssues(current, characterNames);
 
-    if (issues.invalidWords.length === 0 && !issues.isScreenplayStyle) {
-      return { text: current, fixed: true, attempts, remainingIssues: issues };
+      if (issues.invalidWords.length === 0 && !issues.isScreenplayStyle) {
+        return { text: current, fixed: true, attempts, remainingIssues: issues };
+      }
+    } catch (error) {
+      // Por ejemplo AI_NoObjectGeneratedError (el modelo no devuelve un
+      // objeto válido según el schema): se cuenta como un intento fallido
+      // más en vez de tirar toda la petición — 6 de 277 reparaciones reales
+      // se perdieron así antes de este cambio.
+      console.error(`Intento ${attempts}/${MAX_REPAIR_ATTEMPTS} de reparación fallido:`, error);
     }
   }
 

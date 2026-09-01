@@ -1,0 +1,13 @@
+-- LayoutStory.astro y LayoutCategory.astro construían la URL de la imagen de
+-- cada historia con un número de versión de Cloudinary FIJO y hardcodeado
+-- (v1737579916, el mismo para las 175 historias), en vez del real de cada
+-- subida. Esto significa que la URL de la imagen nunca cambiaba al
+-- regenerarla, dejando el resultado a merced de que la caché de la CDN se
+-- invalidase a tiempo (ver invalidate:true en uploadImage, create-story.ts).
+-- Guardamos aquí la versión real que devuelve Cloudinary en cada subida
+-- (insertNewStory/updateStory/regenerate-image la rellenan a partir de
+-- ahora) para poder construir una URL que cambie de verdad cuando la imagen
+-- cambia. Las 175 filas existentes quedan a NULL: el código cae a una URL
+-- sin versión (sigue funcionando, solo pierde el cache-busting instantáneo
+-- hasta que se regenere esa imagen una vez más).
+ALTER TABLE stories ADD COLUMN image_version INTEGER;

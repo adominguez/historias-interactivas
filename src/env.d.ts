@@ -10,6 +10,8 @@ interface ImportMetaEnv {
   readonly FACEBOOK_API_VERSION: string;
   readonly INSTAGRAM_PAGE_ID: string;
   readonly SITE_URL: string;
+  readonly ADMIN_USERNAME: string;
+  readonly ADMIN_PASSWORD: string;
 }
 
 interface ImportMeta {

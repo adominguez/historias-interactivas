@@ -27,7 +27,7 @@ function generateBlueprintPrompt({ scenario, characterOptions, category, age }: 
      - El cuento debe tener un mínimo de 3 nodos y un máximo de 8.
      - Cada decisión debe ofrecer un mínimo de 2 opciones y un máximo de 4. MUY IMPORTANTE: las distintas opciones de una misma decisión deben llevar a nodos DIFERENTES entre sí (al menos dos destinos distintos). Nunca hagas que todas las opciones de un mismo nodo apunten al mismo índice: si el lector acaba en el mismo sitio elija lo que elija, la decisión no sirve de nada.
      - Ningún nodo puede tener una opción cuyo 'next' sea su propio índice (un nodo nunca se referencia a sí mismo): eso dejaría al lector exactamente donde ya estaba.
-     - Cada nodo debe tener un único camino de llegada: ningún nodo puede ser el destino de las opciones de dos nodos (o de la historia y un nodo) distintos. No hagas que dos caminos diferentes confluyan en el mismo nodo, aunque narrativamente parezca natural: el mismo texto no puede encajar con dos historiales previos distintos a la vez.
+     - **Regla de un único padre por nodo (la que más se te olvida, léela dos veces):** cada nodo tiene EXACTAMENTE UN padre — una sola opción, de un solo nodo anterior (o de la propia historia), puede apuntar a él con su 'next'. Antes de dar el esqueleto por terminado, repasa TODAS las opciones de TODOS los nodos y de la historia (todos los 'next' de todo el documento) y comprueba, índice a índice, cuántas veces aparece cada uno como destino: cada índice de 'nodes' debe aparecer como destino EXACTAMENTE UNA VEZ en total sumando todas las opciones del documento entero, nunca dos o más. Es muy tentador cerrar dos caminos distintos en el mismo nodo final para dar sensación de clímax compartido — NO lo hagas, aunque narrativamente te parezca natural: el mismo texto no puede encajar con dos historiales previos distintos a la vez. Si sientes esa tentación, la solución correcta es escribir DOS nodos finales distintos, uno para cada camino (pueden ser parecidos en espíritu — el mismo tipo de desenlace feliz o el mismo giro — pero cada uno mencionando los objetos y hechos concretos de SU propio camino), nunca fusionarlos en uno solo.
 
   2. **Cómo referenciar los nodos (MUY IMPORTANTE, léelo con cuidado):**
      - NO inventes ningún identificador de texto para los nodos. Los nodos se identifican solo por su POSICIÓN dentro del array 'nodes'.
@@ -124,7 +124,10 @@ function generateRepairPrompt({ age, text, characterNames, issues }: { age: stri
   const selectedAge = AGES[age as keyof typeof AGES] || AGES["9-12"];
 
   const reasons = [
-    issues.isScreenplayStyle && 'El diálogo está escrito con formato de guion de teatro/cine (el nombre de un personaje seguido directamente de ":" o "—"). Reescribe cada línea de diálogo integrada en la narración, introducida con raya (—), indicando quién habla UNA sola vez por línea (antes o después del diálogo, nunca las dos veces a la vez ni repetido al final).',
+    issues.isScreenplayStyle && `El diálogo está escrito con formato de guion de teatro/cine (el nombre de un personaje seguido directamente de ":" o "—"). Reescribe cada línea de diálogo integrada en la narración, introducida con raya (—), indicando SIEMPRE quién habla con su NOMBRE REAL, una sola vez por línea. Ejemplo correcto (con un personaje de ejemplo llamado Elena): "—Vamos hacia el norte —dijo Elena, señalando el camino." Dos errores muy comunes que debes evitar al corregir esto, ambos igual de mal que el original:
+  (1) Pegar el nombre al principio del diálogo sin verbo ni puntuación que lo separe: "—Elena vamos hacia el norte" (mal, sigue siendo formato de guion, solo que sin los dos puntos).
+  (2) Quitar el nombre del personaje por completo y dejar el verbo sin sujeto: "—Vamos hacia el norte —dijo, señalando el camino" (mal, ahora no se sabe quién habla).
+  El nombre real del personaje tiene que aparecer, y tiene que ir DESPUÉS del verbo de habla (nunca pegado al inicio de la raya).`,
     issues.invalidWords.length > 0 && `Contiene palabras que no existen en español o están en otro idioma: ${issues.invalidWords.join(', ')}. Sustitúyelas por palabras reales y sencillas en español que tengan sentido en ese punto de la frase.`,
   ].filter(Boolean).join('\n  - ');
 
@@ -142,13 +145,110 @@ function generateRepairPrompt({ age, text, characterNames, issues }: { age: stri
   Reescribe el texto COMPLETO de la escena corrigiendo SOLO el/los problema(s) indicado(s) arriba. Esto es una corrección puntual, no una reescritura creativa: mantén exactamente los mismos hechos, personajes, objetos, el contenido de los diálogos y la estructura narrativa del texto original, sin añadir ni eliminar ningún acontecimiento. Usa el mismo formato HTML (<p>, <strong>, <em>...) que el original. Escribe todo en español.`
 }
 
-function generateImagePrompt({ age, sceneText, characters }: { age: string, sceneText: string, characters: { name: string, description: string }[] }) {
+// Párrafo de apertura por franja de edad: fija la intensidad y el tono
+// general de la imagen. Antes esto no variaba en absoluto (mismo prompt
+// genérico para 3-4 y para 18+), lo que junto con el estilo plano
+// producía portadas muy genéricas y "de IA" y, en 18+, con aspecto
+// infantil. La energía "espectacular y cinematográfica" de 9-12/13-18 se
+// suaviza para 3-4/5-8 y se vuelve seria (sin nada infantil) para 18+.
+const AGE_INTROS: Record<string, string> = {
+  "3-4": "Ilustración de cuento para los más pequeños, cálida, amable y reconfortante, con calidad de libro ilustrado infantil de alta gama. Crea una escena tierna y acogedora, llena de curiosidad y ternura, siempre suave y nunca intensa ni inquietante.",
+  "5-8": "Ilustración editorial para cuento infantil, vívida y llena de vida, con calidad de portada de libro ilustrado premium. Crea una escena alegre, llena de aventura y sensación de descubrimiento, siempre amigable para niños.",
+  "9-12": "Ilustración editorial de fantasía, espectacular y cinematográfica, con calidad de portada de libro ilustrado premium. Crea una escena visualmente impactante, llena de aventura, magia y sensación de descubrimiento.",
+  "13-18": "Ilustración editorial juvenil, espectacular y cinematográfica, con calidad de portada de novela young adult. Crea una escena visualmente impactante, con emoción, tensión narrativa y sensación de descubrimiento, con un tono algo más maduro pero siempre apropiado para adolescentes.",
+  "18+": "Ilustración editorial madura, cinematográfica y con calidad de portada de novela para adultos. Crea una escena visualmente impactante y con peso dramático real, sin ningún elemento infantil, manteniendo un tono serio y sofisticado.",
+};
+
+// Ánimo por categoría: una historia de 'horror'/'fear' no debería tener la
+// misma atmósfera visual que una de 'princesses' o 'christmas' aunque
+// compartan la misma franja de edad. Las claves coinciden con
+// src/data/categories.ts.
+const CATEGORY_MOODS: Record<string, string> = {
+  "fantasy": "magia, mundos fantásticos y seres extraordinarios",
+  "adventures": "aventura, exploración y descubrimiento de lo desconocido",
+  "mystery": "misterio, pistas ocultas e intriga por resolver",
+  "science-fiction": "tecnología asombrosa, mundos futuristas y maravilla espacial",
+  "christmas": "calidez navideña, nieve, luces y magia festiva",
+  "halloween": "misterio divertido y festivo, calabazas y un toque travieso de suspense",
+  "princesses": "elegancia, castillos y cuentos de realeza",
+  "animals": "ternura, naturaleza y conexión con el mundo animal",
+  "horror": "suspense y tensión atmosférica",
+  "love": "calidez emocional, vínculos y momentos entrañables",
+  "fear": "misterio y tensión, superando lo desconocido con valentía",
+  "values": "superación personal, generosidad y aprendizaje",
+  "superheroes": "acción heroica, poder y determinación",
+  "pirates": "aventura marítima, tesoros y mundos por descubrir",
+  "mythology": "grandiosidad épica, dioses y templos antiguos",
+  "history": "ambientación histórica auténtica y sentido de época",
+};
+
+// 'horror'/'fear' combinado con una edad pequeña NO es "suspense real +
+// tono suave" sin más: combinar ambos a ciegas seguiría pudiendo dar una
+// imagen demasiado intensa para un niño de 3-8 años. Aquí se sustituye el
+// ánimo de categoría entero por una versión explícitamente desdramatizada.
+const GENTLE_SCARY_OVERRIDE = "Aunque la categoría es de misterio/miedo, para esta edad el tono debe ser un misterio simpático y divertido, como una casa encantada de dibujos animados — nunca terrorífico de verdad, sin monstruos amenazantes ni imágenes que puedan asustar a un niño pequeño.";
+
+// Núcleo fijo de composición/iluminación/fidelidad, igual para todas las
+// combinaciones de edad y categoría: es la parte que ataca directamente el
+// aspecto "genérico de IA" (composiciones planas, personajes posando,
+// fondos vacíos) detectado en las primeras portadas generadas.
+const IMAGE_PROMPT_CORE = `Interpreta la escena proporcionada y sintetízala en UN único momento visual poderoso. No intentes representar literalmente cada frase, diálogo o acción descrita: identifica el elemento más extraordinario de la escena y conviértelo en el foco principal de la composición.
+
+La imagen debe tener una composición cinematográfica clara, con profundidad mediante primer plano, plano medio y fondo; escenario amplio y memorable; personajes integrados de forma natural en el entorno; sensación de escala; perspectiva dinámica y una lectura visual inmediata.
+
+Usa iluminación narrativa: luz volumétrica, contraluces suaves, reflejos y partículas ambientales cuando tenga sentido, dirigiendo la mirada hacia el elemento protagonista.
+
+Los personajes deben ser expresivos, carismáticos y claramente reconocibles, respetando estrictamente la descripción proporcionada de cada uno (especie, género, personalidad y rasgos esenciales). Sus poses y expresiones deben contar parte de la historia incluso sin leer el texto.
+
+Prioriza: una silueta y un foco visual memorables; escenarios mucho más grandes que los personajes cuando la escena lo permita; magia o fenómenos visibles mediante luz o elementos fantásticos cuando encajen con la categoría; composición asimétrica y dinámica en vez de personajes posando; profundidad atmosférica; emoción y asombro.`;
+
+// Para 3-4, "acuarela lavada"/"pastel sin contraste"/"estética infantil" es
+// justo el aspecto que se busca (ver IMAGE_STYLES), así que esas dos
+// entradas de la lista de "evitar" no aplican en esa franja; el resto
+// (nada de texto, nada realmente aterrador) sí se mantiene siempre.
+function buildAvoidList(age: string): string {
+  const items = [
+    "composiciones planas",
+    "personajes alineados mirando a cámara",
+    "fondos vacíos",
+    "apariencia de clipart",
+    "render 3D genérico",
+    "exceso de elementos compitiendo entre sí",
+    "cualquier representación que pueda resultar aterradora o inapropiada para niños",
+  ];
+  if (age !== "3-4") {
+    items.push("acuarela muy lavada o colores pastel sin contraste", "estética excesivamente infantil o caricaturesca");
+  }
+  return `Evita: ${items.join(", ")}. No añadas texto, letras, títulos, marcos, logotipos ni elementos de interfaz dentro de la imagen.`;
+}
+
+function generateImagePrompt({ age, category, sceneText, characters }: { age: string, category: string, sceneText: string, characters: { name: string, description: string }[] }) {
+  const ageIntro = AGE_INTROS[age] ?? AGE_INTROS["9-12"];
   const styles = IMAGE_STYLES[age] ?? IMAGE_STYLES["9-12"];
   const style = styles[Math.floor(Math.random() * styles.length)];
+
+  const isGentleScaryAge = age === "3-4" || age === "5-8";
+  const isScaryCategory = category === "horror" || category === "fear";
+  const categoryMood = isScaryCategory && isGentleScaryAge
+    ? GENTLE_SCARY_OVERRIDE
+    : `Ambiente narrativo de la categoría: ${CATEGORY_MOODS[category] ?? "aventura y descubrimiento"}.`;
+
   const plainSceneText = sceneText.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
   const charactersText = characters.map(({ name, description }) => `${name}: ${description}`).join(', ');
 
-  return `${style}. Evita añadir texto en la imagen. Escena: ${truncateString(plainSceneText, 900)}. Personajes: ${charactersText}.`;
+  return `${ageIntro}
+
+${categoryMood}
+
+Estética: ${style}.
+
+${IMAGE_PROMPT_CORE}
+
+${buildAvoidList(age)}
+
+Escena: ${truncateString(plainSceneText, 900)}
+
+Personajes: ${charactersText}`;
 }
 
 export { generateBlueprintPrompt, generateSceneContentPrompt, generateRepairPrompt, generateImagePrompt };

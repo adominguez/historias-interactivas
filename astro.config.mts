@@ -104,6 +104,8 @@ export default defineConfig({
       FACEBOOK_API_VERSION: envField.string({ context: "server", access: "public" }),
       INSTAGRAM_PAGE_ID: envField.string({ context: "server", access: "public" }),
       SITE_URL: envField.string({ context: "server", access: "secret" }),
+      ADMIN_USERNAME: envField.string({ context: "server", access: "secret" }),
+      ADMIN_PASSWORD: envField.string({ context: "server", access: "secret" }),
     }
   }
 });

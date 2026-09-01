@@ -1,4 +1,4 @@
-import { getNodesByParentSlug, getStoryBySlug, deleteStory, deleteNodesByStoryId } from "@src/turso";
+import { getNodesByParentSlug, getStoryBySlug, deleteStory, deleteNodesByStoryId, deleteEdgesByStoryId } from "@src/turso";
 import { v2 as cloudinary } from 'cloudinary'
 import { PUBLIC_CLOUDINARY_CLOUD_NAME, PUBLIC_CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET } from "astro:env/server";
 
@@ -32,8 +32,13 @@ export async function GET(request: Request) {
   }
 
   const storyId = story.id;
-  await deleteStory(storyId as number);
+  // Orden obligatorio: 'edges' y 'nodes' tienen claves foráneas hacia
+  // 'stories' (y 'edges' hacia 'nodes'), que Turso sí comprueba de verdad —
+  // borrar la historia antes que sus hijos lo rechazaría con
+  // SQLITE_CONSTRAINT.
+  await deleteEdgesByStoryId(storyId as number);
   await deleteNodesByStoryId(storyId as number);
+  await deleteStory(storyId as number);
 
   const errors = [];
 

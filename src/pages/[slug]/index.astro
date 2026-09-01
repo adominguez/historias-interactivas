@@ -1,8 +1,10 @@
 ---
 import Layout from "@layouts/LayoutStory.astro";
-import { getStoryBySlug, getRelatedStoriesBySlug } from "@src/turso";
+import InlineEditableContent from "@components/InlineEditableContent";
+import { getStoryBySlug, getRelatedStoriesBySlug, getRedirectTargetSlug, getStoryOptions } from "@src/turso";
 import { type Story } from "@types";
 import { generalCategories } from "@src/data/categories";
+import { isAuthorized } from "@src/utils/auth";
 export const prerender = false;
 
 const { slug } = Astro.params;
@@ -16,6 +18,14 @@ if (!slug) {
 const storyResponse = await getStoryBySlug(slug);
 
 if (!storyResponse.length) {
+  // El cuento pudo regenerarse con un slug nuevo (ver regenerateStory en
+  // create-story.ts): antes de dar un 404 comprobamos si hay una
+  // redirección permanente registrada para este slug antiguo.
+  const targetSlug = await getRedirectTargetSlug(slug);
+  if (targetSlug) {
+    return Astro.redirect(`/${targetSlug}`, 301);
+  }
+
   return new Response(null, {
     status: 404,
     statusText: "Not found",
@@ -29,11 +39,13 @@ if (!storyData) {
   });
 }
 
+const storyOptions = await getStoryOptions(storyData.id);
+
 const story = {
   id: storyData.id,
   slug: storyData.slug,
   text: storyData.text,
-  options: JSON.parse(storyData.options),
+  options: storyOptions,
   title: storyData.title,
   description: storyData.description,
   rating: storyData.rating,
@@ -55,8 +67,13 @@ const category = {
 const relatedStories = await getRelatedStoriesBySlug(story.slug);
 
 const title = `${story.title}`;
+const isAdmin = isAuthorized(Astro.request);
 ---
 
-<Layout title={title} description={story.description} slug={story.slug} options={story.options} optionSlug={story.slug} relatedStories={relatedStories} rating={story.rating} ratingCount={story.ratingCount} ratingSlug={story.slug} category={category} created={date} modified={modifiedDate} age={story.age}>
-  <div set:html={story.text} />
+<Layout title={title} description={story.description} slug={story.slug} options={story.options} optionSlug={story.slug} relatedStories={relatedStories} rating={story.rating} ratingCount={story.ratingCount} ratingSlug={story.slug} category={category} created={date} modified={modifiedDate} age={story.age} imageVersion={storyData.image_version} isAdmin={isAdmin}>
+  {isAdmin ? (
+    <InlineEditableContent client:load storySlug={story.slug} target="story" initialTitle={story.title} initialText={story.text} />
+  ) : (
+    <div set:html={story.text} />
+  )}
 </Layout>

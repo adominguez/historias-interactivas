@@ -1,9 +1,11 @@
 ---
 import Layout from "@layouts/LayoutStory.astro";
+import InlineEditableContent from "@components/InlineEditableContent";
 import { turso } from "@src/turso";
-import { getRelatedStoriesBySlug, getRatingStoryBySlug, getStoryBySlug } from "@src/turso";
+import { getRelatedStoriesBySlug, getRatingStoryBySlug, getStoryBySlug, getRedirectTargetSlug, getStoryOptions, getNodeOptions } from "@src/turso";
 import { type Node, type Story } from "@types";
 import { generalCategories } from "@src/data/categories";
+import { isAuthorized } from "@src/utils/auth";
 export const prerender = false;
 
 const { slug, node: nodeParam } = Astro.params;
@@ -22,6 +24,15 @@ const nodeResponse = await turso.execute({
 });
 
 if (!nodeResponse.rows.length) {
+  // Si el cuento se regeneró con un slug nuevo (ver regenerateStory en
+  // create-story.ts), el grafo entero es distinto: no existe un nodo
+  // "equivalente" al que se pedía, así que redirigimos a la raíz del cuento
+  // nuevo en vez de intentar adivinar un nodo concreto.
+  const targetSlug = await getRedirectTargetSlug(parentSlug);
+  if (targetSlug) {
+    return Astro.redirect(`/${targetSlug}`, 301);
+  }
+
   return new Response(null, {
     status: 404,
     statusText: "Not found",
@@ -39,7 +50,7 @@ const node = {
   id: nodeData.id,
   slug: nodeData.slug,
   text: nodeData.text,
-  options: JSON.parse(nodeData.options),
+  options: await getNodeOptions(nodeData.id),
   title: nodeData.title,
   description: nodeData.description,
   parentSlug: nodeData.parent_slug,
@@ -54,7 +65,7 @@ const story = {
   id: storyData.id,
   slug: storyData.slug,
   text: storyData.text,
-  options: JSON.parse(storyData.options),
+  options: await getStoryOptions(storyData.id),
   title: storyData.title,
   description: storyData.description,
   rating: storyData.rating,
@@ -84,8 +95,13 @@ const { rating, ratingCount } = await getRatingStoryBySlug(node.parentSlug);
 
 const title = node.title || node.slug.replaceAll('-', ' ');
 const description = node.description || story.description;
+const isAdmin = isAuthorized(Astro.request);
 ---
 
-<Layout category={category} title={title} description={description} slug={node.parentSlug} options={node.options} optionSlug={node.parentSlug} backUrl={backUrl} relatedStories={relatedStories} ratingSlug={node.parentSlug} rating={rating as number} ratingCount={ratingCount as number} created={date} modified={modifiedDate} age={story.age}>
-  <div set:html={node.text} />
+<Layout category={category} title={title} description={description} slug={node.parentSlug} options={node.options} optionSlug={node.parentSlug} backUrl={backUrl} relatedStories={relatedStories} ratingSlug={node.parentSlug} rating={rating as number} ratingCount={ratingCount as number} created={date} modified={modifiedDate} age={story.age} imageVersion={storyData.image_version} isAdmin={isAdmin} currentNodeSlug={node.slug}>
+  {isAdmin ? (
+    <InlineEditableContent client:load storySlug={node.parentSlug} target={node.slug} initialTitle={node.title} initialText={node.text} />
+  ) : (
+    <div set:html={node.text} />
+  )}
 </Layout>
