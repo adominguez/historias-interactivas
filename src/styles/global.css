@@ -77,6 +77,16 @@ main {
 	font-family: 'Ysabeau SC', sans-serif;
 }
 
+/* Superficie de "papel pergamino" (textura generada, ver Fase C del
+   rediseño) -- compartida por cualquier panel que necesite ese look, en vez
+   de repetir el mismo bloque de fondo en cada componente. */
+.parchment-surface {
+	background-color: #F6EEDD;
+	background-image: url('/decorative/bg-parchment-texture.png');
+	background-repeat: repeat;
+	background-size: 512px 512px;
+}
+
 h1,
 h2,
 h3,

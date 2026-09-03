@@ -14,7 +14,7 @@ const { bookList, title, content, class: className, id = 'cuentos' } = Astro.pro
 ---
 
 <section class:list={[
-  "books-parchment px-4 py-8 relative overflow-hidden",
+  "parchment-surface px-4 py-8 relative overflow-hidden",
   className
   ]} id={id}>
   <img
@@ -31,12 +31,3 @@ const { bookList, title, content, class: className, id = 'cuentos' } = Astro.pro
     <CardBookList bookList={bookList} />
   </div>
 </section>
-
-<style>
-  .books-parchment {
-    background-color: #F6EEDD;
-    background-image: url('/decorative/bg-parchment-texture.png');
-    background-repeat: repeat;
-    background-size: 512px 512px;
-  }
-</style>

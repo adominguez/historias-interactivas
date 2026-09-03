@@ -1,24 +1,54 @@
 ---
 import { type Option } from "@types";
+import Button from "./Button.astro";
 const { options = [], slug } = Astro.props;
 ---
 
-{options?.length > 0 && <h2 class="option-title">¿Qué camino eliges?</h2>}
+{
+  options?.length > 0 && (
+    <div class="flex items-center gap-3 justify-center mt-10 mb-6">
+      <span class="text-gold-600">❦</span>
+      <h2 class="option-title font-display text-gold-600 m-0">¿Qué camino eliges?</h2>
+      <span class="text-gold-600">❦</span>
+    </div>
+  )
+}
 {
   options.length > 0 ?
-  <div class="flex gap-4 flex-wrap mt-8">
-    {options.map((option: Option) => (
-      <a class="rounded-full border-slate-900 border px-4 py-2" href={`/${slug}/${option.next}#contenido`}>{option.text}</a>
+  <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+    {options.map((option: Option, index: number) => (
+      <a
+        class="option-card flex flex-col items-center text-center gap-3 p-6 rounded-xl border-2 border-gold-600/70 bg-parchment-200/70 hover:bg-parchment-200 hover:border-gold-600 hover:-translate-y-0.5 transition-all"
+        href={`/${slug}/${option.next}#contenido`}
+      >
+        <span class="option-number flex items-center justify-center w-11 h-11 rounded-full border-2 border-gold-600 bg-parchment-100 font-display text-lg text-gold-600 shadow-inner">{index + 1}</span>
+        <span class="font-serif-story text-ink">{option.text}</span>
+      </a>
     ))}
   </div>
-  : <span class="option-end w-full text-center block">¡Fin!</span>
+  : (
+    <div class="flex flex-col items-center gap-6 mt-8">
+      <span class="option-end block">¡Fin!</span>
+      <Button href="/" variant="solid">Volver al inicio</Button>
+    </div>
+  )
 }
 
 <style>
   .option-title {
     font-size: clamp(1.5em,4vw + .5em,2.5em);
   }
+  /* Segunda línea fina hacia dentro del borde (efecto de marco "grabado"
+     del mockup, sin imagen) combinada con una sombra de profundidad -- en
+     un solo box-shadow para no competir con las utilidades de Tailwind. */
+  .option-card {
+    box-shadow: inset 0 0 0 4px rgba(201, 162, 39, 0.15), 0 2px 6px rgba(0, 0, 0, 0.15);
+  }
+  .option-card:hover {
+    box-shadow: inset 0 0 0 4px rgba(201, 162, 39, 0.15), 0 8px 16px rgba(0, 0, 0, 0.25);
+  }
   .option-end {
+    font-family: 'Playfair Display Variable', serif;
     font-size: clamp(2em,4vw + .5em,3em);
     font-weight: 700;
     color: var(--accent);

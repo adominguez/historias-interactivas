@@ -5,6 +5,7 @@ import BaseHead from '@components/BaseHead.astro';
 import Footer from '@components/Footer.astro';
 import { CldImage } from 'astro-cloudinary';
 import Breadcrumb from '@components/Breadcrumb.astro';
+import Button from '@components/Button.astro';
 import { getCldOgImageUrl } from 'astro-cloudinary/helpers';
 import type { LittleStory } from '@types';
 import { PUBLIC_CLOUDINARY_CLOUD_NAME } from 'astro:env/server';
@@ -17,9 +18,11 @@ interface Props {
   slug: string;
   name: string;
   stories: LittleStory[];
+  initialContent?: string;
+  dark?: boolean;
 }
 
-const { metaDescription, metaTitle, transition = 'fade', title, slug, name, stories } = Astro.props;
+const { metaDescription, metaTitle, transition = 'fade', title, slug, name, stories, initialContent, dark = false } = Astro.props;
 const imageUrl = `https://res.cloudinary.com/dnxab4qma/image/upload/v1737579916/cuentos-interactivos/categories/hero-${name}`;
 const ogImageUrl = getCldOgImageUrl({ src: `cuentos-interactivos/categories/hero-${name}` });
 
@@ -60,31 +63,65 @@ const url = new URL(Astro.url.pathname, Astro.site);
           }
         }))
       }
-    })}>  
-    </script>      
+    })}>
+    </script>
     <ClientRouter />
 	</head>
-	<body>
-    <Header />
-    <main class="flex pt-24 flex-col gap-8 mx-auto max-w-5xl" transition:animate={transition}>
-      <Breadcrumb breadcrumb={[{
-        title: 'Cuentos interactivos',
-        slug: '/#categorias',
-        current: false,
-      }, {
-        title,
-        slug: `/cuentos-interactivos/${slug}`,
-        current: true,
-      }]} />
-      <CldImage
-        src={`cuentos-interactivos/categories/hero-${name}`}
-        width={1024}
-        height={512}
-        alt={title}
-        sizes="100vw"
-        loading="eager"
-        class="peer-hover:scale-110 z-10 rounded-lg transition-transform"
-      />
+	<body class:list={[dark && "category-page text-parchment-100"]}>
+    <Header isLight={dark} />
+    <main class="flex flex-col gap-8" transition:animate={transition}>
+      {
+        dark ? (
+          <section class="hero-banner relative w-full overflow-hidden">
+            <div class="absolute inset-0 hero-image-wrap">
+              <CldImage
+                src={`cuentos-interactivos/categories/hero-${name}`}
+                width={1200}
+                height={700}
+                alt={title}
+                sizes="100vw"
+                loading="eager"
+                class="!w-full !h-full !max-w-none !max-h-none object-cover"
+              />
+            </div>
+            <div class="relative z-10 max-w-5xl mx-auto px-4 pt-28 pb-16 md:pt-32 md:pb-20">
+              <div class="max-w-xl">
+                <p class="uppercase tracking-wide text-parchment-100/70 text-sm font-medium mb-2">Categoría</p>
+                <h1 class="font-display leading-tight text-balance text-parchment-100">{title}</h1>
+                {
+                  initialContent && (
+                    <p class="text-parchment-100/80 mt-2">{initialContent}</p>
+                  )
+                }
+                <Button href="#cuentos-categoria" variant="solid" class="mt-6">Explorar cuentos</Button>
+              </div>
+            </div>
+          </section>
+        ) : (
+          <div class="px-4 pt-24">
+            <CldImage
+              src={`cuentos-interactivos/categories/hero-${name}`}
+              width={1024}
+              height={512}
+              alt={title}
+              sizes="100vw"
+              loading="eager"
+              class="rounded-lg transition-transform"
+            />
+          </div>
+        )
+      }
+      <div class="max-w-5xl mx-auto w-full px-4">
+        <Breadcrumb breadcrumb={[{
+          title: 'Cuentos interactivos',
+          slug: '/#categorias',
+          current: false,
+        }, {
+          title,
+          slug: `/cuentos-interactivos/${slug}`,
+          current: true,
+        }]} />
+      </div>
       <slot />
     </main>
 	</body>
@@ -94,5 +131,51 @@ const url = new URL(Astro.url.pathname, Astro.site);
 <style is:global>
   h1 {
     font-size: clamp(2em,4vw + .5em,3em);
+  }
+
+  .hero-banner {
+    min-height: 24rem;
+  }
+  .hero-banner h1,
+  .hero-banner p {
+    text-shadow: 0 2px 6px rgba(0, 0, 0, 0.7);
+  }
+  .hero-image-wrap img {
+    display: block;
+    object-position: right top;
+  }
+  .hero-image-wrap::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background:
+      linear-gradient(to bottom, rgba(11, 18, 13, 0.55) 0%, transparent 18%, transparent 35%, rgba(11, 18, 13, 0.75) 82%, #0B120D 100%),
+      linear-gradient(to right, #0B120D 0%, rgba(11, 18, 13, 0.9) 22%, rgba(11, 18, 13, 0.4) 48%, transparent 72%);
+  }
+
+  /* Mismo truco que en LayoutStory.astro: esta plantilla tiene su propio
+     <html>, así que este bloque solo se empaqueta con páginas de categoría
+     -- y solo se aplica cuando dark=true (categorías generales), gracias al
+     scoping por clase .category-page. Las categorías por edad (dark=false)
+     no llevan esta clase y se quedan exactamente como estaban. */
+  body.category-page {
+    background-color: #0B120D;
+    background-image:
+      radial-gradient(ellipse at top, rgba(28, 53, 36, 0.4) 0%, rgba(11, 18, 13, 0.85) 60%),
+      url('/decorative/bg-forest-texture.png');
+    background-repeat: no-repeat, no-repeat;
+    background-size: 100% 100%, cover;
+    background-attachment: fixed, fixed;
+  }
+  body.category-page footer {
+    background: #0B120D;
+    color: rgba(246, 238, 221, 0.7);
+  }
+  body.category-page footer .social-links a {
+    color: rgba(246, 238, 221, 0.7);
+  }
+  body.category-page footer .social-links a:hover {
+    color: #C9A227;
   }
 </style>

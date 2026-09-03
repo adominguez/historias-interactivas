@@ -128,65 +128,76 @@ const breadcrumb = !backUrl ? [{
     })}/>    
     <ClientRouter />
 	</head>
-	<body>
-    <Header />
-    <main class="flex pt-24 flex-col gap-8 mx-auto max-w-5xl" transition:animate={transition}>
-      <CldImage
-        transition:name={slug}
-        src={`cuentos-interactivos/${slug}/${slug}`}
-        version={imageVersion ?? undefined}
-        width={1024}
-        height={512}
-        alt={title}
-        sizes="100vw"
-        loading="eager"
-      />
-      <Breadcrumb breadcrumb={breadcrumb} />
-      {
-        isAdmin && (
-          <div class="px-4">
-            <a href={editHref} class="inline-block text-sm px-3 py-1 rounded-full bg-gray-800 text-white hover:bg-gray-700">✎ Editar este cuento</a>
+	<body class="story-page text-parchment-100">
+    <Header isLight />
+    <main class="flex flex-col gap-8" transition:animate={transition}>
+      <section class="hero-banner relative w-full overflow-hidden">
+        <div class="absolute inset-0 hero-image-wrap h-dvh">
+          <CldImage
+            transition:name={slug}
+            src={`cuentos-interactivos/${slug}/${slug}`}
+            version={imageVersion ?? undefined}
+            width={1200}
+            height={700}
+            alt={title}
+            sizes="100vw"
+            loading="eager"
+            class="!w-full !h-full !max-w-none !max-h-none object-cover"
+          />
+        </div>
+        <div class="relative z-10 max-w-5xl mx-auto px-4 pt-28 pb-16 md:pt-32 md:pb-20">
+          <div class="max-w-xl">
+            <div class="flex flex-wrap items-center gap-2 mb-2 text-sm">
+              <a href={`/cuentos/${category.slug}`} class="uppercase tracking-wide text-parchment-100/70 hover:text-gold-400 font-medium">{category.title}</a>
+              {
+                selectedAge && (
+                  <span class:list={['inline-block px-2 py-0.5 rounded-full text-white text-xs font-semibold', selectedAge.color]}>
+                    {selectedAge.alias}
+                  </span>
+                )
+              }
+            </div>
+            <h1 class="font-display leading-tight text-balance text-parchment-100">{title}</h1>
+            <Rating
+              totalStars={5}
+              initialRating={rating}
+              ratingCount={ratingCount}
+              size={24}
+              color="#C9A227"
+              slug={ratingSlug}
+              client:visible
+            />
+            {
+              ratingCount === 0 ? (
+                <p class="text-sm text-parchment-100/60">Este cuento aún no ha sido valorado, se el primero en valorarlo</p>
+              ) : (
+                <p class="text-sm text-parchment-100/60">Realiza una valoración del cuento</p>
+              )
+            }
+            <DownloadImageButton slug={slug} imageUrl={imageUrl} client:visible />
           </div>
-        )
-      }
-      <section id="contenido" class="px-4 py-8 pb-20">
+        </div>
+      </section>
+      <div class="max-w-5xl mx-auto w-full px-4">
+        <Breadcrumb breadcrumb={breadcrumb} />
+        {
+          isAdmin && (
+            <a href={editHref} class="inline-block mt-2 text-sm px-3 py-1 rounded-full bg-gray-800 text-white hover:bg-gray-700">✎ Editar este cuento</a>
+          )
+        }
+      </div>
+      <section id="contenido" class="max-w-5xl mx-auto w-full px-4 py-8 pb-20">
         {
           backUrl && (
             <button onclick="history.back()">Atrás</button>
           )
         }
-        <div class="mb-8">
-          <div class="flex flex-wrap items-center gap-2 mb-2 text-sm">
-            <a href={`/cuentos/${category.slug}`} class="uppercase tracking-wide text-gray-500 hover:text-primary font-medium">{category.title}</a>
-            {
-              selectedAge && (
-                <span class:list={['inline-block px-2 py-0.5 rounded-full text-white text-xs font-semibold', selectedAge.color]}>
-                  {selectedAge.alias}
-                </span>
-              )
-            }
+        <div class="parchment-surface text-ink rounded-lg border border-gold-600/40 shadow-lg p-6 md:p-10 mt-6">
+          <div class:list={["prose-story font-serif-story", selectedAge?.proseSize ?? "text-lg leading-normal"]}>
+            <slot />
           </div>
-          <h1 class="leading-tight text-balance">{title}</h1>
-          <Rating
-            totalStars={5}
-            initialRating={rating}
-            ratingCount={ratingCount}
-            size={24}
-            color="#FFD700"
-            slug={ratingSlug}
-            client:visible
-          />
-          {
-            ratingCount === 0 ? (
-              <p class="text-sm text-gray-500">Este cuento aún no ha sido valorado, se el primero en valorarlo</p>
-            ) : (
-              <p class="text-sm text-gray-500">Realiza una valoración del cuento</p>
-            )
-          }
+          <Options options={options} slug={optionSlug} />
         </div>
-        <DownloadImageButton slug={slug} imageUrl={imageUrl} client:visible />
-        <slot />
-        <Options options={options} slug={optionSlug} />
       </section>
       <Books bookList={relatedStories} title='¿Quieres leer otro cuento?' />
     </main>
@@ -196,5 +207,76 @@ const breadcrumb = !backUrl ? [{
 <style is:global>
   h1 {
     font-size: clamp(2em,4vw + .5em,3em);
+  }
+
+  .prose-story p:first-of-type::first-letter {
+    float: left;
+    font-family: 'Playfair Display Variable', serif;
+    font-size: 3.5em;
+    line-height: 0.8;
+    padding: 0.05em 0.1em 0 0;
+    color: #C9A227;
+  }
+
+  /* global.css define `body { background: linear-gradient(...) no-repeat;
+     background-size: 100% 600px; }` para el resto del sitio (claro). Esta
+     página tiene su propio <html> (no comparte Layout.astro), así que este
+     bloque global solo se empaqueta con páginas de cuento -- pisamos el
+     `background` completo (no solo un color) para que no se cuele el
+     degradado gris/blanco original por encima de la textura oscura. */
+  body.story-page {
+    background-color: #0B120D;
+    background-image:
+      radial-gradient(ellipse at top, rgba(28, 53, 36, 0.4) 0%, rgba(11, 18, 13, 0.85) 60%),
+      url('/decorative/bg-forest-texture.png');
+    background-repeat: no-repeat, no-repeat;
+    background-size: 100% 100%, cover;
+    background-attachment: fixed, fixed;
+  }
+
+  /* Footer.astro trae su propio fondo claro fijo, sin ningún prop para
+     adaptarlo -- se pisa aquí (misma lógica de <html> propio de arriba) en
+     vez de tocar el componente compartido, que otras páginas aún sin
+     rediseñar siguen usando tal cual. */
+  body.story-page footer {
+    background: #0B120D;
+    color: rgba(246, 238, 221, 0.7);
+  }
+  body.story-page footer .social-links a {
+    color: rgba(246, 238, 221, 0.7);
+  }
+  /* Banner de cabecera a pantalla completa (empieza en la parte de arriba
+     de <main>, por detrás del <Header isLight/> que flota encima con
+     position:absolute): la imagen ocupa toda la sección y se funde con el
+     fondo mediante degradados reales -- hacia la izquierda (donde está el
+     texto), hacia arriba (para que el menú siga siendo legible) y hacia
+     abajo (para enlazar con el panel de contenido) -- en vez de un recuadro
+     con borde duro. (Se probó con `mask-image`, pero el modo de máscara
+     -luminancia vs. alfa- no es consistente entre navegadores para un
+     degradado CSS; una capa superpuesta con color real es infalible.) */
+  .hero-banner {
+    min-height: 28rem;
+  }
+  .hero-banner h1,
+  .hero-banner p,
+  .hero-banner ul,
+  .hero-banner .flex.flex-wrap {
+    text-shadow: 0 2px 6px rgba(0, 0, 0, 0.7);
+  }
+  .hero-image-wrap img {
+    display: block;
+  }
+  .hero-image-wrap::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background:
+      linear-gradient(to bottom, rgba(11, 18, 13, 0.55) 0%, transparent 18%, transparent 35%, rgba(11, 18, 13, 0.75) 82%, #0B120D 100%),
+      linear-gradient(to right, #0B120D 0%, rgba(11, 18, 13, 0.9) 22%, rgba(11, 18, 13, 0.4) 48%, transparent 72%);
+  }
+
+  body.story-page footer .social-links a:hover {
+    color: #C9A227;
   }
 </style>

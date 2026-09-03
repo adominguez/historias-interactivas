@@ -20,12 +20,13 @@ export const ages = [
   "18+"
 ]
 
-export type Age = {
+type Age = {
   type: string;
   people: string;
   alias: string;
   words: string;
   color: string;
+  proseSize: string;
 }
 
 export const AGES = {
@@ -34,35 +35,40 @@ export const AGES = {
     people: "niños",
     alias: "3-4 años",
     words: "40-60 palabras",
-    color: "bg-green-500"
+    color: "bg-green-500",
+    proseSize: "text-xl leading-relaxed"
   },
   "5-8": {
     type: "un cuento",
     people: "niños",
     alias: "5-8 años",
     words: "100-200 palabras",
-    color: "bg-blue-500"
+    color: "bg-blue-500",
+    proseSize: "text-xl leading-relaxed"
   },
   "9-12": {
     type: "un cuento",
     people: "niños",
     alias: "9-12 años",
     words: "200-300 palabras",
-    color: "bg-yellow-500"
+    color: "bg-yellow-500",
+    proseSize: "text-lg leading-normal"
   },
   "13-18": {
     type: "una historia",
     people: "jóvenes",
     alias: "13-18 años",
     words: "300-500 palabras",
-    color: "bg-orange-500"
+    color: "bg-orange-500",
+    proseSize: "text-lg leading-normal"
   },
   "18+": {
     type: "una historia",
     people: "personas",
     alias: "18 años o más",
     words: "500-1000 palabras",
-    color: "bg-red-500"
+    color: "bg-red-500",
+    proseSize: "text-base leading-normal"
   }
 } as { [key: string]: Age };
 

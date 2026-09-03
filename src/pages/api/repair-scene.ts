@@ -1,7 +1,7 @@
 import { createOpenAI } from "@ai-sdk/openai";
 import { generateObject } from "ai";
 import { repairedTextSchema } from "@src/schemas";
-import { hasScreenplayStyleDialogue, findInvalidSpanishWords } from "@src/utils/functions";
+import { hasScreenplayStyleDialogue, findInvalidSpanishWords, hasLeakedEndingLabel, hasMalformedDashes, hasQuotedDialogue } from "@src/utils/functions";
 import { generateRepairPrompt } from "@src/utils/prompts";
 import { getStoryBySlug, getNodeBySlugAndParent, updateStoryText, updateNodeText } from "@src/turso";
 import { OPENAI_API_KEY } from "astro:env/server";
@@ -15,6 +15,9 @@ const MAX_REPAIR_ATTEMPTS = 3;
 const detectContentIssues = (text: string, characterNames: string[]) => ({
   invalidWords: findInvalidSpanishWords(text, characterNames),
   isScreenplayStyle: hasScreenplayStyleDialogue(text, characterNames),
+  hasLeakedLabel: hasLeakedEndingLabel(text),
+  hasBadDashes: hasMalformedDashes(text),
+  hasQuotes: hasQuotedDialogue(text),
 });
 
 // Repara el texto de UNA escena ya publicada: le pasamos al modelo el texto
@@ -45,7 +48,7 @@ const repairSceneText = async ({ text, characterNames, age }: { text: string, ch
       current = result.object.text;
       issues = detectContentIssues(current, characterNames);
 
-      if (issues.invalidWords.length === 0 && !issues.isScreenplayStyle) {
+      if (issues.invalidWords.length === 0 && !issues.isScreenplayStyle && !issues.hasLeakedLabel && !issues.hasBadDashes && !issues.hasQuotes) {
         return { text: current, fixed: true, attempts, remainingIssues: issues };
       }
     } catch (error) {
@@ -104,8 +107,8 @@ export async function GET(request: Request) {
   const characterNames = characters.map(({ name }) => name);
   const age = story.age as string;
 
-  const { invalidWords, isScreenplayStyle } = detectContentIssues(currentText, characterNames);
-  if (invalidWords.length === 0 && !isScreenplayStyle) {
+  const { invalidWords, isScreenplayStyle, hasLeakedLabel, hasBadDashes, hasQuotes } = detectContentIssues(currentText, characterNames);
+  if (invalidWords.length === 0 && !isScreenplayStyle && !hasLeakedLabel && !hasBadDashes && !hasQuotes) {
     return new Response(JSON.stringify({ message: "No se ha detectado ningún problema de contenido en esta escena, no hace falta reparar" }), {
       status: 200,
       headers: { "Content-Type": "application/json" },

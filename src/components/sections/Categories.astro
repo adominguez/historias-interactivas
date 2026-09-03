@@ -1,6 +1,7 @@
 ---
 import { getCategoriesByType } from '@src/turso';
 import { CldImage } from 'astro-cloudinary';
+import categoryCoverVersions from '@src/data/categoryCoverVersions.json';
 
 interface Props {
   type: string;
@@ -27,9 +28,10 @@ const categories = await getCategoriesByType(type);
         categories.map(({name, slug, title}) => (
           <article class="w-full">
             <a href={`cuentos/${slug}`} class="group block w-full max-w-[160px] mx-auto">
-              <div class="aspect-[300/400] w-full overflow-hidden rounded-sm border border-gold-600/40 shadow-[inset_2px_0_0_0_rgba(0,0,0,0.35),0_4px_10px_rgba(0,0,0,0.4)]">
+              <div class="aspect-[300/400] w-full rounded-lg overflow-hidden shadow-lg shadow-black/40">
                 <CldImage
                   src={`cuentos-interactivos/categories/${name}_cat`}
+                  version={(categoryCoverVersions as Record<string, number>)[name as string]}
                   width={300}
                   height={400}
                   alt={title as string}

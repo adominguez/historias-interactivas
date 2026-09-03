@@ -15,6 +15,7 @@ function generateBlueprintPrompt({ scenario, characterOptions, category, age }: 
   1. **Estructura:**
      - Escribe todo (títulos, resúmenes y textos de las opciones) en español, sin mezclar ninguna palabra ni expresión en otro idioma.
      - Estos son los personajes disponibles para este tipo de historia: ${formattedOptions}. Elige entre 2 y 3 que formen un elenco con sentido temático entre sí (el mismo tipo de mundo y de tono) y que encajen con el escenario propuesto. NO mezcles personajes de mundos claramente incompatibles solo porque ambos estaban en la lista (por ejemplo, evita juntar un ser espacial de ciencia ficción con un animal de un bosque mágico sin ninguna explicación). Si ves que ninguna combinación encaja bien, puedes ajustar ligeramente la descripción de alguno para que sí encaje.
+     - Cada personaje elegido de esa lista es un ARQUETIPO (su especie o rol), no un nombre. Invéntale un nombre propio adecuado al tono del cuento y úsalo SIEMPRE en el texto, en vez de repetir el arquetipo una y otra vez (por ejemplo, si eliges "Guardiana de la estrella", el personaje se llama algo como "Mila" y en el cuento se le llama "Mila", no "la Guardiana de la estrella" cada vez que habla o actúa — el arquetipo se explica una sola vez en su descripción). Excepción: si el propio arquetipo ya es un nombre o título que funciona como tal en la narración (por ejemplo "Capitán Roderick" o un personaje con nombre propio real), no hace falta inventarle otro.
      - El escenario del cuento es '${scenario}'.
      - La categoría del cuento es '${category}'.
      - El cuento debe estar dividido en un **inicio**, un **nudo** y un **desenlace**.
@@ -53,7 +54,7 @@ function generateSceneContentPrompt({ age, history, summary, isEnding, character
     : 'Esta es la escena inicial del cuento, no hay nada previo que continuar.';
 
   const charactersText = characters.length > 0
-    ? `Personajes de la historia (manténlos coherentes con esta descripción durante toda la escena: personalidad, forma de hablar, el género gramatical exacto que se indica para cada uno —incluidos los adjetivos que formen parte de su propio nombre, que deben escribirse siempre con la misma terminación de género, nunca alternando—, sin cambiar nada de esto aunque en otra escena se haya usado diferente):\n${characters.map(({ name, description }) => `- ${name}: ${description}`).join('\n')}`
+    ? `Personajes de la historia (manténlos coherentes con esta descripción durante toda la escena: personalidad, forma de hablar, el género gramatical exacto que se indica para cada uno —incluidos los adjetivos que formen parte de su propio nombre, que deben escribirse siempre con la misma terminación de género, nunca alternando—, sin cambiar nada de esto aunque en otra escena se haya usado diferente). Cada uno tiene un nombre propio Y una especie/tipo (por ejemplo "Nilo" es su nombre, "un pingüino" es lo que es) — la primera vez que menciones a cada personaje EN ESTE TEXTO, incluye brevemente qué es además de su nombre, para que quien lee pueda imaginarlo sin tener que adivinarlo (por ejemplo "Nilo, un pingüino ágil de aletas veloces" en vez de solo "Nilo"). No hace falta repetirlo en cada mención posterior dentro de la misma escena, con la primera vez basta:\n${characters.map(({ name, description }) => `- ${name}: ${description}`).join('\n')}`
     : '';
 
   return `Escribe el texto completo de esta escena de ${selectedAge.type} interactivo para ${selectedAge.people} de ${selectedAge.alias}.
@@ -68,7 +69,9 @@ function generateSceneContentPrompt({ age, history, summary, isEnding, character
   - Escribe ${selectedAge.words}, con un lenguaje adecuado para ${selectedAge.people} de ${selectedAge.alias}.
   - Escribe todo el texto en español, sin mezclar ninguna palabra ni expresión en otro idioma.
   - NO uses markdown, utiliza las etiquetas HTML <p>, <strong>, <em>... que hagan falta.
-  - Los diálogos deben ir siempre integrados en la narración, introducidos con raya (—). NUNCA uses comillas para marcar un diálogo, y NUNCA uses formato de guion de teatro o cine (nombre seguido de dos puntos). Cada línea de diálogo lleva su raya, y quién habla se indica UNA sola vez por línea (puede ir antes o después del diálogo, como prefieras, pero nunca las dos veces a la vez ni repetida al final). Antes de dar una línea de diálogo por terminada, comprueba mentalmente que no has mencionado quién habla dos veces.
+  - Los diálogos deben ir siempre integrados en la narración, introducidos con raya (—). NUNCA uses comillas para marcar un diálogo, y NUNCA uses formato de guion de teatro o cine (nombre seguido de dos puntos). Cada línea de diálogo lleva su raya, y quién habla se indica UNA sola vez por línea (puede ir antes o después del diálogo, como prefieras, pero nunca las dos veces a la vez ni repetida al final). Antes de dar una línea de diálogo por terminada, comprueba mentalmente que no has mencionado quién habla dos veces. Nunca dejes una raya suelta sin texto después justo antes de cerrar un párrafo, ni escribas dos rayas seguidas ("——").
+  - NUNCA escribas ninguna etiqueta interna tipo "Fin 1.", "Fin 2.", "FIN" al final de una escena, ni ningún otro texto de numeración o control: el texto que escribes es exactamente lo que va a leer el usuario, sin nada añadido de tu propio proceso.
+  - No cambies el nombre de un mismo lugar u objeto a mitad de cuento (por ejemplo, llamarlo "la garganta de agua" en una frase y "la cascada" en la siguiente como si fueran lo mismo sin explicarlo): una vez que lo nombras de una forma, mantenla igual en toda la escena.
   - Usa solo palabras reales del español; si dudas de si una palabra existe, usa una más sencilla y común en su lugar.
   - Prioriza SIEMPRE la claridad sobre el adorno poético. Evita metáforas o personificaciones vacías que no signifiquen nada concreto, del tipo "la hierba canta con la brisa", "el camino se siente claro", "una voz hecha de viento y campanillas" o "el Arco se inclina ante la paciencia". Si una frase suena bonita pero no podrías explicar con palabras sencillas qué significa o qué aporta a la historia, no la escribas: cuenta lo mismo de forma directa y concreta.
   - Cuando un personaje hable, sus palabras deben decir algo claro y accionable (una idea, una pista, una decisión), nunca una frase ambigua tipo acertijo poético que no se entiende.
@@ -120,7 +123,7 @@ const IMAGE_STYLES: Record<string, string[]> = {
 // pide que lo reescriba corrigiendo solo lo señalado, preservando hechos,
 // personajes y estructura, para minimizar el riesgo de introducir una
 // inconsistencia nueva en un cuento que ya está publicado.
-function generateRepairPrompt({ age, text, characterNames, issues }: { age: string, text: string, characterNames: string[], issues: { invalidWords: string[], isScreenplayStyle: boolean } }) {
+function generateRepairPrompt({ age, text, characterNames, issues }: { age: string, text: string, characterNames: string[], issues: { invalidWords: string[], isScreenplayStyle: boolean, hasLeakedLabel?: boolean, hasBadDashes?: boolean, hasQuotes?: boolean } }) {
   const selectedAge = AGES[age as keyof typeof AGES] || AGES["9-12"];
 
   const reasons = [
@@ -129,6 +132,9 @@ function generateRepairPrompt({ age, text, characterNames, issues }: { age: stri
   (2) Quitar el nombre del personaje por completo y dejar el verbo sin sujeto: "—Vamos hacia el norte —dijo, señalando el camino" (mal, ahora no se sabe quién habla).
   El nombre real del personaje tiene que aparecer, y tiene que ir DESPUÉS del verbo de habla (nunca pegado al inicio de la raya).`,
     issues.invalidWords.length > 0 && `Contiene palabras que no existen en español o están en otro idioma: ${issues.invalidWords.join(', ')}. Sustitúyelas por palabras reales y sencillas en español que tengan sentido en ese punto de la frase.`,
+    issues.hasLeakedLabel && `El texto termina con una etiqueta interna tipo "Fin 1.", "Fin 2." que no debería estar ahí. Elimínala por completo; el texto debe terminar de forma natural, sin ninguna numeración ni marca de control.`,
+    issues.hasBadDashes && `Hay guiones de diálogo mal cerrados: una raya "—" suelta sin nada después justo antes de terminar un párrafo, o dos rayas seguidas "——". Corrige la puntuación para que cada raya introduzca o cierre correctamente su frase.`,
+    issues.hasQuotes && `El diálogo está marcado con comillas (rectas ", tipográficas " ", o angulares «») en vez de con raya (—), a veces incluso combinando ambas. Elimina TODAS las comillas y usa exclusivamente la raya para introducir cada línea de diálogo, igual que el resto del texto.`,
   ].filter(Boolean).join('\n  - ');
 
   return `Esta es una escena ya publicada de ${selectedAge.type} interactivo para ${selectedAge.people} de ${selectedAge.alias} que tiene un problema concreto que hay que corregir:
@@ -251,4 +257,94 @@ Escena: ${truncateString(plainSceneText, 900)}
 Personajes: ${charactersText}`;
 }
 
-export { generateBlueprintPrompt, generateSceneContentPrompt, generateRepairPrompt, generateImagePrompt };
+// Diagnóstico de coherencia de reparto para un cuento ya publicado (ver
+// diagnose-cast-coherence.ts). Reutiliza el mismo criterio que ya se le pide
+// al modelo al ELEGIR el reparto en generateBlueprintPrompt, pero aquí en
+// sentido inverso: dado un reparto ya fijado, juzgar si tiene sentido.
+function generateCastCoherencePrompt({ title, category, age, characters }: { title: string, category: string, age: string, characters: { name: string, description: string }[] }) {
+  const charactersText = characters.map(({ name, description }) => `- ${name}: ${description}`).join('\n');
+
+  return `Evalúa si el siguiente reparto de personajes de un cuento infantil interactivo tiene sentido temático en conjunto: si parecen pertenecer al mismo tipo de mundo y tono narrativo, o si por el contrario alguno fue mezclado sin relación con el resto (por ejemplo, juntar un ser de ciencia ficción con un animal de bosque mágico sin ninguna conexión, o un personaje cuya descripción no aporta nada a la trama y parece añadido al azar, sin motivo narrativo).
+
+Título del cuento: "${title}"
+Categoría: ${category}
+Edad objetivo: ${age}
+
+Reparto:
+${charactersText}
+
+No hace falta que los personajes sean del mismo tipo exacto (animales, personas y seres mágicos pueden convivir perfectamente en un cuento infantil); lo que importa es si, leídos en conjunto, dan la sensación de pertenecer a la misma historia y el mismo tono, o si alguno se siente claramente fuera de lugar. Sé estricto solo con mezclas genuinamente incoherentes: no marques como incoherente un reparto simplemente variado que sí tiene sentido en conjunto.
+
+Importante: juzga el reparto EXACTAMENTE como está descrito arriba, no como podría arreglarse. No inventes ni asumas ninguna justificación, conexión o explicación (un portal, un viaje, un encuentro casual) que no esté ya escrita en las descripciones — si hiciera falta inventar ese puente narrativo para que encajen, es precisamente la señal de que no encajan. Responde con el campo "reason" en una sola frase corta.`;
+}
+
+type CoherenceOption = { text: string; next: string };
+type CoherenceNode = { slug: string; title: string; text: string; options: CoherenceOption[] };
+type CoherenceStoryInput = {
+  title: string;
+  category: string;
+  age: string;
+  characters: { name: string; description: string }[];
+  story: { text: string; options: CoherenceOption[] };
+  nodes: CoherenceNode[];
+};
+
+// Diagnóstico de coherencia narrativa de UN cuento completo, con todos sus
+// nodos a la vez (ver diagnose-story-coherence.ts y su uso en
+// create-story.ts). A diferencia del resto de prompts de este archivo, este
+// no genera ni corrige texto: solo lo evalúa. Los tres tipos de problema que
+// pide buscar están anclados con ejemplos reales concretos (no solo una
+// regla en prosa) porque esa es la lección ya aprendida con
+// generateRepairPrompt: una regla abstracta el modelo la reinterpreta de
+// formas inesperadas, un ejemplo concreto se sigue de forma mucho más fiel.
+function generateStoryCoherencePrompt({ title, category, age, characters, story, nodes }: CoherenceStoryInput) {
+  const plainText = (html: string) => html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+
+  // Para poder juzgar si una escena cumple lo que su opción de entrada
+  // prometía, hace falta saber qué opción(es) llevan hasta cada nodo — ni
+  // el nodo ni el bloque que lo llama lo saben por sí solos, así que se
+  // calcula aquí recorriendo todas las opciones (de la raíz y de cada
+  // nodo) una vez.
+  const incomingByNode = new Map<string, string[]>();
+  const registerIncoming = (options: CoherenceOption[]) => {
+    options.forEach(({ text, next }) => {
+      const list = incomingByNode.get(next) ?? [];
+      list.push(text);
+      incomingByNode.set(next, list);
+    });
+  };
+  registerIncoming(story.options);
+  nodes.forEach(node => registerIncoming(node.options));
+
+  const charactersText = characters.map(({ name, description }) => `- ${name}: ${description}`).join('\n');
+
+  const rootBlock = `ESCENA RAÍZ ("story"):\n${plainText(story.text)}\nOpciones desde aquí: ${story.options.map(o => `"${o.text}"`).join(' / ') || '(ninguna, es un final)'}`;
+
+  const nodeBlocks = nodes.map(node => {
+    const incoming = incomingByNode.get(node.slug) ?? [];
+    return `NODO "${node.slug}" (título: "${node.title}"):\nSe llega aquí eligiendo: ${incoming.map(t => `"${t}"`).join(' / ') || '(sin opción de entrada registrada)'}\nTexto: ${plainText(node.text)}\nOpciones desde aquí: ${node.options.map(o => `"${o.text}"`).join(' / ') || '(ninguna, es un final)'}`;
+  }).join('\n\n');
+
+  return `Lee este cuento infantil interactivo COMPLETO, con todos sus caminos, y evalúa si tiene sentido narrativo y lógico de principio a fin. NO es una revisión de ortografía ni de formato de diálogo (eso ya se comprueba aparte, de forma determinista): busca solo problemas de SIGNIFICADO.
+
+Título: "${title}" — Categoría: ${category} — Edad objetivo: ${age}
+
+Personajes:
+${charactersText}
+
+${rootBlock}
+
+${nodeBlocks}
+
+Busca específicamente estos tres tipos de problema (da igual si el problema aparece dentro de un solo nodo o solo se nota comparando varios):
+
+1. **Terminología inconsistente**: el mismo lugar, objeto o elemento cambia de nombre sin ninguna explicación a lo largo del cuento. Ejemplo real de esto: llamar a un mismo sitio "la garganta de agua" en una frase y "la cascada" un poco más adelante, como si fueran la misma cosa sin aclararlo — una garganta y una cascada no son lo mismo, y el lector no puede saber si es un error o son dos lugares distintos.
+
+2. **Frases que suenan profundas pero no dicen nada concreto**, sobre todo en respuestas o "lecciones" de personajes. Ejemplo real de esto: a la pregunta "¿por qué cambia la cascada con el tiempo?" un personaje responde "nada debe quedarse igual sin que todos participen" — eso NO es una respuesta real a la pregunta, suena a sabiduría pero no explica nada concreto sobre por qué cambia la cascada. Señala cualquier frase así, no solo en diálogos.
+
+3. **Una opción que promete una cosa y la escena a la que lleva hace otra distinta o contraria**. Ejemplo real de esto: una opción dice "consultar a los guardianes escuchando sus consejos" (implica hablar CON ellos), pero la escena a la que lleva describe intentar que el guardián NO note su presencia — justo lo contrario de lo prometido. Para cada nodo, compara la opción que lleva hasta él con lo que realmente ocurre en su texto.
+
+No señales nada relacionado con ortografía, palabras inventadas o formato de guiones de diálogo: eso ya se comprueba por separado. Sé estricto solo con problemas genuinamente confusos o contradictorios; no marques como problema una historia simplemente sencilla, o con un final abierto típico de cuento infantil.`;
+}
+
+export { generateBlueprintPrompt, generateSceneContentPrompt, generateRepairPrompt, generateImagePrompt, generateCastCoherencePrompt, generateStoryCoherencePrompt, type CoherenceStoryInput };
