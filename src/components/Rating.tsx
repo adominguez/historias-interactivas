@@ -27,8 +27,9 @@ const Rating: React.FC<RatingProps> = ({
 
   // Manejar el cambio de rating
   const handleRating = async (value: number) => {
-    const isRated = await getRatedStory(slug);
-    const result = await fetch(`/api/update-rating?slug=${slug}&rating=${value}&isRated=${!!isRated}`);
+    const previouslyRated = await getRatedStory(slug);
+    const previousRatingParam = previouslyRated ? `&previousRating=${previouslyRated.rating}` : '';
+    const result = await fetch(`/api/update-rating?slug=${slug}&rating=${value}${previousRatingParam}`);
     if (result.status === 200) {
       const response = await result.json()
       setRatingCount(response.results.ratingCount);

@@ -393,15 +393,21 @@ export const getRatingStoryBySlug = async (slug: string) => {
   return { rating, ratingCount };
 }
 
-export const updateStoryRating = async (slug: string, newRating: number, isRated: boolean) => {
+export const updateStoryRating = async (slug: string, newRating: number, previousRating?: number) => {
   try {
-    // Iniciar una transacción para garantizar consistencia
+    // Si el navegador ya había votado antes (previousRating viene de su
+    // localStorage), hay que sustituir esa contribución por la nueva en la
+    // media, SIN tocar rating_count (sigue siendo el mismo votante). Si
+    // rating_count es 0 (p. ej. localStorage dice "ya votó" pero la fila no
+    // tiene votos reales, tras un reseteo de datos) se trata como voto nuevo.
     const result = await turso.execute({
-      sql: isRated ? `
+      sql: previousRating !== undefined ? `
         UPDATE stories
-        SET rating = (
-          (rating * rating_count + ?) / (rating_count + 1)
-        )
+        SET rating = CASE
+            WHEN rating_count > 0 THEN (rating * rating_count - ? + ?) / rating_count
+            ELSE ?
+          END,
+          rating_count = CASE WHEN rating_count > 0 THEN rating_count ELSE 1 END
         WHERE slug = ?;
       ` : `
         UPDATE stories
@@ -411,7 +417,7 @@ export const updateStoryRating = async (slug: string, newRating: number, isRated
         rating_count = rating_count + 1
         WHERE slug = ?;
       `,
-      args: [newRating, slug],
+      args: previousRating !== undefined ? [previousRating, newRating, newRating, slug] : [newRating, slug],
     });
 
     // Verificar si la actualización fue exitosa
