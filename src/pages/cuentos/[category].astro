@@ -41,25 +41,31 @@ if (type === 'age') {
 
 ---
 
-<Layout title={title}, metaTitle={metaTitle} metaDescription={metaDescription} slug={slug} name={name} stories={stories}>
-  <section class="px-4 py-8">
-    <h1 class="leading-tight text-balance">{title}</h1>
-    {
-      initialContent && (
-        <p>{initialContent}</p>
-      )
-    }
-  </section>
-  {
-    type === 'general' && (
-      <GeneralCategory contentByAge={contentByAge} stories={stories} />
-    )
-  }
+<Layout title={title} metaTitle={metaTitle} metaDescription={metaDescription} slug={slug} name={name} stories={stories} initialContent={initialContent} dark={type === 'general'}>
   {
     type === 'age' && (
-      <AgeCategory contentByAge={contentByAge} stories={stories} />
+      <section class="px-4 py-8">
+        <h1 class="leading-tight text-balance">{title}</h1>
+        {
+          initialContent && (
+            <p>{initialContent}</p>
+          )
+        }
+      </section>
     )
   }
+  <div id="cuentos-categoria" class="flex flex-col gap-8">
+    {
+      type === 'general' && (
+        <GeneralCategory contentByAge={contentByAge} stories={stories} />
+      )
+    }
+    {
+      type === 'age' && (
+        <AgeCategory contentByAge={contentByAge} stories={stories} />
+      )
+    }
+  </div>
 </Layout>
 
 <style>

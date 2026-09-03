@@ -439,16 +439,6 @@ export const insertNewCategory = async (categoryParams: (string)[]) => {
   });
 }
 
-export const getCategories = async () => {
-  const result = await turso.execute({
-    sql: `
-      SELECT * FROM categories;
-    `,
-    args: [],
-  });
-  return result.rows;
-}
-
 export const getCategoriesByType = async (type: string) => {
   const result = await turso.execute({
     sql: `

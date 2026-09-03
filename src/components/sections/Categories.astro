@@ -1,6 +1,7 @@
 ---
 import { getCategoriesByType } from '@src/turso';
 import { CldImage } from 'astro-cloudinary';
+import categoryCoverVersions from '@src/data/categoryCoverVersions.json';
 
 interface Props {
   type: string;
@@ -20,24 +21,26 @@ const categories = await getCategoriesByType(type);
   effect
 ]} id={id}>
   <div class="flex flex-col gap-8 mx-auto max-w-7xl">
-    <h2 class="text-white text-balance">{title}</h2>
+    <h2 class="font-display text-parchment-100 text-balance">{title}</h2>
     <p class="text-gray-300 text-balance">{content}</p>
-    <div class={`wrapper-${type} grid gap-4 z-20`}>
+    <div class={`wrapper-${type} grid gap-6 z-20`}>
       {
         categories.map(({name, slug, title}) => (
-          <article class:list={[
-            "relative overflow-hidden rounded-lg",
-            "aspect-[300/400]"
-          ]}>
-            <a href={`cuentos/${slug}`} class="link peer absolute bottom-0 px-2 py-4 text-white border-transparent hover:border-red text-center top-0 left-0 right-0 flex flex-col justify-end items-center text-balance z-20 leading-6 hover:text-white"><h3 class="category-text">{title}</h3></a>
-            <CldImage
-              src={`cuentos-interactivos/categories/${name}_cat`}
-              width={300}
-              height={400}
-              alt={title as string}
-              sizes="100vw"
-              class="peer-hover:scale-110 z-10 rounded-lg transition-transform"
-            />
+          <article class="w-full">
+            <a href={`cuentos/${slug}`} class="group block w-full max-w-[160px] mx-auto">
+              <div class="aspect-[300/400] w-full rounded-lg overflow-hidden shadow-lg shadow-black/40">
+                <CldImage
+                  src={`cuentos-interactivos/categories/${name}_cat`}
+                  version={(categoryCoverVersions as Record<string, number>)[name as string]}
+                  width={300}
+                  height={400}
+                  alt={title as string}
+                  sizes="100vw"
+                  class="group-hover:scale-110 transition-transform duration-300 w-full h-full object-cover"
+                />
+              </div>
+              <h3 class="category-text">{title}</h3>
+            </a>
           </article>
         ))
       }
@@ -49,7 +52,9 @@ const categories = await getCategoriesByType(type);
   section {
     
     &.fog {
-      background-image: radial-gradient(ellipse at bottom,#1b2735 0%,#090a0f 100%);
+      background-image: radial-gradient(ellipse at bottom, rgba(28,53,36,0.55) 0%, rgba(11,18,13,0.85) 100%), url('/decorative/bg-forest-texture.png');
+      background-size: cover, cover;
+      background-position: center, center;
       &::after {
         content: '';
         position: absolute;
@@ -67,7 +72,9 @@ const categories = await getCategoriesByType(type);
     }
 
     &.cloud {
-      background-image: radial-gradient(ellipse at bottom,#63acff 0%,#5b72e6 100%);
+      background-image: radial-gradient(ellipse at bottom, rgba(28,53,36,0.4) 0%, rgba(18,35,26,0.75) 100%), url('/decorative/bg-forest-texture.png');
+      background-size: cover, cover;
+      background-position: center, center;
       &::after {
         content: '';
         position: absolute;
@@ -86,20 +93,19 @@ const categories = await getCategoriesByType(type);
   }
 
   .wrapper-general {
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
   }
 
   .wrapper-age {
-    gap: 3rem;
-    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  }
-
-  .link:hover {
-    text-shadow: 0px 0px 10px #fff;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
   }
 
   .category-text {
-    @apply text-lg text-white;
+    @apply font-display text-center text-sm text-gold-400 mt-2 transition-colors;
+  }
+
+  .group:hover .category-text {
+    @apply text-gold-500;
   }
 
   @keyframes fog {

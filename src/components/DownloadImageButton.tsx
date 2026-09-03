@@ -99,14 +99,10 @@ class DownloadImageButton extends React.Component<DownloadImageButtonProps> {
   render() {
     return (
       <button
-        style={{
-          padding: "10px 20px",
-          fontSize: "16px",
-          cursor: "pointer",
-        }}
+        className="inline-flex items-center gap-2 mt-4 px-5 py-2.5 rounded-full font-display text-sm tracking-wide border border-gold-600/60 bg-forest-800 text-gold-400 hover:bg-forest-900 transition-colors cursor-pointer"
         onClick={this.processAndDownloadImage}
       >
-        Generar y Descargar Imagen
+        🖼️ Generar y Descargar Imagen
       </button>
     );
   }

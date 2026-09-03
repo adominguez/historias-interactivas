@@ -58,25 +58,3 @@ const { title, description, transition = 'fade', isLight = false, image } = Astr
 	</body>
   <Footer />
 </html>
-<style is:global>
-	:root {
-		--accent: 136, 58, 234;
-		--accent-light: 224, 204, 250;
-		--accent-dark: 49, 10, 101;
-		--accent-gradient: linear-gradient(
-			45deg,
-			rgb(var(--accent)),
-			rgb(var(--accent-light)) 30%,
-			white 60%
-		);
-	}
-
-	html.dark {
-		background-color: #0d0950;
-		color: #fff;
-	}
-
-	.dark .nav-links a {
-		color: #fff;
-	}
-</style>

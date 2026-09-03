@@ -34,10 +34,10 @@ export async function GET(request: Request) {
 
   const { scenario, characterOptions, category: resolvedCategory, age: resolvedAge } = generateStorySetup(category, age);
 
-  const { status, story, nodes, error } = await regenerateStory({ storySlug, scenario, characterOptions, category: resolvedCategory, age: resolvedAge });
+  const { status, story, nodes, coherenceCheck, error } = await regenerateStory({ storySlug, scenario, characterOptions, category: resolvedCategory, age: resolvedAge });
 
   if (status === 200) {
-    return new Response(JSON.stringify({ story, nodes }), { status, headers: { "Content-Type": "application/json" } });
+    return new Response(JSON.stringify({ story, nodes, coherenceCheck }), { status, headers: { "Content-Type": "application/json" } });
   } else {
     return new Response(JSON.stringify({ message: "Ha ocurrido un error al regenerar el cuento", error }), { status, headers: { "Content-Type": "application/json" } });
   }

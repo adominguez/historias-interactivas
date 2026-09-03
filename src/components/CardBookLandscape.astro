@@ -1,0 +1,52 @@
+---
+import { CldImage } from 'astro-cloudinary';
+import Rating from './Rating';
+
+interface Props {
+  slug: string;
+  title: string;
+  resume: string;
+  rating: number;
+  ratingCount: number;
+  detailed?: boolean;
+}
+
+const { slug, title, resume, rating, ratingCount, detailed = false } = Astro.props;
+---
+
+<a
+  href={`/${slug}`}
+  class="landscape-card group block rounded-lg overflow-hidden border border-gold-600/40 bg-parchment-100 shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-all"
+>
+  <div class="aspect-video overflow-hidden">
+    <CldImage
+      transition:name={slug}
+      src={`cuentos-interactivos/${slug}/${slug}`}
+      width={480}
+      height={270}
+      alt={title}
+      sizes="100vw"
+      class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+    />
+  </div>
+  <div class="p-3">
+    <h3 class="font-display text-ink text-base line-clamp-1 m-0">{title}</h3>
+    <Rating
+      totalStars={5}
+      initialRating={rating}
+      ratingCount={ratingCount}
+      size={14}
+      color="#C9A227"
+      slug={slug}
+      className="my-1"
+    />
+    {
+      detailed && (
+        <>
+          <p class="text-ink/70 text-sm line-clamp-2 mt-1 mb-2">{resume}</p>
+          <span class="text-gold-600 text-sm font-medium">Abrir historia →</span>
+        </>
+      )
+    }
+  </div>
+</a>

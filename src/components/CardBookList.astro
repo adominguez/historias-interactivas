@@ -1,5 +1,5 @@
 ---
-import CardBook from "./CardBook.astro"
+import CardBookLandscape from "./CardBookLandscape.astro"
 import { type LittleStory } from "@types"
 
 const { bookList = [], showFilter } = Astro.props
@@ -9,20 +9,10 @@ const { bookList = [], showFilter } = Astro.props
     <div>Elegir tipo</div>
   )
 }
-<div class="wrapper-grid grid gap-4 z-20">
+<div class="grid gap-6 z-20 sm:grid-cols-2 lg:grid-cols-3">
   {
-    bookList.map(({ slug, title, created_at, resume, age, rating, rating_count: ratingCount }: LittleStory) => (
-      <CardBook slug={slug} title={title} created_at={created_at} resume={resume} ratingCount={ratingCount} rating={rating} age={age} />
+    bookList.map(({ slug, title, resume, rating, rating_count: ratingCount }: LittleStory) => (
+      <CardBookLandscape slug={slug} title={title} resume={resume} ratingCount={ratingCount} rating={rating} detailed />
     ))
   }
 </div>
-
-<style>
-  .wrapper-grid {
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  }
-
-  .link:hover {
-    text-shadow: 0px 0px 10px #fff;
-  }
-</style>

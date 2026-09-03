@@ -2,8 +2,9 @@ import { createOpenAI } from "@ai-sdk/openai";
 import { generateObject } from "ai";
 import { blueprintSchema, sceneContentSchema, storyContentSchema } from "@src/schemas";
 import { generateStorySetup } from "@src/utils/characters";
-import { validateStoryIntegrity, resolveBlueprint, hasScreenplayStyleDialogue, findInvalidSpanishWords } from "@src/utils/functions";
+import { validateStoryIntegrity, resolveBlueprint, hasScreenplayStyleDialogue, findInvalidSpanishWords, hasLeakedEndingLabel, hasMalformedDashes, hasQuotedDialogue } from "@src/utils/functions";
 import { generateBlueprintPrompt, generateSceneContentPrompt, generateImagePrompt } from "@src/utils/prompts";
+import { checkStoryCoherence } from "@src/utils/coherenceCheck";
 import OpenAI from "openai";
 import { v2 as cloudinary } from 'cloudinary'
 import { insertNewNodes, insertNewStory, getStoryBySlug, updateStory, deleteNodesByStoryId, insertSlugRedirect, insertEdges, deleteEdgesByStoryId } from "@src/turso";
@@ -144,14 +145,20 @@ const generateSceneContentWithRetry = async (params: { age: string, history: str
 
     const invalidWords = findInvalidSpanishWords(result.text, characterNames);
     const isScreenplayStyle = hasScreenplayStyleDialogue(result.text, characterNames);
+    const hasLeakedLabel = hasLeakedEndingLabel(result.text);
+    const hasBadDashes = hasMalformedDashes(result.text);
+    const hasQuotes = hasQuotedDialogue(result.text);
 
-    if (invalidWords.length === 0 && !isScreenplayStyle) {
+    if (invalidWords.length === 0 && !isScreenplayStyle && !hasLeakedLabel && !hasBadDashes && !hasQuotes) {
       return result;
     }
 
     const reasons = [
       isScreenplayStyle && 'diálogo con formato de guion',
       invalidWords.length > 0 && `palabras no válidas (${invalidWords.join(', ')})`,
+      hasLeakedLabel && 'etiqueta interna de final filtrada en el texto',
+      hasBadDashes && 'guiones de diálogo mal cerrados',
+      hasQuotes && 'diálogo marcado con comillas',
     ].filter(Boolean).join(' y ');
     console.log(`Escena con ${reasons}, regenerando (intento ${attempt}/${MAX_SCENE_CONTENT_ATTEMPTS})...`);
   }
@@ -282,6 +289,34 @@ const generateStoryWithContent = async ({ scenario, characterOptions, category, 
     meta: nodeContents[index].meta,
   }));
 
+  // Comprobación de coherencia NARRATIVA del cuento ya ensamblado (ver
+  // utils/coherenceCheck.ts): terminología que cambia sin explicación,
+  // frases vacías que no dicen nada concreto, y opciones que prometen algo
+  // distinto de lo que ocurre en la escena a la que llevan. A diferencia de
+  // las comprobaciones de resolveBlueprint/generateSceneContentWithRetry,
+  // esto NO bloquea ni reintenta la generación todavía (regenerar el texto
+  // completo de un cuento entero para arreglar un problema puede que solo
+  // afecte a una escena es carísimo comparado con el resto del pipeline) —
+  // de momento solo se expone en la respuesta para poder decidir, con datos
+  // reales de uso, si conviene que bloquee/reintente más adelante.
+  let coherenceCheck: Awaited<ReturnType<typeof checkStoryCoherence>> | { coherent: null; issues: []; error: string };
+  try {
+    coherenceCheck = await checkStoryCoherence({
+      title: story.title,
+      category,
+      age,
+      characters: story.characters,
+      story: { text: story.text, options: story.options },
+      nodes,
+    });
+    if (!coherenceCheck.coherent) {
+      console.warn('Posibles problemas de coherencia narrativa detectados:', coherenceCheck.issues);
+    }
+  } catch (error) {
+    console.error('No se pudo completar la comprobación de coherencia narrativa:', error);
+    coherenceCheck = { coherent: null, issues: [], error: "No se pudo completar la comprobación" };
+  }
+
   let imageVersion: number | undefined;
 
   if (!skipImage) {
@@ -306,13 +341,13 @@ const generateStoryWithContent = async ({ scenario, characterOptions, category, 
     imageVersion = version;
   }
 
-  return { status: 200 as const, story, nodes, category, age, imageVersion };
+  return { status: 200 as const, story, nodes, category, age, imageVersion, coherenceCheck };
 };
 
 const createStory = async (params: { scenario: string, characterOptions: string[], category: string, age: string }) => {
   const result = await generateStoryWithContent(params);
   if (result.status !== 200) return result;
-  const { story, nodes, category, age, imageVersion } = result;
+  const { story, nodes, category, age, imageVersion, coherenceCheck } = result;
 
   const storyParams = [
     story.title,
@@ -360,7 +395,7 @@ const createStory = async (params: { scenario: string, characterOptions: string[
   await insertEdges(edges);
 
   console.log('Cuento guardado en la base de datos!!');
-  return { status: 200 as const, story, nodes, error: undefined };
+  return { status: 200 as const, story, nodes, coherenceCheck, error: undefined };
 };
 
 // Sustituye TODO el contenido de un cuento ya publicado (título, texto,
@@ -385,7 +420,7 @@ const regenerateStory = async ({ storySlug, scenario, characterOptions, category
 
   const result = await generateStoryWithContent({ scenario, characterOptions, category, age, skipImage: true, excludeStoryId: existing.id as number });
   if (result.status !== 200) return result;
-  const { story, nodes, imageVersion } = result;
+  const { story, nodes, imageVersion, coherenceCheck } = result;
 
   console.log(`Sustituyendo el cuento en la base de datos (slug: "${storySlug}" -> "${story.slug}")...`);
   await updateStory(existing.id as number, {
@@ -408,6 +443,31 @@ const regenerateStory = async ({ storySlug, scenario, characterOptions, category
 
   if (story.slug !== storySlug) {
     await insertSlugRedirect(storySlug, existing.id as number);
+
+    // La imagen de portada vive en Cloudinary con un public_id derivado del
+    // slug ('cuentos-interactivos/{slug}/{slug}'), y TODO el sitio (esta
+    // página, el og:image, el botón de descarga, las tarjetas de categoría)
+    // reconstruye esa ruta a partir del slug ACTUAL de la historia, nunca
+    // desde una ruta guardada. skipImage:true significa que no se sube
+    // ninguna imagen nueva aquí, así que si no movemos el asset físico al
+    // nuevo public_id, cada visitante vería un icono de imagen rota (ya
+    // pasó: encontrado en vivo el 02-09 en varias historias regeneradas).
+    // Esto ya se detectó y se arregló una vez, el 01-09, pero solo con un
+    // script puntual sobre las historias de aquel momento — nunca se metió
+    // en este código, así que ha vuelto a pasar con cada regeneración desde
+    // entonces. uploader.rename() preserva la 'version', así que no hace
+    // falta tocar 'image_version'.
+    try {
+      const oldPublicId = `cuentos-interactivos/${storySlug}/${storySlug}`;
+      const newPublicId = `cuentos-interactivos/${story.slug}/${story.slug}`;
+      await cloudinary.uploader.rename(oldPublicId, newPublicId, { overwrite: true, invalidate: true });
+      console.log(`Imagen de portada movida en Cloudinary: "${oldPublicId}" -> "${newPublicId}"`);
+    } catch (error) {
+      // No abortamos la regeneración por esto: el cuento en sí ya se ha
+      // guardado bien, y esto se puede volver a intentar aparte
+      // (regenerate-image usa el mismo public_id nuevo).
+      console.error('No se pudo mover la imagen de portada en Cloudinary tras el cambio de slug:', error);
+    }
   }
 
   // Las 'edges' viejas referencian (por foreign key) los nodos viejos, así
@@ -439,7 +499,7 @@ const regenerateStory = async ({ storySlug, scenario, characterOptions, category
 
   console.log('Cuento regenerado!!');
 
-  return { status: 200 as const, story, nodes, error: undefined };
+  return { status: 200 as const, story, nodes, coherenceCheck, error: undefined };
 };
 
 export async function GET(request: Request) {
@@ -459,11 +519,11 @@ export async function GET(request: Request) {
   console.log('Configuración del cuento: ', scenario, characterOptions, category, age);
 
   // Creamos el cuento
-  const { status, story, nodes, error } = await createStory({ scenario, characterOptions, category, age });
+  const { status, story, nodes, coherenceCheck, error } = await createStory({ scenario, characterOptions, category, age });
 
   // Devolvemos el resultado
   if (status === 200) {
-    return new Response(JSON.stringify({ story, nodes }), { status });
+    return new Response(JSON.stringify({ story, nodes, coherenceCheck }), { status });
   } else {
     return new Response(JSON.stringify({ message: "Ha ocurrido un error al crear el cuento", error }), { status });
   }

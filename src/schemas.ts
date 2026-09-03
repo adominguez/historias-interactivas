@@ -53,8 +53,8 @@ const indexOptionSchema = z.object({
 
 // Esquema para los personajes
 const characterSchema = z.object({
-  name: z.string().describe("Nombre del personaje"),
-  description: z.string().describe("Descripción del personaje: aspecto, personalidad, y su género gramatical fijo (femenino o masculino; el español no tiene una forma neutra real para sustantivos como 'robot' o 'dragón', así que hay que elegir uno de los dos), que debe mantenerse igual en todo el cuento, incluidos los adjetivos que formen parte de su propio nombre."),
+  name: z.string().describe("Nombre PROPIO del personaje (por ejemplo 'Kai', 'Mila', 'Toby'), inventado por ti y adecuado al tono del cuento — NUNCA el arquetipo o descriptor genérico de la lista de personajes disponibles (nunca uses literalmente 'Zorro de las sombras' o 'Guardiana de la estrella' como nombre: eso es su especie/rol, que va en 'description', no su nombre)."),
+  description: z.string().describe("Descripción del personaje: qué es (su especie/arquetipo, tomado de la lista de personajes disponibles), aspecto, personalidad, y su género gramatical fijo (femenino o masculino; el español no tiene una forma neutra real para sustantivos como 'robot' o 'dragón', así que hay que elegir uno de los dos), que debe mantenerse igual en todo el cuento, incluidos los adjetivos que formen parte de su propio nombre."),
 });
 
 // Esquema para los metadatos
@@ -110,4 +110,30 @@ const repairedTextSchema = z.object({
   text: z.string().min(30).describe("Texto en formato HTML, usar etiquetas como <p>, <strong>, <em>... Todo lo que se necesite"),
 });
 
-export { blueprintSchema, sceneContentSchema, storyContentSchema, repairedTextSchema };
+// Diagnóstico de coherencia del reparto de un cuento ya publicado. A
+// diferencia del resto de comprobaciones (grafo, diálogo, ortografía), esto
+// es un juicio semántico que no se puede resolver con una regla
+// determinista, así que necesita una llamada a IA de solo lectura.
+const castCoherenceSchema = z.object({
+  coherent: z.boolean().describe("Si el reparto de personajes tiene sentido temático en conjunto (mismo tipo de mundo y tono) para este cuento"),
+  outlierCharacters: z.array(z.string()).describe("Nombres exactos (tal cual aparecen en el reparto) de los personajes que no encajan con el resto. Vacío si 'coherent' es true."),
+  reason: z.string().describe("Explicación breve (1-2 frases) del veredicto"),
+});
+
+// Diagnóstico de coherencia NARRATIVA de un cuento completo (todos sus
+// caminos a la vez), no de una escena suelta: terminología que cambia sin
+// explicación, frases que suenan profundas pero no dicen nada concreto, y
+// opciones que prometen algo distinto de lo que ocurre en la escena a la
+// que llevan. Es un juicio de lectura comprensiva, no una regla mecánica,
+// así que necesita una llamada a IA (ver utils/coherenceCheck.ts).
+const storyCoherenceIssueSchema = z.object({
+  location: z.string().describe("Dónde ocurre el problema: 'story' para la escena raíz, o el slug exacto del nodo donde se nota o se origina."),
+  description: z.string().describe("Explicación breve y concreta del problema, citando la frase exacta cuando ayude a localizarlo."),
+});
+
+const storyCoherenceSchema = z.object({
+  coherent: z.boolean().describe("Si el cuento, leído de principio a fin en todos sus caminos, tiene sentido narrativo y lógico"),
+  issues: z.array(storyCoherenceIssueSchema).describe("Problemas de coherencia narrativa encontrados. Vacío si 'coherent' es true."),
+});
+
+export { blueprintSchema, sceneContentSchema, storyContentSchema, repairedTextSchema, castCoherenceSchema, storyCoherenceSchema };

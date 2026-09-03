@@ -5,8 +5,7 @@
  */
 
 :root {
-	--accent: #4e4e4e;
-	--accent-dark: #4e4e4e;
+	--accent: #C9A227;
 	--black: 15, 18, 25;
 	--gray: 96, 115, 159;
 	--gray-light: 229, 233, 240;
@@ -34,6 +33,26 @@
   unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+2074,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
 }
 
+/* playfair-display-latin-wght-normal */
+@font-face {
+  font-family: 'Playfair Display Variable';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 1 1000;
+  src: url(@fontsource-variable/playfair-display/files/playfair-display-latin-wght-normal.woff2) format('woff2-variations');
+  unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+2074,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+}
+
+/* eb-garamond-latin-wght-normal */
+@font-face {
+  font-family: 'EB Garamond Variable';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 1 1000;
+  src: url(@fontsource-variable/eb-garamond/files/eb-garamond-latin-wght-normal.woff2) format('woff2-variations');
+  unicode-range: U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+2074,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD;
+}
+
 body {
 	font-family: 'Ysabeau Infant Variable', sans-serif;
 	margin: 0;
@@ -56,6 +75,16 @@ main {
 
 .sc {
 	font-family: 'Ysabeau SC', sans-serif;
+}
+
+/* Superficie de "papel pergamino" (textura generada, ver Fase C del
+   rediseño) -- compartida por cualquier panel que necesite ese look, en vez
+   de repetir el mismo bloque de fondo en cada componente. */
+.parchment-surface {
+	background-color: #F6EEDD;
+	background-image: url('/decorative/bg-parchment-texture.png');
+	background-repeat: repeat;
+	background-size: 512px 512px;
 }
 
 h1,

@@ -1,5 +1,6 @@
 ---
-import Books from "@components/sections/Books.astro";
+import CardBookLandscape from "@components/CardBookLandscape.astro";
+import { AGES } from "@src/utils/characters";
 import { type LittleStory } from "@types";
 
 interface Props {
@@ -8,35 +9,36 @@ interface Props {
 }
 
 const { contentByAge, stories } = Astro.props;
-const stories34 = stories.filter(({age}) => age === '3-4');
-const stories58 = stories.filter(({age}) => age === '5-8');
-const stories912 = stories.filter(({age}) => age === '9-12');
-const stories1318 = stories.filter(({age}) => age === '13-18');
-const stories18 = stories.filter(({age}) => age === '18+');
+
+const bands = ['3-4', '5-8', '9-12', '13-18', '18+']
+  .map((age) => ({ age, stories: stories.filter((s) => s.age === age) }))
+  .filter((band) => band.stories.length > 0);
 ---
 
 {
-  stories34.length ?
-    <Books bookList={stories34} title={contentByAge['3-4'].title} class="py-0 pb-10" content={contentByAge['3-4'].content} />
-  : null
-}
-{
-  stories58.length ?
-    <Books bookList={stories58} title={contentByAge['5-8'].title} class="py-0 pb-10"  content={contentByAge['5-8'].content} />
-  : null
-}
-{
-  stories912.length ?
-    <Books bookList={stories912} title={contentByAge['9-12'].title} class="py-0 pb-10" content={contentByAge['9-12'].content} />
-  : null
-}
-{
-  stories1318.length ?
-    <Books bookList={stories1318} title={contentByAge['13-18'].title} class="py-0 pb-10" content={contentByAge['13-18'].content} />
-  : null
-}
-{
-  stories18.length ?
-    <Books bookList={stories18} title={contentByAge['18+'].title} class="py-0 pb-10" content={contentByAge['18+'].content} />
-  : null
+  bands.map(({ age, stories: bandStories }) => (
+    <section class="px-4">
+      <div class="max-w-5xl mx-auto parchment-surface rounded-lg border border-gold-600/40 shadow-lg p-6 md:p-10 flex flex-col md:flex-row gap-8">
+        <div class="md:w-1/3 flex-shrink-0">
+          <span class:list={['inline-block px-3 py-1 rounded-full text-white text-xs font-semibold mb-3', AGES[age].color]}>
+            {AGES[age].alias}
+          </span>
+          <h2 class="font-display text-ink text-2xl mb-2">{contentByAge[age].title}</h2>
+          <p class="text-ink/70">{contentByAge[age].content}</p>
+        </div>
+        <div class="flex-1 grid gap-4 sm:grid-cols-2">
+          {bandStories.map((story) => (
+            <CardBookLandscape
+              slug={story.slug}
+              title={story.title}
+              resume={story.resume}
+              rating={story.rating}
+              ratingCount={story.rating_count}
+              detailed={bandStories.length <= 2}
+            />
+          ))}
+        </div>
+      </div>
+    </section>
+  ))
 }

@@ -108,6 +108,35 @@ function hasScreenplayStyleDialogue(text: string, characterNames: string[]): boo
   });
 }
 
+// Detecta un artefacto de generación real visto en producción: el texto
+// final de un nodo termina con una etiqueta interna tipo "Fin 1.", "Fin 4."
+// (numeración de finales que debería quedarse en el proceso de generación,
+// nunca llegar al texto que lee el usuario).
+function hasLeakedEndingLabel(text: string): boolean {
+  const plainText = text.replace(/<[^>]+>/g, " ").trim();
+  return /\bfin\s*\d+\.?\s*$/i.test(plainText);
+}
+
+// Detecta guiones de diálogo mal cerrados, vistos en cuentos reales: un
+// guion "—" suelto justo antes de cerrar un párrafo, sin ningún texto
+// después (una atribución que se quedó a medias), o dos guiones seguidos
+// "——" (error de puntuación al fusionar dos frases).
+function hasMalformedDashes(text: string): boolean {
+  if (text.includes("——")) return true;
+  return /—\s*(<\/p>|$)/.test(text.trim());
+}
+
+// Detecta diálogo marcado con comillas en vez de con raya (—), que el
+// prompt prohíbe explícitamente ("NUNCA uses comillas para marcar un
+// diálogo") pero para el que nunca ha existido una comprobación
+// determinista — encontrado en producción en varias formas: comillas
+// rectas ("), tipográficas (" "), angulares francesas («»), a veces incluso
+// combinadas con la propia raya en la misma línea.
+function hasQuotedDialogue(text: string): boolean {
+  const plainText = text.replace(/<[^>]+>/g, " ");
+  return /[«»""]/.test(plainText);
+}
+
 // Función para verificar la integridad narrativa del grafo generado por la IA
 // antes de persistirlo: enlaces rotos, nodos huérfanos, slugs duplicados y
 // ausencia de finales.
@@ -166,6 +195,55 @@ function validateStoryIntegrity(story: { slug: string; options: Option[] }, node
     errors.push({ type: "no-ending" });
   }
 
+  // Las tres comprobaciones siguientes (convergencia, decisión de mentira,
+  // bucle) existen desde el 29-30 de agosto en resolveBlueprint, pero SOLO
+  // se aplican al generar un cuento nuevo — nunca se han vuelto a comprobar
+  // contra el catálogo ya publicado antes de esa fecha. Se repiten aquí con
+  // la misma lógica, pero sobre slugs (datos ya publicados) en vez de
+  // índices (datos crudos de la IA antes de resolver).
+
+  // Convergencia real: dos orígenes distintos (la historia o un nodo)
+  // llevando al mismo nodo. Un self-loop no cuenta como una segunda fuente
+  // (se comprueba aparte, más abajo).
+  const reachedBy = new Map<string, Set<string>>();
+  const registerReachedBy = (fromSlug: string, options: Option[] = []) => {
+    options.forEach(option => {
+      if (option.next === fromSlug) return;
+      const sources = reachedBy.get(option.next) ?? new Set();
+      sources.add(fromSlug);
+      reachedBy.set(option.next, sources);
+    });
+  };
+  registerReachedBy(story.slug, story.options);
+  nodes.forEach(node => registerReachedBy(node.slug, node.options));
+  reachedBy.forEach((sources, slug) => {
+    if (sources.size > 1) {
+      errors.push({ type: "convergent-node", slug, sources: [...sources] });
+    }
+  });
+
+  // Decisiones de mentira: varias opciones de un mismo nodo llevan todas al
+  // mismo destino, así que la elección no tiene ninguna consecuencia real.
+  const isPointlessChoice = (options: Option[] = []) =>
+    options.length > 1 && new Set(options.map(option => option.next)).size === 1;
+
+  if (isPointlessChoice(story.options)) {
+    errors.push({ type: "pointless-choice", from: story.slug });
+  }
+  nodes.forEach(node => {
+    if (isPointlessChoice(node.options)) {
+      errors.push({ type: "pointless-choice", from: node.slug });
+    }
+  });
+
+  // Bucles: una opción de un nodo que apunta a su propio índice deja al
+  // lector exactamente donde ya estaba.
+  nodes.forEach(node => {
+    if ((node.options ?? []).some(option => option.next === node.slug)) {
+      errors.push({ type: "self-loop", slug: node.slug });
+    }
+  });
+
   const isValidated = errors.length === 0;
 
   if (!isValidated) {
@@ -181,7 +259,10 @@ type ContentTarget = { slug: string; text: string };
 type StoryIssue =
   | { scope: "structure"; type: string; [key: string]: unknown }
   | { scope: "content"; type: "screenplay-dialogue"; slug: string }
-  | { scope: "content"; type: "invalid-words"; slug: string; words: string[] };
+  | { scope: "content"; type: "invalid-words"; slug: string; words: string[] }
+  | { scope: "content"; type: "leaked-ending-label"; slug: string }
+  | { scope: "content"; type: "malformed-dashes"; slug: string }
+  | { scope: "content"; type: "quoted-dialogue"; slug: string };
 
 // Diagnostica un cuento YA persistido en la base de datos, reutilizando las
 // mismas comprobaciones deterministas que se usan durante la generación
@@ -207,6 +288,15 @@ function diagnoseStory(
     const words = findInvalidSpanishWords(text, characterNames);
     if (words.length > 0) {
       issues.push({ scope: "content", type: "invalid-words", slug, words });
+    }
+    if (hasLeakedEndingLabel(text)) {
+      issues.push({ scope: "content", type: "leaked-ending-label", slug });
+    }
+    if (hasMalformedDashes(text)) {
+      issues.push({ scope: "content", type: "malformed-dashes", slug });
+    }
+    if (hasQuotedDialogue(text)) {
+      issues.push({ scope: "content", type: "quoted-dialogue", slug });
     }
     return issues;
   });
@@ -438,16 +528,6 @@ const saveRatedStory = (slug: string, rating: number) => {
 };
 
 /**
- * Recupera todos los cuentos valorados del localStorage
- * @returns {Array<{slug: string, rating: number, date: string}>} - Listado de cuentos valorados
- */
-const getRatedStories = (): { slug: string; rating: number; date: string }[] => {
-  if (!isBrowser) return []; // Verificar entorno cliente
-
-  return JSON.parse(localStorage.getItem(LOCAL_STORAGE_KEY) || "[]");
-};
-
-/**
  * Recupera la calificación de un cuento valorado del localStorage
  * @param {string} slug - El identificador único (slug) del cuento.
  */
@@ -460,20 +540,5 @@ const getRatedStory = (slug: string) => {
   return existingStory;
 }
 
-/**
- * Elimina un cuento valorado del localStorage
- * @param {string} slug - El identificador único (slug) del cuento a eliminar.
- */
-const removeRatedStory = (slug: string) => {
-  if (!isBrowser) return; // Verificar entorno cliente
 
-  const ratedStories = JSON.parse(localStorage.getItem(LOCAL_STORAGE_KEY) || "[]");
-  const updatedStories = ratedStories.filter((story: any) => story.slug !== slug);
-
-  localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updatedStories));
-};
-
-
-
-
-export { truncateString, validateStoryIntegrity, resolveBlueprint, hasScreenplayStyleDialogue, findInvalidSpanishWords, diagnoseStory, slugify, saveRatedStory, getRatedStories, removeRatedStory, getRatedStory };
+export { truncateString, validateStoryIntegrity, resolveBlueprint, hasScreenplayStyleDialogue, findInvalidSpanishWords, hasLeakedEndingLabel, hasMalformedDashes, hasQuotedDialogue, diagnoseStory, saveRatedStory, getRatedStory };
