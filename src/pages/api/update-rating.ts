@@ -6,7 +6,7 @@ export async function GET(request: Request) {
 
   const slug = url.searchParams.get("slug") || undefined;
   const rating = url.searchParams.get("rating") || undefined;
-  const isRated = url.searchParams.get("isRated") || undefined;
+  const previousRating = url.searchParams.get("previousRating") || undefined;
 
   if (!slug) {
     return new Response(JSON.stringify({ error: 'Missing slug parameter' }), {
@@ -23,7 +23,7 @@ export async function GET(request: Request) {
   }
 
   // Llama a la función que busca en la base de datos
-  const results = await updateStoryRating(slug, parseInt(rating, 10), isRated === 'true' ? true : false);
+  const results = await updateStoryRating(slug, parseInt(rating, 10), previousRating !== undefined ? parseInt(previousRating, 10) : undefined);
 
   return new Response(JSON.stringify({ results }), {
     status: 200,
