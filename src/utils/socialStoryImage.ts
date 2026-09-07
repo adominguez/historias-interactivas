@@ -73,3 +73,64 @@ export const buildStoryImageUrl = ({ slug, imageVersion, hookText }: { slug: str
       { flags: "layer_apply", gravity: "south", y: 220 },
     ],
   });
+
+// Imagen para que el propio lector comparta el camino que ha recorrido, al
+// llegar a un final (ver Options.astro) -- mismo formato 9:16 que las
+// Stories automáticas (útil también si el lector la comparte a mano en su
+// Instagram/Facebook), pero con el remate del cuento en vez del gancho del
+// día. `steps` son los mismos objetos que ya devuelve getStoryPathToNode
+// (turso.ts) / usa StoryPath.astro -- si el camino es muy largo se recortan
+// los primeros pasos (se conserva el final, que es lo más relevante del
+// remate) y se marca con "...".
+const RECAP_STEP_LIMIT = 4;
+
+export const buildPathRecapImageUrl = ({
+  slug,
+  imageVersion,
+  storyTitle,
+  steps,
+}: {
+  slug: string;
+  imageVersion: number | null;
+  storyTitle: string;
+  steps: { text: string }[];
+}) => {
+  const trimmedSteps = steps.length > RECAP_STEP_LIMIT ? steps.slice(-RECAP_STEP_LIMIT) : steps;
+  const numberedSteps = trimmedSteps
+    .map((step, index) => `${index + 1}. ${step.text}`)
+    .join("\n");
+  const recapText = steps.length > RECAP_STEP_LIMIT ? `...\n${numberedSteps}` : numberedSteps;
+
+  return cloudinary.url(`cuentos-interactivos/${slug}/${slug}`, {
+    version: imageVersion ?? undefined,
+    transformation: [
+      { width: 1080, height: 1920, crop: "fill", gravity: "auto" },
+      {
+        overlay: {
+          font_family: "arial",
+          font_weight: "bold",
+          font_size: 56,
+          text: storyTitle,
+        },
+        color: "#FFFFFF",
+        background: "rgb:00000099",
+        width: 900,
+        crop: "fit",
+      },
+      { flags: "layer_apply", gravity: "north", y: 200 },
+      {
+        overlay: {
+          font_family: "arial",
+          font_weight: "bold",
+          font_size: 34,
+          text: `Tu camino:\n${recapText}`,
+        },
+        color: "#FFFFFF",
+        background: "rgb:00000099",
+        width: 900,
+        crop: "fit",
+      },
+      { flags: "layer_apply", gravity: "south", y: 300 },
+    ],
+  });
+};

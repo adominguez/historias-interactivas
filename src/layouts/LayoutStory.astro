@@ -188,7 +188,7 @@ const breadcrumb = [{
           <div class:list={["prose-story font-serif-story", selectedAge?.proseSize ?? "text-lg leading-normal"]}>
             <slot />
           </div>
-          <Options options={options} slug={optionSlug} />
+          <Options options={options} slug={optionSlug} storyPath={storyPath} storyTitle={storyTitle} imageVersion={imageVersion} />
         </div>
       </section>
       <Books bookList={relatedStories} title='¿Quieres leer otro cuento?' />
