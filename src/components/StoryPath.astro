@@ -1,0 +1,68 @@
+---
+// Camino narrativo recorrido hasta la escena actual: "Inicio → elegiste
+// 'entrar en la cueva' → elegiste 'seguir al norte'". Distinto del
+// Breadcrumb.astro de navegación del sitio (Inicio del site / Categoría /
+// Título) — este es sobre las DECISIONES tomadas dentro de este cuento en
+// concreto, así que vive como pieza aparte dentro del panel de la escena, no
+// arriba con el resto de navegación.
+interface Props {
+  storySlug: string;
+  steps: { text: string; slug: string }[];
+}
+
+const { storySlug, steps } = Astro.props;
+---
+
+{
+  steps.length > 0 && (
+    <nav class="story-path font-serif-story" aria-label="Tu camino en esta historia">
+      <a href={`/${storySlug}`} class="story-path-link">Inicio</a>
+      {steps.map((step, index) => {
+        const isCurrent = index === steps.length - 1;
+        return (
+          <Fragment>
+            <span class="story-path-sep" aria-hidden="true">❦</span>
+            {isCurrent ? (
+              <span class="story-path-current">{step.text}</span>
+            ) : (
+              <a href={`/${storySlug}/${step.slug}`} class="story-path-link">{step.text}</a>
+            )}
+          </Fragment>
+        );
+      })}
+    </nav>
+  )
+}
+
+<style>
+  .story-path {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.4em;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid rgba(201, 162, 39, 0.3);
+    font-size: 0.9rem;
+    font-style: italic;
+    color: rgba(43, 33, 24, 0.65);
+  }
+  .story-path-sep {
+    color: #C9A227;
+    font-style: normal;
+  }
+  .story-path-link {
+    color: rgba(43, 33, 24, 0.65);
+    text-decoration: underline;
+    text-decoration-color: rgba(201, 162, 39, 0.5);
+    text-underline-offset: 2px;
+  }
+  .story-path-link:hover {
+    color: #C9A227;
+  }
+  .story-path-current {
+    color: #2B2118;
+    font-weight: 600;
+    font-style: normal;
+  }
+</style>

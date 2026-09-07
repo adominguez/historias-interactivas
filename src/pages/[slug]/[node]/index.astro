@@ -2,7 +2,7 @@
 import Layout from "@layouts/LayoutStory.astro";
 import InlineEditableContent from "@components/InlineEditableContent";
 import { turso } from "@src/turso";
-import { getRelatedStoriesBySlug, getRatingStoryBySlug, getStoryBySlug, getRedirectTargetSlug, getStoryOptions, getNodeOptions } from "@src/turso";
+import { getRelatedStoriesBySlug, getRatingStoryBySlug, getStoryBySlug, getRedirectTargetSlug, getStoryOptions, getNodeOptions, getStoryPathToNode } from "@src/turso";
 import { type Node, type Story } from "@types";
 import { generalCategories } from "@src/data/categories";
 import { isAuthorized } from "@src/utils/auth";
@@ -92,13 +92,14 @@ const backUrl =
   
 const relatedStories = await getRelatedStoriesBySlug(node.parentSlug);
 const { rating, ratingCount } = await getRatingStoryBySlug(node.parentSlug);
+const storyPath = await getStoryPathToNode(story.id, node.parentSlug, node.slug);
 
 const title = node.title || node.slug.replaceAll('-', ' ');
 const description = node.description || story.description;
 const isAdmin = isAuthorized(Astro.request);
 ---
 
-<Layout category={category} title={title} description={description} slug={node.parentSlug} options={node.options} optionSlug={node.parentSlug} backUrl={backUrl} relatedStories={relatedStories} ratingSlug={node.parentSlug} rating={rating as number} ratingCount={ratingCount as number} created={date} modified={modifiedDate} age={story.age} imageVersion={storyData.image_version} isAdmin={isAdmin} currentNodeSlug={node.slug}>
+<Layout category={category} title={title} description={description} slug={node.parentSlug} options={node.options} optionSlug={node.parentSlug} backUrl={backUrl} relatedStories={relatedStories} ratingSlug={node.parentSlug} rating={rating as number} ratingCount={ratingCount as number} created={date} modified={modifiedDate} age={story.age} imageVersion={storyData.image_version} isAdmin={isAdmin} currentNodeSlug={node.slug} storyPath={storyPath}>
   {isAdmin ? (
     <InlineEditableContent client:load storySlug={node.parentSlug} target={node.slug} initialTitle={node.title} initialText={node.text} />
   ) : (

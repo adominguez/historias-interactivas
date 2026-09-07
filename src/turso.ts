@@ -63,6 +63,44 @@ export const insertEdges = async (edges: [number, number | null, number, string,
 // resueltas a Option[] ({text, next: slug}) para que el resto de la
 // aplicación (Options.astro, LayoutStory.astro...) siga trabajando igual
 // que cuando venían de JSON.parse(stories.options).
+// El camino narrativo hasta un nodo: recorre back_slug hacia atrás desde el
+// nodo objetivo hasta la raíz del cuento, devolviendo en orden (raíz →
+// actual) el texto de la opción elegida en cada paso. Trae TODOS los nodos y
+// TODAS las opciones del cuento de una vez (2 consultas, no 2 por nivel de
+// profundidad) y hace el recorrido en memoria — un cuento típico tiene pocas
+// decenas de nodos como mucho, así que es barato traerlo entero.
+export const getStoryPathToNode = async (storyId: number, storySlug: string, targetNodeSlug: string) => {
+  const [nodesResult, edgesResult] = await Promise.all([
+    turso.execute({
+      sql: "SELECT id, slug, back_slug FROM nodes WHERE story_id = ?;",
+      args: [storyId],
+    }),
+    turso.execute({
+      sql: "SELECT to_node_id, text FROM edges WHERE story_id = ?;",
+      args: [storyId],
+    }),
+  ]);
+
+  const nodeBySlug = new Map(nodesResult.rows.map((row) => [row.slug as string, row]));
+  const edgeTextByToNodeId = new Map(edgesResult.rows.map((row) => [row.to_node_id as number, row.text as string]));
+
+  const steps: { text: string; slug: string }[] = [];
+  let slug = targetNodeSlug;
+
+  while (true) {
+    const node = nodeBySlug.get(slug);
+    if (!node) break;
+
+    steps.unshift({ text: edgeTextByToNodeId.get(node.id as number) ?? "", slug });
+
+    const backSlug = node.back_slug as string | null;
+    if (!backSlug || backSlug === storySlug) break; // el paso anterior es la raíz del cuento
+    slug = backSlug;
+  }
+
+  return steps;
+};
+
 export const getStoryOptions = async (storyId: number) => {
   const result = await turso.execute({
     sql: `
