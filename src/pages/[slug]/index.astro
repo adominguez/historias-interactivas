@@ -1,7 +1,7 @@
 ---
 import Layout from "@layouts/LayoutStory.astro";
 import InlineEditableContent from "@components/InlineEditableContent";
-import { getStoryBySlug, getRelatedStoriesBySlug, getRedirectTargetSlug, getStoryOptions } from "@src/turso";
+import { getStoryBySlug, getRelatedStoriesBySlug, getRedirectTargetSlug, getStoryOptions, getEndingCount } from "@src/turso";
 import { type Story } from "@types";
 import { generalCategories } from "@src/data/categories";
 import { isAuthorized } from "@src/utils/auth";
@@ -66,11 +66,16 @@ const category = {
 };
 const relatedStories = await getRelatedStoriesBySlug(story.slug);
 
+// Solo hace falta contar los finales si esta propia página YA es un final
+// (raíz sin opciones, caso raro) -- en cualquier otro caso normal esta
+// consulta se ahorra sin más.
+const endingCount = storyOptions.length === 0 ? await getEndingCount(story.id) : null;
+
 const title = `${story.title}`;
 const isAdmin = isAuthorized(Astro.request);
 ---
 
-<Layout title={title} description={story.description} slug={story.slug} options={story.options} optionSlug={story.slug} relatedStories={relatedStories} rating={story.rating} ratingCount={story.ratingCount} ratingSlug={story.slug} category={category} created={date} modified={modifiedDate} age={story.age} imageVersion={storyData.image_version} isAdmin={isAdmin}>
+<Layout title={title} description={story.description} slug={story.slug} options={story.options} optionSlug={story.slug} relatedStories={relatedStories} rating={story.rating} ratingCount={story.ratingCount} ratingSlug={story.slug} category={category} created={date} modified={modifiedDate} age={story.age} imageVersion={storyData.image_version} isAdmin={isAdmin} endingCount={endingCount}>
   {isAdmin ? (
     <InlineEditableContent client:load storySlug={story.slug} target="story" initialTitle={story.title} initialText={story.text} />
   ) : (

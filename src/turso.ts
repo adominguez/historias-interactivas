@@ -698,3 +698,23 @@ export const getFeaturedStories = async (sinceIso: string, limit: number) => {
   });
   return fallbackResult.rows;
 }
+
+// Cuántos finales tiene un cuento en total (nodos sin ninguna opción de
+// salida, es decir sin ningún edge que salga de ellos) -- para el aviso
+// "este cuento tiene N finales posibles" al llegar a uno de ellos (ver
+// Options.astro), sin desvelar cuáles son los otros. Un cuento cuya propia
+// raíz no tiene opciones (caso raro, sin nodos) cuenta como 1 final: el
+// propio inicio.
+export const getEndingCount = async (storyId: number) => {
+  const result = await turso.execute({
+    sql: `
+      SELECT COUNT(*) AS count
+      FROM nodes n
+      WHERE n.story_id = ?
+      AND NOT EXISTS (SELECT 1 FROM edges e WHERE e.from_node_id = n.id);
+    `,
+    args: [storyId],
+  });
+  const count = result.rows[0]?.count as number;
+  return count > 0 ? count : 1;
+}

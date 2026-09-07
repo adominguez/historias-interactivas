@@ -2,7 +2,7 @@
 import Layout from "@layouts/LayoutStory.astro";
 import InlineEditableContent from "@components/InlineEditableContent";
 import { turso } from "@src/turso";
-import { getRelatedStoriesBySlug, getRatingStoryBySlug, getStoryBySlug, getRedirectTargetSlug, getStoryOptions, getNodeOptions, getStoryPathToNode } from "@src/turso";
+import { getRelatedStoriesBySlug, getRatingStoryBySlug, getStoryBySlug, getRedirectTargetSlug, getStoryOptions, getNodeOptions, getStoryPathToNode, getEndingCount } from "@src/turso";
 import { type Node, type Story } from "@types";
 import { generalCategories } from "@src/data/categories";
 import { isAuthorized } from "@src/utils/auth";
@@ -94,12 +94,16 @@ const relatedStories = await getRelatedStoriesBySlug(node.parentSlug);
 const { rating, ratingCount } = await getRatingStoryBySlug(node.parentSlug);
 const storyPath = await getStoryPathToNode(story.id, node.parentSlug, node.slug);
 
+// Solo hace falta contar los finales si este nodo concreto YA es un final
+// -- en cualquier otra escena esta consulta se ahorra sin más.
+const endingCount = node.options.length === 0 ? await getEndingCount(story.id) : null;
+
 const title = node.title || node.slug.replaceAll('-', ' ');
 const description = node.description || story.description;
 const isAdmin = isAuthorized(Astro.request);
 ---
 
-<Layout category={category} title={title} storyTitle={story.title} description={description} slug={node.parentSlug} options={node.options} optionSlug={node.parentSlug} backUrl={backUrl} relatedStories={relatedStories} ratingSlug={node.parentSlug} rating={rating as number} ratingCount={ratingCount as number} created={date} modified={modifiedDate} age={story.age} imageVersion={storyData.image_version} isAdmin={isAdmin} currentNodeSlug={node.slug} storyPath={storyPath}>
+<Layout category={category} title={title} storyTitle={story.title} description={description} slug={node.parentSlug} options={node.options} optionSlug={node.parentSlug} backUrl={backUrl} relatedStories={relatedStories} ratingSlug={node.parentSlug} rating={rating as number} ratingCount={ratingCount as number} created={date} modified={modifiedDate} age={story.age} imageVersion={storyData.image_version} isAdmin={isAdmin} currentNodeSlug={node.slug} storyPath={storyPath} endingCount={endingCount}>
   {isAdmin ? (
     <InlineEditableContent client:load storySlug={node.parentSlug} target={node.slug} initialTitle={node.title} initialText={node.text} />
   ) : (

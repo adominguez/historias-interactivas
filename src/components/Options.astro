@@ -1,25 +1,15 @@
 ---
 import { type Option } from "@types";
 import Button from "./Button.astro";
-import { buildPathRecapImageUrl } from "@src/utils/socialStoryImage";
 
 interface Props {
   options: Option[];
   slug: string;
   storyPath?: { text: string; slug: string }[];
-  storyTitle?: string;
-  imageVersion?: number | null;
+  endingCount?: number | null;
 }
 
-const { options = [], slug, storyPath = [], storyTitle, imageVersion = null } = Astro.props as Props;
-
-// El remate "Tu camino" solo tiene sentido si de verdad se ha recorrido
-// algo -- un cuento cuya propia raíz ya es un final (sin ningún nodo
-// visitado) no tiene camino que mostrar, así que se mantiene el "¡Fin!"
-// de siempre sin más.
-const recapImageUrl = options.length === 0 && storyPath.length > 0 && storyTitle
-  ? buildPathRecapImageUrl({ slug, imageVersion, storyTitle, steps: storyPath })
-  : null;
+const { options = [], slug, storyPath = [], endingCount = null } = Astro.props as Props;
 ---
 
 {
@@ -48,7 +38,12 @@ const recapImageUrl = options.length === 0 && storyPath.length > 0 && storyTitle
     <div class="flex flex-col items-center gap-6 mt-8">
       <span class="option-end block">¡Fin!</span>
       {
-        recapImageUrl && (
+        endingCount && endingCount > 1 && (
+          <p class="text-ink/70 text-center max-w-md">Este cuento tiene {endingCount} finales posibles. ¿Los has descubierto todos?</p>
+        )
+      }
+      {
+        storyPath.length > 0 && (
           <div class="path-recap flex flex-col items-center gap-3 text-center">
             <h2 class="font-display text-gold-600 m-0">Tu camino</h2>
             <ol class="path-recap-list flex flex-col gap-1 text-ink/80 font-serif-story">
@@ -56,13 +51,6 @@ const recapImageUrl = options.length === 0 && storyPath.length > 0 && storyTitle
                 <li>{step.text}</li>
               ))}
             </ol>
-            <a
-              href={recapImageUrl}
-              download={`${slug}-camino.png`}
-              class="inline-flex items-center gap-2 mt-2 px-5 py-2.5 rounded-full font-display text-sm tracking-wide border border-gold-600/60 bg-forest-800 text-gold-400 hover:bg-forest-900 transition-colors"
-            >
-              🖼️ Descargar imagen de tu camino
-            </a>
           </div>
         )
       }

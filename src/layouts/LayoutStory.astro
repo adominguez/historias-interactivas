@@ -39,9 +39,10 @@ interface Props {
   currentNodeSlug?: string;
   storyPath?: { text: string; slug: string }[];
   storyTitle?: string;
+  endingCount?: number | null;
 }
 
-const { description, transition = 'fade', title, slug, options = [], optionSlug, backUrl, relatedStories, ratingCount, rating, ratingSlug, category, created, modified = created, age, imageVersion, isAdmin, currentNodeSlug, storyPath = [], storyTitle = title } = Astro.props;
+const { description, transition = 'fade', title, slug, options = [], optionSlug, backUrl, relatedStories, ratingCount, rating, ratingSlug, category, created, modified = created, age, imageVersion, isAdmin, currentNodeSlug, storyPath = [], storyTitle = title, endingCount = null } = Astro.props;
 
 const editHref = `/admin/editar-historia?storySlug=${encodeURIComponent(slug)}${currentNodeSlug ? `&node=${encodeURIComponent(currentNodeSlug)}` : ''}`;
 
@@ -188,7 +189,7 @@ const breadcrumb = [{
           <div class:list={["prose-story font-serif-story", selectedAge?.proseSize ?? "text-lg leading-normal"]}>
             <slot />
           </div>
-          <Options options={options} slug={optionSlug} storyPath={storyPath} storyTitle={storyTitle} imageVersion={imageVersion} />
+          <Options options={options} slug={optionSlug} storyPath={storyPath} endingCount={endingCount} />
         </div>
       </section>
       <Books bookList={relatedStories} title='¿Quieres leer otro cuento?' />
