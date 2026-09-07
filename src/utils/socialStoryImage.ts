@@ -86,13 +86,21 @@ export const buildStoryImageUrl = ({ slug, imageVersion, hookText }: { slug: str
 // A diferencia de buildStoryImageUrl (cajas negras + Arial, pensadas para
 // leerse rápido encima de cualquier ilustración en una Story), esta imagen
 // es un recuerdo para guardar/compartir, así que usa las mismas tipografías
-// y tonos de pergamino/dorado que el resto del sitio -- confirmado que
-// Cloudinary sirve Playfair Display y EB Garamond como Google Fonts sin
-// necesidad de subir nada, y que "radius" sí redondea las esquinas de una
-// capa de texto igual que en cualquier otro overlay.
+// que el resto del sitio (Cloudinary sirve Playfair Display y EB Garamond
+// como Google Fonts sin necesidad de subir nada).
+//
+// Primer intento: mismas cajas de pergamino con esquinas redondeadas que
+// usa el resto del sitio -- rechazado en revisión real ("queda un poco
+// pegote"), con razón: son rectángulos planos encima de una ilustración muy
+// cinematográfica, se notan pegados por bonito que sea el color. La propia
+// cabecera de LayoutStory.astro ya resuelve esto sin ninguna caja: un
+// degradado que oscurece hacia arriba/abajo (ver su <style>, `.hero-image-
+// wrap::after`). Aquí se reproduce lo mismo con el efecto `gradient_fade`
+// de Cloudinary sobre la propia imagen (con fondo negro detrás para que el
+// desvanecido a transparente revele oscuridad, no blanco) en vez de una
+// caja -- el texto (blanco, para leerse sobre cualquier ilustración) queda
+// flotando sobre la imagen de verdad, no pegado encima.
 const RECAP_STEP_LIMIT = 4;
-const PARCHMENT_BACKGROUND = "rgb:F6EEDDE6"; // --parchment-100 con transparencia, no un bloque opaco
-const INK_COLOR = "#2B2118"; // mismo tono que --ink en tailwind.config.mjs
 
 export const buildPathRecapImageUrl = ({
   slug,
@@ -112,7 +120,9 @@ export const buildPathRecapImageUrl = ({
   return cloudinary.url(`cuentos-interactivos/${slug}/${slug}`, {
     version: imageVersion ?? undefined,
     transformation: [
-      { width: 1080, height: 1920, crop: "fill", gravity: "auto" },
+      { width: 1080, height: 1920, crop: "fill", gravity: "auto", background: "black" },
+      { effect: "gradient_fade", y: "-0.35" },
+      { effect: "gradient_fade", y: "0.35" },
       {
         overlay: {
           font_family: "Playfair Display",
@@ -120,26 +130,22 @@ export const buildPathRecapImageUrl = ({
           font_size: 58,
           text: storyTitle,
         },
-        color: INK_COLOR,
-        background: PARCHMENT_BACKGROUND,
-        width: 880,
+        color: "#FFFFFF",
+        width: 900,
         crop: "fit",
-        radius: 16,
       },
-      { flags: "layer_apply", gravity: "north", y: 140 },
+      { flags: "layer_apply", gravity: "north", y: 120 },
       {
         overlay: {
           font_family: "EB Garamond",
           font_size: 36,
           text: recapText,
         },
-        color: INK_COLOR,
-        background: PARCHMENT_BACKGROUND,
-        width: 820,
+        color: "#FFFFFF",
+        width: 860,
         crop: "fit",
-        radius: 16,
       },
-      { flags: "layer_apply", gravity: "south", y: 180 },
+      { flags: "layer_apply", gravity: "south", y: 120 },
     ],
   });
 };
