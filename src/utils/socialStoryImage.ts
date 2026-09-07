@@ -53,11 +53,17 @@ export const buildStoryImageUrl = ({ slug, imageVersion, hookText }: { slug: str
       },
       { flags: "layer_apply", gravity: "north", y: 280 },
       {
+        // Ni Instagram ni Facebook ofrecen un enlace pulsable de verdad vía
+        // API (confirmado contra la lista completa de parámetros de Meta:
+        // no existe ningún campo de sticker/enlace/CTA al crear una Story).
+        // Las dos cuentas SÍ tienen ya la web puesta como enlace de perfil
+        // ("bio"), que es real y pulsable -- así que el texto apunta ahí en
+        // vez de mostrar la URL en crudo, que no se puede tocar.
         overlay: {
           font_family: "arial",
           font_weight: "bold",
-          font_size: 36,
-          text: `elarboldelashistorias.com/${slug}`,
+          font_size: 40,
+          text: "Enlace en la bio ⤴",
         },
         color: "#FFFFFF",
         background: "rgb:00000099",
