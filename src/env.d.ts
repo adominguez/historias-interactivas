@@ -12,6 +12,7 @@ interface ImportMetaEnv {
   readonly SITE_URL: string;
   readonly ADMIN_USERNAME: string;
   readonly ADMIN_PASSWORD: string;
+  readonly CRON_SECRET: string;
 }
 
 interface ImportMeta {
