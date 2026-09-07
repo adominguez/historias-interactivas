@@ -1,5 +1,5 @@
 import { defineMiddleware } from "astro:middleware";
-import { isAuthorized } from "@src/utils/auth";
+import { isAuthorized, isAuthorizedCron } from "@src/utils/auth";
 
 // Endpoints de /api que usa el propio sitio público (buscador, valorar un
 // cuento) y por tanto NO deben pedir usuario/contraseña. Todo lo demás bajo
@@ -11,10 +11,21 @@ const PUBLIC_API_PATHS = new Set([
   "/api/update-rating",
 ]);
 
+// El único endpoint que dispara el cron diario de Vercel (ver vercel.json).
+// Sigue exigiendo Basic Auth como cualquier otro endpoint de /api para
+// quien lo llame a mano (útil para probar en local con ?dryRun=1) — solo
+// gana una SEGUNDA vía de entrada válida (el bearer del cron, ver
+// isAuthorizedCron), nunca queda en PUBLIC_API_PATHS.
+const CRON_PATH = "/api/social-auto-post";
+
 const needsAuth = (pathname: string) =>
   pathname.startsWith("/admin") || (pathname.startsWith("/api/") && !PUBLIC_API_PATHS.has(pathname));
 
 export const onRequest = defineMiddleware((context, next) => {
+  if (context.url.pathname === CRON_PATH && isAuthorizedCron(context.request)) {
+    return next();
+  }
+
   if (!needsAuth(context.url.pathname)) {
     return next();
   }

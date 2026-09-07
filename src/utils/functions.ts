@@ -541,4 +541,14 @@ const getRatedStory = (slug: string) => {
 }
 
 
-export { truncateString, validateStoryIntegrity, resolveBlueprint, hasScreenplayStyleDialogue, findInvalidSpanishWords, hasLeakedEndingLabel, hasMalformedDashes, hasQuotedDialogue, diagnoseStory, saveRatedStory, getRatedStory };
+// URL pública de la imagen de portada de un cuento en Cloudinary. Mismo
+// patrón ya duplicado en varios layouts/componentes (LayoutStory.astro,
+// EditStoryForm.tsx...); se añade aquí como función reutilizable en vez de
+// escribir una copia más, no como una capa de abstracción nueva. `cloudName`
+// se recibe como parámetro (no se importa astro:env/server aquí dentro)
+// porque este archivo también se usa desde componentes de cliente
+// (saveRatedStory/getRatedStory) y ese import solo es válido en servidor.
+const getStoryCoverImageUrl = (cloudName: string, slug: string, imageVersion: number | null) =>
+  `https://res.cloudinary.com/${cloudName}/image/upload/${imageVersion ? `v${imageVersion}/` : ''}cuentos-interactivos/${slug}/${slug}`;
+
+export { truncateString, validateStoryIntegrity, resolveBlueprint, hasScreenplayStyleDialogue, findInvalidSpanishWords, hasLeakedEndingLabel, hasMalformedDashes, hasQuotedDialogue, diagnoseStory, saveRatedStory, getRatedStory, getStoryCoverImageUrl };

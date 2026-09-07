@@ -578,3 +578,55 @@ export const deleteNodesByStoryId = async (storyId: number) => {
     args: [storyId],
   });
 }
+
+export const insertSocialPost = async (row: {
+  storyId: number;
+  format: string;
+  platform: string;
+  status: "success" | "failure";
+  caption: string | null;
+  externalPostId: string | null;
+  errorMessage: string | null;
+}) => {
+  await turso.execute({
+    sql: `
+      INSERT INTO social_posts (story_id, format, platform, status, caption, external_post_id, error_message)
+      VALUES (?, ?, ?, ?, ?, ?, ?);
+    `,
+    args: [row.storyId, row.format, row.platform, row.status, row.caption, row.externalPostId, row.errorMessage],
+  });
+}
+
+export const getLastSuccessfulSocialFormat = async (): Promise<string | undefined> => {
+  const result = await turso.execute(`
+    SELECT format FROM social_posts WHERE status = 'success' ORDER BY created_at DESC LIMIT 1;
+  `);
+  return result.rows[0]?.format as string | undefined;
+}
+
+// Cuento elegible para publicar hoy: el primero que NO se haya publicado con
+// éxito en los últimos COOLDOWN_DAYS días (ver src/utils/socialFormats.ts),
+// o, si TODOS estuvieran en cooldown (llegará a pasar con ~175 cuentos y
+// varias publicaciones/semana), el que lleve más tiempo sin publicarse con
+// éxito — evita fallar la ejecución en vez de simplemente relajar el
+// cooldown para ese caso. El propio ORDER BY resuelve los dos casos a la
+// vez: las filas "elegibles" (nunca publicadas, o publicadas antes del
+// corte) ordenan primero (0 < 1); dentro de cada grupo, last_posted_at
+// ascendente deja primero las nunca publicadas (NULL ordena antes que
+// cualquier valor en SQLite) y luego las más antiguas.
+export const getNextStoryToPost = async (cooldownCutoffIso: string) => {
+  const result = await turso.execute({
+    sql: `
+      SELECT s.*, MAX(sp.created_at) AS last_posted_at
+      FROM stories s
+      LEFT JOIN social_posts sp ON sp.story_id = s.id AND sp.status = 'success'
+      GROUP BY s.id
+      ORDER BY
+        (last_posted_at IS NOT NULL AND last_posted_at >= ?),
+        last_posted_at
+      LIMIT 1;
+    `,
+    args: [cooldownCutoffIso],
+  });
+  return result.rows[0];
+}

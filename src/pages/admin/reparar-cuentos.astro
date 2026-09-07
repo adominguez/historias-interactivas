@@ -1,8 +1,15 @@
 ---
 import BaseHead from '@components/BaseHead.astro';
 import RepairStoriesPanel from '@components/RepairStoriesPanel';
+import CoherenceCheckGrid from '@components/CoherenceCheckGrid';
+import { getLittleStoriesList } from '@src/turso';
 
 export const prerender = false;
+
+const rows = await getLittleStoriesList();
+const stories = rows
+  .map((row) => ({ slug: row.slug as string, title: row.title as string, age: row.age as string }))
+  .sort((a, b) => a.title.localeCompare(b.title, 'es'));
 ---
 
 <!doctype html>
@@ -16,6 +23,10 @@ export const prerender = false;
       <h1>Reparar cuentos</h1>
       <p>Analiza todos los cuentos publicados en busca de problemas estructurales (grafo roto) y de contenido (diálogo mal formateado, palabras inválidas), y permite reparar los de contenido con IA.</p>
       <RepairStoriesPanel client:load />
+
+      <h2>Coherencia narrativa y de reparto</h2>
+      <p>Comprobación semántica (con IA, no determinista) de si un cuento tiene sentido de principio a fin y si su reparto de personajes encaja temáticamente. A diferencia del análisis anterior, no es gratis ni automática: se lanza cuento a cuento.</p>
+      <CoherenceCheckGrid stories={stories} client:load />
     </main>
   </body>
 </html>

@@ -105,6 +105,7 @@ export default defineConfig({
       SITE_URL: envField.string({ context: "server", access: "secret" }),
       ADMIN_USERNAME: envField.string({ context: "server", access: "secret" }),
       ADMIN_PASSWORD: envField.string({ context: "server", access: "secret" }),
+      CRON_SECRET: envField.string({ context: "server", access: "secret" }),
     }
   }
 });

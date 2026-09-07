@@ -136,4 +136,16 @@ const storyCoherenceSchema = z.object({
   issues: z.array(storyCoherenceIssueSchema).describe("Problemas de coherencia narrativa encontrados. Vacío si 'coherent' es true."),
 });
 
-export { blueprintSchema, sceneContentSchema, storyContentSchema, repairedTextSchema, castCoherenceSchema, storyCoherenceSchema };
+// Texto para una publicación automática en redes sociales de un cuento ya
+// publicado (ver utils/socialCaption.ts). Facebook e Instagram llevan
+// textos DISTINTOS (no el mismo texto copiado dos veces) porque Facebook
+// enlaza automáticamente cualquier URL en texto plano dentro del mensaje,
+// mientras que Instagram nunca convierte enlaces de la descripción en
+// clicables (solo el de la biografía).
+const socialCaptionSchema = z.object({
+  facebookCaption: z.string().min(20).describe("Texto para Facebook: tono narrativo, con gancho inicial y una pregunta que invite a comentar. Puede incluir la URL en texto plano, Facebook la convierte en enlace automáticamente."),
+  instagramCaption: z.string().min(20).describe("Texto para Instagram: corto, visual, gancho inmediato. Instagram NO convierte enlaces de texto en clicables (solo el de la biografía), así que cualquier mención a la web debe leerse como texto normal, nunca como si fuera pulsable."),
+  hashtags: z.array(z.string()).min(3).max(8).describe("Hashtags en español derivados ÚNICAMENTE de las categorías y la edad reales de este cuento, dadas más abajo — nunca inventes temas o tramas que no estén ya en esos datos."),
+});
+
+export { blueprintSchema, sceneContentSchema, storyContentSchema, repairedTextSchema, castCoherenceSchema, storyCoherenceSchema, socialCaptionSchema };

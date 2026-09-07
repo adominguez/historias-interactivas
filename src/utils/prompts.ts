@@ -1,5 +1,6 @@
 import { AGES } from '@src/utils/characters';
 import { truncateString } from '@src/utils/functions';
+import type { SocialCaptionPromptInput } from '@src/utils/socialFormats';
 
 // Pass 1: solo la estructura del grafo (slugs, opciones, resúmenes de escena),
 // sin el texto final de cada nodo. Barato de generar y barato de validar antes
@@ -347,4 +348,39 @@ Busca específicamente estos tres tipos de problema (da igual si el problema apa
 No señales nada relacionado con ortografía, palabras inventadas o formato de guiones de diálogo: eso ya se comprueba por separado. Sé estricto solo con problemas genuinamente confusos o contradictorios; no marques como problema una historia simplemente sencilla, o con un final abierto típico de cuento infantil.`;
 }
 
-export { generateBlueprintPrompt, generateSceneContentPrompt, generateRepairPrompt, generateImagePrompt, generateCastCoherencePrompt, generateStoryCoherencePrompt, type CoherenceStoryInput };
+// Texto para publicar en redes sociales un cuento ya publicado (ver
+// utils/socialCaption.ts y social-auto-post.ts). Mismo principio que
+// generateStoryCoherencePrompt: instrucciones ancladas con un ejemplo
+// concreto de lo que NO hay que hacer, no solo una regla en prosa — aquí es
+// aún más importante, porque el fallo más grave posible no es un texto flojo
+// sino inventar una decisión, personaje o final que el cuento real no tiene.
+function generateSocialCaptionPrompt({ format, title, resume, characters, categoryTitles, age, slug, rootOptions }: SocialCaptionPromptInput) {
+  const charactersText = characters.map(({ name, description }) => `- ${name}: ${description}`).join('\n');
+
+  const formatBlock = format === 'decision'
+    ? `Formato: "¿QUÉ ELEGIRÍAS?". El gancho de la publicación es una decisión REAL del propio cuento — las opciones que el lector puede elegir nada más empezar a leer, citadas tal cual, son:
+${(rootOptions ?? []).map(o => `- "${o.text}"`).join('\n')}
+
+Usa estas opciones EXACTAMENTE como están escritas arriba (puedes adaptarlas ligeramente al tono de cada red, pero sin cambiar lo que dicen ni inventar una tercera opción que no exista). Ejemplo de lo que NO hay que hacer: si las opciones reales son "entrar en la cueva" y "seguir el río", no escribas "¿entrarías en la cueva, seguirías el río, o pedirías ayuda?" — esa tercera opción no existe en el cuento.`
+    : `Formato: "CUENTO RECOMENDADO". Es una recomendación/teaser del cuento en general, no de una decisión concreta: usa el resumen para generar curiosidad sobre cómo empieza la historia, sin explicar cómo se desarrolla ni cómo termina.`;
+
+  return `Escribe el texto para promocionar en redes sociales este cuento infantil interactivo ya publicado en la web. ${formatBlock}
+
+Título: "${title}"
+Edad objetivo: ${age}
+Categorías: ${categoryTitles.join(', ') || '(sin categoría)'}
+Resumen del cuento: ${resume}
+
+Personajes:
+${charactersText || '(sin personajes con nombre propio)'}
+
+Reglas que no se pueden romper:
+- Escribe TODO en español.
+- No inventes ningún personaje, objeto, lugar, decisión o acontecimiento que no esté ya en el título, el resumen, el reparto o las opciones dadas arriba. Ejemplo de lo que NO hay que hacer: mencionar "el mapa perdido" o "el hermano del protagonista" si el resumen no habla de ningún mapa ni de ningún hermano.
+- No reveles nunca cómo termina el cuento ni qué elige finalmente el protagonista, aunque el resumen lo insinúe — el objetivo es dar ganas de leerlo, no contarlo.
+- El texto de Facebook ("facebookCaption") lleva un tono más narrativo: un gancho, y una pregunta al final que invite a comentar. Puede mencionar la web en texto plano (p. ej. "en elarboldelashistorias.com/${slug}"), Facebook la convierte en enlace automáticamente.
+- El texto de Instagram ("instagramCaption") es más corto y directo, con el gancho en la primera línea. Instagram NUNCA convierte en enlace clicable lo que se escriba en el texto (solo el de la biografía), así que si mencionas la web, redáctalo como un dato, no como si se pudiera pulsar (ejemplo correcto: "Búscalo como '${title}' en El Árbol de las Historias"; ejemplo incorrecto, no usar: "toca aquí para leerlo").
+- No uses más de 8 hashtags, todos derivados de las categorías y la edad ya dadas arriba, ninguno inventado.`;
+}
+
+export { generateBlueprintPrompt, generateSceneContentPrompt, generateRepairPrompt, generateImagePrompt, generateCastCoherencePrompt, generateStoryCoherencePrompt, generateSocialCaptionPrompt, type CoherenceStoryInput };
