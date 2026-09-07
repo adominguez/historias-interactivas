@@ -147,7 +147,7 @@ const breadcrumb = [{
                 )
               }
             </div>
-            <h1 class="font-display leading-tight text-balance text-parchment-100">{title}</h1>
+            <span class="hero-title block font-display leading-tight text-balance text-parchment-100">{storyTitle}</span>
             <Rating
               totalStars={5}
               initialRating={rating}
@@ -184,6 +184,7 @@ const breadcrumb = [{
         }
         <div class="parchment-surface text-ink rounded-lg border border-gold-600/40 shadow-lg p-6 md:p-10 mt-6">
           <StoryPath storySlug={slug} steps={storyPath} />
+          <h1 class="scene-title font-display text-ink text-balance">{title}</h1>
           <div class:list={["prose-story font-serif-story", selectedAge?.proseSize ?? "text-lg leading-normal"]}>
             <slot />
           </div>
@@ -196,8 +197,23 @@ const breadcrumb = [{
   <Footer />
 </html>
 <style is:global>
-  h1 {
+  /* Antes esto apuntaba a un <h1> real (el título del cuento, en la
+     cabecera). Ahora ese elemento es un <span> -- para que en las páginas
+     de nodo el h1 real quede libre para el título de la escena concreta
+     (mejor para SEO/accesibilidad: cada URL de nodo tiene su propio h1
+     específico en vez de repetir el título del cuento en todas) -- así que
+     el tamaño se mantiene igual pero apuntando a la clase, no a la
+     etiqueta. */
+  .hero-title {
     font-size: clamp(2em,4vw + .5em,3em);
+  }
+
+  /* El h1 real de la página, en el panel de contenido: el título del
+     cuento en la portada, o el título del nodo en cada escena. Más
+     discreto que el de la cabecera -- ahí ya está el nombre del cuento en
+     grande, esto es solo la escena concreta. */
+  .scene-title {
+    font-size: clamp(1.25em, 2vw + .5em, 1.75em);
   }
 
   .prose-story p:first-of-type::first-letter {
@@ -248,7 +264,7 @@ const breadcrumb = [{
   .hero-banner {
     min-height: 28rem;
   }
-  .hero-banner h1,
+  .hero-banner .hero-title,
   .hero-banner p,
   .hero-banner ul,
   .hero-banner .flex.flex-wrap {
