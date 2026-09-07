@@ -668,3 +668,33 @@ export const getNextStoryToPost = async (cooldownCutoffIso: string) => {
   });
   return result.rows[0];
 }
+
+// Cuentos publicados con éxito en redes (feed o Story, cualquier
+// plataforma) desde `sinceIso`, uno por cuento (GROUP BY story_id: el mismo
+// cuento publicado varias veces esta semana en distintos sitios cuenta una
+// sola vez), del más reciente al más antiguo — para la página /destacados
+// enlazada desde la bio de Instagram/Facebook. Si esa semana no hay
+// ninguno (primer arranque, o el cron lleva días sin correr), cae a los
+// cuentos más recientes del catálogo para que la página nunca salga vacía.
+export const getFeaturedStories = async (sinceIso: string, limit: number) => {
+  const featuredResult = await turso.execute({
+    sql: `
+      SELECT s.*, MAX(sp.created_at) AS featured_at
+      FROM social_posts sp
+      JOIN stories s ON s.id = sp.story_id
+      WHERE sp.status = 'success' AND sp.created_at >= ?
+      GROUP BY s.id
+      ORDER BY featured_at DESC
+      LIMIT ?;
+    `,
+    args: [sinceIso, limit],
+  });
+
+  if (featuredResult.rows.length > 0) return featuredResult.rows;
+
+  const fallbackResult = await turso.execute({
+    sql: `SELECT * FROM stories ORDER BY created_at DESC LIMIT ?;`,
+    args: [limit],
+  });
+  return fallbackResult.rows;
+}

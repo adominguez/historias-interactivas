@@ -1,0 +1,36 @@
+---
+import Layout from "@layouts/Layout.astro";
+import BooksSection from "@components/sections/Books.astro";
+import { getFeaturedStories } from "@src/turso";
+import { type LittleStory } from "@types";
+
+// Página enlazada desde el perfil de Instagram/Facebook ("Enlace en la
+// bio" de las publicaciones automáticas, ver utils/socialStoryImage.ts):
+// para que quien llega desde una Story no tenga que buscar por su cuenta
+// el cuento que le llamó la atención. Muestra los "destacados de la
+// semana" (feed + Stories juntos, no solo lo que esté vivo en Stories
+// ahora mismo) para que nunca esté vacía — ver getFeaturedStories en
+// turso.ts, que además cae a los cuentos más recientes si esta semana no
+// hay ninguna publicación registrada todavía.
+const FEATURED_WINDOW_DAYS = 7;
+const sinceIso = new Date(Date.now() - FEATURED_WINDOW_DAYS * 24 * 60 * 60 * 1000)
+  .toISOString()
+  .slice(0, 19)
+  .replace("T", " ");
+
+const bookList = (await getFeaturedStories(sinceIso, 12)) as unknown as LittleStory[];
+---
+
+<Layout
+  title="Destacados de la semana - El Árbol de las Historias"
+  description="Los cuentos interactivos que hemos compartido últimamente en redes — elige uno y descubre cómo continúa la historia."
+>
+  <div class="pt-24">
+    <BooksSection
+      id="destacados"
+      bookList={bookList}
+      title="Destacados de esta semana"
+      content="¿Vienes de Instagram o Facebook? Aquí tienes los cuentos que hemos compartido últimamente — elige uno y descubre cómo continúa la historia."
+    />
+  </div>
+</Layout>
