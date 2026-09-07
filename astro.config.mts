@@ -77,11 +77,11 @@ export default defineConfig({
     edgeMiddleware: true,
     // /api/social-auto-post genera texto con IA y hace varias llamadas
     // secuenciales a la Graph API (incluida una espera de hasta 20s a que
-    // Instagram procese el contenedor de una Story) — el límite por
-    // defecto de Vercel puede no dar tiempo (confirmado en vivo:
-    // FUNCTION_INVOCATION_TIMEOUT en una prueba real de Story). 60s es
-    // seguro en cualquier plan de Vercel según su propia documentación.
-    maxDuration: 60,
+    // Instagram procese el contenedor de una Story) — confirmado en vivo
+    // que 60s tampoco basta para la ruta real de publicación (IA + FB +
+    // espera de IG en el peor caso se acerca a ese límite). 120s da
+    // margen real.
+    maxDuration: 120,
   }),
   vite: {
     ssr: {
