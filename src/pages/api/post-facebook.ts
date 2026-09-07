@@ -4,6 +4,13 @@ import { FACEBOOK_API_TOKEN, FACEBOOK_PAGE_ID, FACEBOOK_API_VERSION } from "astr
 const facebookUrl = `https://graph.facebook.com/${FACEBOOK_API_VERSION}/${FACEBOOK_PAGE_ID}/photos?access_token=${FACEBOOK_API_TOKEN}`;
 const photoStoriesUrl = `https://graph.facebook.com/${FACEBOOK_API_VERSION}/${FACEBOOK_PAGE_ID}/photo_stories?access_token=${FACEBOOK_API_TOKEN}`;
 
+// Sin esto, un fetch que se quede colgado (confirmado en vivo: la ruta de
+// Stories agotaba hasta 120s en Vercel sin devolver ni error ni respuesta)
+// consume todo el presupuesto de la función serverless en silencio. Con
+// timeout, si de verdad se cuelga falla rápido con un error identificable
+// en vez de agotar maxDuration sin dejar ninguna pista de cuál llamada era.
+const GRAPH_API_TIMEOUT_MS = 15000;
+
 // Publica una foto con mensaje en la página de Facebook. Extraída como
 // función reutilizable (antes solo existía como el cuerpo del handler POST
 // de abajo) para que social-auto-post.ts pueda llamarla directamente sin
@@ -14,7 +21,8 @@ export async function postToFacebook(imageUrl: string, message: string): Promise
     headers: {
       "Content-Type": "application/x-www-form-urlencoded"
     },
-    body: `url=${encodeURIComponent(imageUrl)}&message=${encodeURIComponent(message)}`
+    body: `url=${encodeURIComponent(imageUrl)}&message=${encodeURIComponent(message)}`,
+    signal: AbortSignal.timeout(GRAPH_API_TIMEOUT_MS)
   });
 
   const data = await response.json();
@@ -40,7 +48,8 @@ export async function postFacebookStory(imageUrl: string): Promise<{ ok: true; p
     headers: {
       "Content-Type": "application/x-www-form-urlencoded"
     },
-    body: `url=${encodeURIComponent(imageUrl)}&published=false`
+    body: `url=${encodeURIComponent(imageUrl)}&published=false`,
+    signal: AbortSignal.timeout(GRAPH_API_TIMEOUT_MS)
   });
 
   const uploadData = await uploadResponse.json();
@@ -54,7 +63,8 @@ export async function postFacebookStory(imageUrl: string): Promise<{ ok: true; p
     headers: {
       "Content-Type": "application/x-www-form-urlencoded"
     },
-    body: `photo_id=${encodeURIComponent(uploadData.id)}`
+    body: `photo_id=${encodeURIComponent(uploadData.id)}`,
+    signal: AbortSignal.timeout(GRAPH_API_TIMEOUT_MS)
   });
 
   const storyData = await storyResponse.json();

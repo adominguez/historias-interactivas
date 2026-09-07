@@ -6,6 +6,13 @@ const publishUrl = `https://graph.facebook.com/${FACEBOOK_API_VERSION}/${INSTAGR
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
+// Sin esto, un fetch que se quede colgado (confirmado en vivo: la ruta de
+// Stories agotaba hasta 120s en Vercel sin devolver ni error ni respuesta)
+// consume todo el presupuesto de la función serverless en silencio. Con
+// timeout, si de verdad se cuelga falla rápido con un error identificable
+// en vez de agotar maxDuration sin dejar ninguna pista de cuál llamada era.
+const GRAPH_API_TIMEOUT_MS = 15000;
+
 // Instagram procesa la imagen del contenedor de forma asíncrona: publicar
 // justo después de crearlo puede fallar con "Media ID is not available"
 // aunque el contenedor se haya creado bien (confirmado en una prueba real:
@@ -17,7 +24,7 @@ const waitForMediaReady = async (containerId: string): Promise<{ ok: true } | { 
   const statusUrl = `https://graph.facebook.com/${FACEBOOK_API_VERSION}/${containerId}?fields=status_code&access_token=${FACEBOOK_API_TOKEN}`;
 
   for (let attempt = 0; attempt < 10; attempt++) {
-    const response = await fetch(statusUrl);
+    const response = await fetch(statusUrl, { signal: AbortSignal.timeout(GRAPH_API_TIMEOUT_MS) });
     const data = await response.json();
 
     if (data.status_code === "FINISHED") return { ok: true };
@@ -43,7 +50,8 @@ const createAndPublishMedia = async (containerParams: Record<string, string>): P
     body: new URLSearchParams({
       ...containerParams,
       access_token: FACEBOOK_API_TOKEN
-    })
+    }),
+    signal: AbortSignal.timeout(GRAPH_API_TIMEOUT_MS)
   });
 
   const mediaData = await mediaResponse.json();
@@ -63,7 +71,8 @@ const createAndPublishMedia = async (containerParams: Record<string, string>): P
     body: JSON.stringify({
       creation_id: mediaData.id,
       access_token: FACEBOOK_API_TOKEN
-    })
+    }),
+    signal: AbortSignal.timeout(GRAPH_API_TIMEOUT_MS)
   });
 
   const publishData = await publishResponse.json();
