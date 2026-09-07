@@ -548,7 +548,13 @@ const getRatedStory = (slug: string) => {
 // se recibe como parámetro (no se importa astro:env/server aquí dentro)
 // porque este archivo también se usa desde componentes de cliente
 // (saveRatedStory/getRatedStory) y ese import solo es válido en servidor.
-const getStoryCoverImageUrl = (cloudName: string, slug: string, imageVersion: number | null) =>
-  `https://res.cloudinary.com/${cloudName}/image/upload/${imageVersion ? `v${imageVersion}/` : ''}cuentos-interactivos/${slug}/${slug}`;
+// `transformation` es un segmento de transformación de Cloudinary opcional
+// (p. ej. "c_fill,w_1080,h_1350,g_auto" para recortar a 4:5 con recorte
+// inteligente) — las portadas se generan en 1536x1024 (3:2), que Instagram
+// acepta pero no es su formato recomendado (4:5 vertical), así que
+// social-auto-post.ts pide esa variante recortada solo para Instagram, sin
+// generar ni guardar ninguna imagen nueva.
+const getStoryCoverImageUrl = (cloudName: string, slug: string, imageVersion: number | null, transformation?: string) =>
+  `https://res.cloudinary.com/${cloudName}/image/upload/${transformation ? `${transformation}/` : ''}${imageVersion ? `v${imageVersion}/` : ''}cuentos-interactivos/${slug}/${slug}`;
 
 export { truncateString, validateStoryIntegrity, resolveBlueprint, hasScreenplayStyleDialogue, findInvalidSpanishWords, hasLeakedEndingLabel, hasMalformedDashes, hasQuotedDialogue, diagnoseStory, saveRatedStory, getRatedStory, getStoryCoverImageUrl };

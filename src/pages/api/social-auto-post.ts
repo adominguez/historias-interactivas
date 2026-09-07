@@ -8,6 +8,12 @@ import { postToFacebook } from "@src/pages/api/post-facebook";
 import { postToInstagram } from "@src/pages/api/post-instagram";
 import { PUBLIC_CLOUDINARY_CLOUD_NAME } from "astro:env/server";
 
+// Las portadas se generan en 1536x1024 (3:2) — Instagram lo acepta (su rango
+// válido es 4:5 a 1.91:1) pero no es su formato recomendado (4:5 vertical,
+// que ocupa más pantalla en el feed). g_auto pide a Cloudinary un recorte
+// con detección de contenido en vez de recortar siempre por el centro.
+const INSTAGRAM_IMAGE_TRANSFORMATION = "c_fill,w_1080,h_1350,g_auto";
+
 // Orquesta la publicación automática diaria en Facebook + Instagram (ver
 // vercel.json para el cron y src/middleware.ts / src/utils/auth.ts para su
 // autenticación). Cada llamada: decide el formato de hoy según el día de la
@@ -75,6 +81,7 @@ export async function GET(request: Request) {
     const { facebookCaption, instagramCaption, hashtags } = await generateSocialCaption(promptInput);
     const hashtagsLine = hashtags.join(" ");
     const imageUrl = getStoryCoverImageUrl(PUBLIC_CLOUDINARY_CLOUD_NAME, story.slug as string, story.image_version as number | null);
+    const instagramImageUrl = getStoryCoverImageUrl(PUBLIC_CLOUDINARY_CLOUD_NAME, story.slug as string, story.image_version as number | null, INSTAGRAM_IMAGE_TRANSFORMATION);
 
     const summary = {
       dryRun,
@@ -84,6 +91,7 @@ export async function GET(request: Request) {
       instagramCaption,
       hashtags,
       imageUrl,
+      instagramImageUrl,
       facebook: null as { ok: boolean; postId?: string; error?: string } | null,
       instagram: null as { ok: boolean; postId?: string; error?: string } | null,
     };
@@ -101,7 +109,7 @@ export async function GET(request: Request) {
       });
       summary.facebook = fb;
 
-      const ig = await postToInstagram(imageUrl, `${instagramCaption}\n\n${hashtagsLine}`);
+      const ig = await postToInstagram(instagramImageUrl, `${instagramCaption}\n\n${hashtagsLine}`);
       await insertSocialPost({
         storyId,
         format: generator.id,
