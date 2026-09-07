@@ -16,6 +16,24 @@ cloudinary.config({
 // buscarse un bug de encoding; el builder cloudinary.url() lo hace bien por
 // construcción, así que esta es la única función del proyecto que construye
 // una URL de Cloudinary así en vez de con el patrón de string de siempre.
+//
+// Ni Instagram ni Facebook exponen un enlace pulsable de verdad en su API de
+// publicación (el sticker de enlace / editor de enlaces son solo funciones
+// manuales de cada app, confirmado por su propia documentación) -- lo más
+// honesto que se puede ofrecer es la web escrita como texto legible, no un
+// enlace real.
+//
+// El gancho va arriba (pequeño) y la web abajo (texto de la marca de agua),
+// dejando margen a las zonas donde Instagram/Facebook superponen su propia
+// interfaz (cabecera con usuario/progreso arriba, caja de respuesta abajo)
+// para que ningún texto quede tapado.
+// Importante (perdido varias horas hasta dar con esto, confirmado contra la
+// documentación oficial de Cloudinary): la gravedad y el desplazamiento
+// (x/y) de una capa de texto NO van en el mismo componente que define el
+// overlay (l_text/color/background/width/crop) -- puestos ahí se ignoran
+// por completo y la capa siempre queda centrada, sin error visible. Van en
+// el componente SIGUIENTE, junto a "flags: layer_apply". Por eso cada capa
+// de texto de abajo son DOS objetos de transformación, no uno.
 export const buildStoryImageUrl = ({ slug, imageVersion, hookText }: { slug: string; imageVersion: number | null; hookText: string }) =>
   cloudinary.url(`cuentos-interactivos/${slug}/${slug}`, {
     version: imageVersion ?? undefined,
@@ -25,16 +43,27 @@ export const buildStoryImageUrl = ({ slug, imageVersion, hookText }: { slug: str
         overlay: {
           font_family: "arial",
           font_weight: "bold",
-          font_size: 64,
+          font_size: 48,
           text: hookText,
         },
         color: "#FFFFFF",
         background: "rgb:00000099",
         width: 900,
         crop: "fit",
-        gravity: "south",
-        y: 160,
       },
-      { flags: "layer_apply" },
+      { flags: "layer_apply", gravity: "north", y: 280 },
+      {
+        overlay: {
+          font_family: "arial",
+          font_weight: "bold",
+          font_size: 36,
+          text: `elarboldelashistorias.com/${slug}`,
+        },
+        color: "#FFFFFF",
+        background: "rgb:00000099",
+        width: 900,
+        crop: "fit",
+      },
+      { flags: "layer_apply", gravity: "south", y: 220 },
     ],
   });
