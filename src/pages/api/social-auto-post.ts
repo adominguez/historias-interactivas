@@ -1,11 +1,12 @@
 import { getNextStoryToPost, getLastSuccessfulSocialFormat, getStoryOptions, insertSocialPost } from "@src/turso";
-import { SOCIAL_FORMATS, COOLDOWN_DAYS, resolveFormatForToday } from "@src/utils/socialFormats";
+import { SOCIAL_FORMATS, SOCIAL_FORMAT_IDS, COOLDOWN_DAYS, resolveFormatForToday, type SocialFormatId, type SocialSurface } from "@src/utils/socialFormats";
 import { WEEKDAY_FORMAT } from "@src/utils/socialSchedule";
 import { generateSocialCaption } from "@src/utils/socialCaption";
 import { getStoryCoverImageUrl } from "@src/utils/functions";
+import { buildStoryImageUrl } from "@src/utils/socialStoryImage";
 import { generalCategories } from "@src/data/categories";
-import { postToFacebook } from "@src/pages/api/post-facebook";
-import { postToInstagram } from "@src/pages/api/post-instagram";
+import { postToFacebook, postFacebookStory } from "@src/pages/api/post-facebook";
+import { postToInstagram, postInstagramStory } from "@src/pages/api/post-instagram";
 import { PUBLIC_CLOUDINARY_CLOUD_NAME } from "astro:env/server";
 
 // Las portadas se generan en 1536x1024 (3:2) — Instagram lo acepta (su rango
@@ -14,29 +15,42 @@ import { PUBLIC_CLOUDINARY_CLOUD_NAME } from "astro:env/server";
 // con detección de contenido en vez de recortar siempre por el centro.
 const INSTAGRAM_IMAGE_TRANSFORMATION = "c_fill,w_1080,h_1350,g_auto";
 
+type PostResult = { ok: boolean; postId?: string; error?: string };
+
 // Orquesta la publicación automática diaria en Facebook + Instagram (ver
 // vercel.json para el cron y src/middleware.ts / src/utils/auth.ts para su
-// autenticación). Cada llamada: decide el formato de hoy según el día de la
-// semana (no-op si hoy no toca nada), elige un cuento no publicado
-// recientemente, genera el texto con IA, publica en ambas redes y deja
-// constancia (éxito o fallo) en 'social_posts'.
+// autenticación). Cada llamada: decide el formato y la superficie de hoy
+// según el día de la semana (no-op si hoy no toca nada), elige un cuento no
+// publicado recientemente, genera el texto con IA, publica (en el feed o
+// como Story, según toque) y deja constancia (éxito o fallo) en
+// 'social_posts'.
 //
 // ?dryRun=1 hace todo lo anterior EXCEPTO publicar de verdad y sin tocar la
-// base de datos, para poder revisar la selección de cuento y la calidad de
-// los textos sin gastar el cooldown de ningún cuento ni publicar en las
-// páginas reales.
+// base de datos. ?surface=feed|story y ?format=recommendation|decision
+// fuerzan la superficie/formato de hoy (para poder probar el camino de
+// Story sin esperar a un domingo real) — mismo nivel de protección que
+// dryRun, no abren ninguna vía de autenticación nueva.
 export async function GET(request: Request) {
   const url = new URL(request.url);
   const dryRun = url.searchParams.get("dryRun") === "1";
 
+  const surfaceOverride = url.searchParams.get("surface");
+  const formatOverride = url.searchParams.get("format");
+
   try {
     const weekday = new Date().getUTCDay();
     const scheduled = WEEKDAY_FORMAT[weekday];
-    const lastFormat = await getLastSuccessfulSocialFormat();
-    const format = resolveFormatForToday(scheduled, lastFormat);
 
-    if (!format) {
-      return new Response(JSON.stringify({ skipped: true, reason: "Hoy no toca publicar (día sin formato asignado en Fase 1)", weekday }), {
+    const surface: SocialSurface | null =
+      surfaceOverride === "feed" || surfaceOverride === "story" ? surfaceOverride : (scheduled?.surface ?? null);
+    const scheduledFormat: SocialFormatId | null =
+      formatOverride && (SOCIAL_FORMAT_IDS as string[]).includes(formatOverride) ? (formatOverride as SocialFormatId) : (scheduled?.format ?? null);
+
+    const lastFormat = await getLastSuccessfulSocialFormat();
+    const format = resolveFormatForToday(scheduledFormat, lastFormat);
+
+    if (!format || !surface) {
+      return new Response(JSON.stringify({ skipped: true, reason: "Hoy no toca publicar (día sin formato asignado)", weekday }), {
         status: 200,
         headers: { "Content-Type": "application/json" },
       });
@@ -78,48 +92,85 @@ export async function GET(request: Request) {
       rootOptions
     );
 
-    const { facebookCaption, instagramCaption, hashtags } = await generateSocialCaption(promptInput);
+    const { facebookCaption, instagramCaption, hashtags, storyHook } = await generateSocialCaption(promptInput);
     const hashtagsLine = hashtags.join(" ");
-    const imageUrl = getStoryCoverImageUrl(PUBLIC_CLOUDINARY_CLOUD_NAME, story.slug as string, story.image_version as number | null);
-    const instagramImageUrl = getStoryCoverImageUrl(PUBLIC_CLOUDINARY_CLOUD_NAME, story.slug as string, story.image_version as number | null, INSTAGRAM_IMAGE_TRANSFORMATION);
 
     const summary = {
       dryRun,
       format: generator.id,
+      surface,
       story: { id: storyId, slug: story.slug, title: story.title },
       facebookCaption,
       instagramCaption,
       hashtags,
-      imageUrl,
-      instagramImageUrl,
-      facebook: null as { ok: boolean; postId?: string; error?: string } | null,
-      instagram: null as { ok: boolean; postId?: string; error?: string } | null,
+      storyHook,
+      imageUrl: null as string | null,
+      instagramImageUrl: null as string | null,
+      storyImageUrl: null as string | null,
+      facebook: null as PostResult | null,
+      instagram: null as PostResult | null,
     };
 
-    if (!dryRun) {
-      const fb = await postToFacebook(imageUrl, `${facebookCaption}\n\n${hashtagsLine}`);
-      await insertSocialPost({
-        storyId,
-        format: generator.id,
-        platform: "facebook",
-        status: fb.ok ? "success" : "failure",
-        caption: facebookCaption,
-        externalPostId: fb.ok ? fb.postId : null,
-        errorMessage: fb.ok ? null : fb.error,
-      });
-      summary.facebook = fb;
+    if (surface === "story") {
+      const storyImageUrl = buildStoryImageUrl({ slug: story.slug as string, imageVersion: story.image_version as number | null, hookText: storyHook });
+      summary.storyImageUrl = storyImageUrl;
 
-      const ig = await postToInstagram(instagramImageUrl, `${instagramCaption}\n\n${hashtagsLine}`);
-      await insertSocialPost({
-        storyId,
-        format: generator.id,
-        platform: "instagram",
-        status: ig.ok ? "success" : "failure",
-        caption: instagramCaption,
-        externalPostId: ig.ok ? ig.postId : null,
-        errorMessage: ig.ok ? null : ig.error,
-      });
-      summary.instagram = ig;
+      if (!dryRun) {
+        const fb = await postFacebookStory(storyImageUrl);
+        await insertSocialPost({
+          storyId,
+          format: generator.id,
+          platform: "facebook_story",
+          status: fb.ok ? "success" : "failure",
+          caption: storyHook,
+          externalPostId: fb.ok ? fb.postId : null,
+          errorMessage: fb.ok ? null : fb.error,
+        });
+        summary.facebook = fb;
+
+        const ig = await postInstagramStory(storyImageUrl);
+        await insertSocialPost({
+          storyId,
+          format: generator.id,
+          platform: "instagram_story",
+          status: ig.ok ? "success" : "failure",
+          caption: storyHook,
+          externalPostId: ig.ok ? ig.postId : null,
+          errorMessage: ig.ok ? null : ig.error,
+        });
+        summary.instagram = ig;
+      }
+    } else {
+      const imageUrl = getStoryCoverImageUrl(PUBLIC_CLOUDINARY_CLOUD_NAME, story.slug as string, story.image_version as number | null);
+      const instagramImageUrl = getStoryCoverImageUrl(PUBLIC_CLOUDINARY_CLOUD_NAME, story.slug as string, story.image_version as number | null, INSTAGRAM_IMAGE_TRANSFORMATION);
+      summary.imageUrl = imageUrl;
+      summary.instagramImageUrl = instagramImageUrl;
+
+      if (!dryRun) {
+        const fb = await postToFacebook(imageUrl, `${facebookCaption}\n\n${hashtagsLine}`);
+        await insertSocialPost({
+          storyId,
+          format: generator.id,
+          platform: "facebook",
+          status: fb.ok ? "success" : "failure",
+          caption: facebookCaption,
+          externalPostId: fb.ok ? fb.postId : null,
+          errorMessage: fb.ok ? null : fb.error,
+        });
+        summary.facebook = fb;
+
+        const ig = await postToInstagram(instagramImageUrl, `${instagramCaption}\n\n${hashtagsLine}`);
+        await insertSocialPost({
+          storyId,
+          format: generator.id,
+          platform: "instagram",
+          status: ig.ok ? "success" : "failure",
+          caption: instagramCaption,
+          externalPostId: ig.ok ? ig.postId : null,
+          errorMessage: ig.ok ? null : ig.error,
+        });
+        summary.instagram = ig;
+      }
     }
 
     return new Response(JSON.stringify(summary), {

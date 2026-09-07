@@ -8,6 +8,14 @@ export const COOLDOWN_DAYS = 35;
 
 export type SocialFormatId = "recommendation" | "decision";
 
+// Superficie donde se publica ese contenido (Fase 2 añade "story"; un futuro
+// "reel" en Fase 3 se sumaría aquí sin tocar nada más de este archivo). Es
+// una dimensión aparte del formato a propósito: la misma decisión editorial
+// (recomendación/decisión) puede publicarse como post de feed o como Story,
+// reutilizando el mismo generador de texto en vez de duplicar la disciplina
+// anti-invención/anti-spoiler para cada combinación.
+export type SocialSurface = "feed" | "story";
+
 // Orden de rotación: también el orden en que se busca "el siguiente formato
 // distinto" cuando el formato asignado a hoy coincidiría con el último
 // publicado con éxito (ver resolveFormatForToday). Registrar un formato
