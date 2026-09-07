@@ -29,21 +29,19 @@ const waitForMediaReady = async (containerId: string): Promise<{ ok: true } | { 
   return { ok: false, error: "El contenedor de Instagram no terminó de procesarse a tiempo (20s)" };
 };
 
-// Publica una imagen con descripción en la cuenta de Instagram (flujo de tres
-// pasos de la Graph API: crear el contenedor de medios, esperar a que
-// termine de procesarse, y publicarlo). Extraída como función reutilizable
-// (antes solo existía como el cuerpo del handler POST de abajo) para que
-// social-auto-post.ts pueda llamarla directamente sin pegarle una petición
-// HTTP a este mismo endpoint.
-export async function postToInstagram(imageUrl: string, caption: string): Promise<{ ok: true; postId: string } | { ok: false; error: string }> {
+// Crea un contenedor de medios con los parámetros dados, espera a que
+// termine de procesarse y lo publica -- el flujo de 3 pasos es idéntico para
+// un post de feed y una Story, solo cambian los parámetros del contenedor
+// (caption vs. media_type=STORIES), así que ambas funciones de abajo llaman
+// a este único helper en vez de duplicar el flujo.
+const createAndPublishMedia = async (containerParams: Record<string, string>): Promise<{ ok: true; postId: string } | { ok: false; error: string }> => {
   const mediaResponse = await fetch(containerUrl, {
     method: "POST",
     headers: {
       "Content-Type": "application/x-www-form-urlencoded"
     },
     body: new URLSearchParams({
-      image_url: imageUrl,
-      caption,
+      ...containerParams,
       access_token: FACEBOOK_API_TOKEN
     })
   });
@@ -75,6 +73,22 @@ export async function postToInstagram(imageUrl: string, caption: string): Promis
   }
 
   return { ok: true, postId: publishData.id as string };
+};
+
+// Publica una imagen con descripción en la cuenta de Instagram. Extraída
+// como función reutilizable (antes solo existía como el cuerpo del handler
+// POST de abajo) para que social-auto-post.ts pueda llamarla directamente
+// sin pegarle una petición HTTP a este mismo endpoint.
+export async function postToInstagram(imageUrl: string, caption: string) {
+  return createAndPublishMedia({ image_url: imageUrl, caption });
+}
+
+// Publica una Story de Instagram. A diferencia del feed, las Stories no
+// llevan caption en la API -- el texto ya va incrustado en la propia imagen
+// (ver utils/socialStoryImage.ts) -- así que esta función no recibe ningún
+// texto, solo la imagen ya compuesta.
+export async function postInstagramStory(imageUrl: string) {
+  return createAndPublishMedia({ image_url: imageUrl, media_type: "STORIES" });
 }
 
 export const POST: APIRoute = async ({ request }) => {

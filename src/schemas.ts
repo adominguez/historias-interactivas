@@ -146,6 +146,15 @@ const socialCaptionSchema = z.object({
   facebookCaption: z.string().min(20).describe("Texto para Facebook: tono narrativo, con gancho inicial y una pregunta que invite a comentar. Puede incluir la URL en texto plano, Facebook la convierte en enlace automáticamente."),
   instagramCaption: z.string().min(20).describe("Texto para Instagram: corto, visual, gancho inmediato. Instagram NO convierte enlaces de texto en clicables (solo el de la biografía), así que cualquier mención a la web debe leerse como texto normal, nunca como si fuera pulsable."),
   hashtags: z.array(z.string()).min(3).max(8).describe("Hashtags en español derivados ÚNICAMENTE de las categorías y la edad reales de este cuento, dadas más abajo — nunca inventes temas o tramas que no estén ya en esos datos."),
+  // max(100) da margen real de sobra frente a la instrucción del prompt de
+  // "no más de ~70 caracteres, SIEMPRE una frase completa": un límite duro
+  // demasiado ajustado (60) provocó en una prueba real que el modelo
+  // cortara la frase a mitad camino, dejando una coma colgando ("...las
+  // estrellas buscan su,") — con este modo de salida estructurada, el
+  // límite del schema se aplica como un tope duro de generación, no como
+  // una validación posterior, así que hay que dejar margen de verdad, no
+  // solo pedirlo en el texto del prompt.
+  storyHook: z.string().min(10).max(100).describe("Frase muy corta para incrustar sobre la imagen de una Story de Instagram/Facebook — debe leerse de un vistazo, sin necesidad de tocar nada (las Stories no llevan descripción aparte, el texto va incrustado en la propia imagen). Para el formato 'decision', formúlala como pregunta directa citando o resumiendo brevísimamente la opción real dada abajo; para 'recommendation', un gancho puro sobre el cuento. Nunca incluyas hashtags ni la URL de la web aquí."),
 });
 
 export { blueprintSchema, sceneContentSchema, storyContentSchema, repairedTextSchema, castCoherenceSchema, storyCoherenceSchema, socialCaptionSchema };
