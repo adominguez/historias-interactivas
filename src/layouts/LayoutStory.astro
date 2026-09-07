@@ -38,9 +38,10 @@ interface Props {
   isAdmin?: boolean;
   currentNodeSlug?: string;
   storyPath?: { text: string; slug: string }[];
+  storyTitle?: string;
 }
 
-const { description, transition = 'fade', title, slug, options = [], optionSlug, backUrl, relatedStories, ratingCount, rating, ratingSlug, category, created, modified = created, age, imageVersion, isAdmin, currentNodeSlug, storyPath = [] } = Astro.props;
+const { description, transition = 'fade', title, slug, options = [], optionSlug, backUrl, relatedStories, ratingCount, rating, ratingSlug, category, created, modified = created, age, imageVersion, isAdmin, currentNodeSlug, storyPath = [], storyTitle = title } = Astro.props;
 
 const editHref = `/admin/editar-historia?storySlug=${encodeURIComponent(slug)}${currentNodeSlug ? `&node=${encodeURIComponent(currentNodeSlug)}` : ''}`;
 
@@ -64,7 +65,11 @@ const keywords = `${category.title}, Cuento interactivo, historia interactiva, $
 
 const genre = category.title.toLowerCase().replace('cuentos de ', '')
 
-const breadcrumb = !backUrl ? [{
+// Solo navegación real del sitio (Inicio / Categoría / Cuento) -- qué
+// decisión te trajo hasta la escena actual ya lo cuenta StoryPath, con las
+// opciones reales del cuento, así que aquí no hace falta (ni conviene)
+// intentar representar la escena anterior por su slug.
+const breadcrumb = [{
         title: 'Cuentos interactivos',
         slug: `/#${slug}`,
         current: false,
@@ -74,26 +79,9 @@ const breadcrumb = !backUrl ? [{
         slug: `/cuentos/${category.slug}`,
         current: false,
       }, {
-        title,
-        slug: `/cuentos-interactivos/${slug}`,
-        current: true,
-      }] : [{
-        title: 'Cuentos interactivos',
-        slug: `/#${slug}`,
-        current: false,
-        back: !backUrl,
-      }, {
-        title: category.title,
-        slug: `/cuentos/${category.slug}`,
-        current: false,
-      }, {
-        title: backUrl.replaceAll('-', ' ').replace('/', ''),
-        slug: `${backUrl}`,
-        current: false,
-      }, {
-        title,
-        slug: `/cuentos-interactivos/${backUrl}/${slug}`,
-        current: true,
+        title: storyTitle,
+        slug: `/${slug}`,
+        current: !backUrl,
       }]
 
 ---
