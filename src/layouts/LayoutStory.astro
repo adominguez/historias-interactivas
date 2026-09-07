@@ -5,6 +5,7 @@ import BaseHead from '@components/BaseHead.astro';
 import Footer from '@components/Footer.astro';
 import { CldImage } from 'astro-cloudinary';
 import Breadcrumb from '@components/Breadcrumb.astro';
+import StoryPath from '@components/StoryPath.astro';
 import Options from '@components/Options.astro';
 import { type Option } from "@types";
 import Books from '@components/sections/Books.astro';
@@ -36,9 +37,10 @@ interface Props {
   imageVersion?: number | null;
   isAdmin?: boolean;
   currentNodeSlug?: string;
+  storyPath?: { text: string; slug: string }[];
 }
 
-const { description, transition = 'fade', title, slug, options = [], optionSlug, backUrl, relatedStories, ratingCount, rating, ratingSlug, category, created, modified = created, age, imageVersion, isAdmin, currentNodeSlug } = Astro.props;
+const { description, transition = 'fade', title, slug, options = [], optionSlug, backUrl, relatedStories, ratingCount, rating, ratingSlug, category, created, modified = created, age, imageVersion, isAdmin, currentNodeSlug, storyPath = [] } = Astro.props;
 
 const editHref = `/admin/editar-historia?storySlug=${encodeURIComponent(slug)}${currentNodeSlug ? `&node=${encodeURIComponent(currentNodeSlug)}` : ''}`;
 
@@ -193,6 +195,7 @@ const breadcrumb = !backUrl ? [{
           )
         }
         <div class="parchment-surface text-ink rounded-lg border border-gold-600/40 shadow-lg p-6 md:p-10 mt-6">
+          <StoryPath storySlug={slug} steps={storyPath} />
           <div class:list={["prose-story font-serif-story", selectedAge?.proseSize ?? "text-lg leading-normal"]}>
             <slot />
           </div>
