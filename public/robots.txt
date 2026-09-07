@@ -1,4 +1,6 @@
 User-agent: *
 Allow: /
+Disallow: /admin
+Disallow: /api/
 
-Sitemap: https://elarboldelashistorias/sitemap-index.xml
+Sitemap: https://elarboldelashistorias.com/sitemap-index.xml

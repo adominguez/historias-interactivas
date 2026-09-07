@@ -63,6 +63,12 @@ try {
 export default defineConfig({
   site: 'https://elarboldelashistorias.com',
   integrations: [sitemap({
+    // Las páginas de /admin (protegidas por Basic Auth, nunca indexables)
+    // se colaban en el sitemap público -- @astrojs/sitemap las descubre
+    // solo por existir como páginas reales de Astro, sin pasar por
+    // customPages, así que hay que filtrarlas aquí explícitamente en vez
+    // de simplemente no añadirlas a customPages.
+    filter: (page) => !page.includes("/admin"),
     serialize(item) {
       const lastCharacter = item.url.slice(-1);
       if (lastCharacter === "/") {
