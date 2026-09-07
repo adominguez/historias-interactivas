@@ -82,7 +82,17 @@ export const buildStoryImageUrl = ({ slug, imageVersion, hookText }: { slug: str
 // (turso.ts) / usa StoryPath.astro -- si el camino es muy largo se recortan
 // los primeros pasos (se conserva el final, que es lo más relevante del
 // remate) y se marca con "...".
+//
+// A diferencia de buildStoryImageUrl (cajas negras + Arial, pensadas para
+// leerse rápido encima de cualquier ilustración en una Story), esta imagen
+// es un recuerdo para guardar/compartir, así que usa las mismas tipografías
+// y tonos de pergamino/dorado que el resto del sitio -- confirmado que
+// Cloudinary sirve Playfair Display y EB Garamond como Google Fonts sin
+// necesidad de subir nada, y que "radius" sí redondea las esquinas de una
+// capa de texto igual que en cualquier otro overlay.
 const RECAP_STEP_LIMIT = 4;
+const PARCHMENT_BACKGROUND = "rgb:F6EEDDE6"; // --parchment-100 con transparencia, no un bloque opaco
+const INK_COLOR = "#2B2118"; // mismo tono que --ink en tailwind.config.mjs
 
 export const buildPathRecapImageUrl = ({
   slug,
@@ -96,10 +106,8 @@ export const buildPathRecapImageUrl = ({
   steps: { text: string }[];
 }) => {
   const trimmedSteps = steps.length > RECAP_STEP_LIMIT ? steps.slice(-RECAP_STEP_LIMIT) : steps;
-  const numberedSteps = trimmedSteps
-    .map((step, index) => `${index + 1}. ${step.text}`)
-    .join("\n");
-  const recapText = steps.length > RECAP_STEP_LIMIT ? `...\n${numberedSteps}` : numberedSteps;
+  const stepLines = trimmedSteps.map((step) => step.text).join("\n");
+  const recapText = `❦ Tu camino ❦\n${steps.length > RECAP_STEP_LIMIT ? "...\n" : ""}${stepLines}`;
 
   return cloudinary.url(`cuentos-interactivos/${slug}/${slug}`, {
     version: imageVersion ?? undefined,
@@ -107,30 +115,31 @@ export const buildPathRecapImageUrl = ({
       { width: 1080, height: 1920, crop: "fill", gravity: "auto" },
       {
         overlay: {
-          font_family: "arial",
+          font_family: "Playfair Display",
           font_weight: "bold",
-          font_size: 56,
+          font_size: 58,
           text: storyTitle,
         },
-        color: "#FFFFFF",
-        background: "rgb:00000099",
-        width: 900,
+        color: INK_COLOR,
+        background: PARCHMENT_BACKGROUND,
+        width: 880,
         crop: "fit",
+        radius: 16,
       },
-      { flags: "layer_apply", gravity: "north", y: 200 },
+      { flags: "layer_apply", gravity: "north", y: 140 },
       {
         overlay: {
-          font_family: "arial",
-          font_weight: "bold",
-          font_size: 34,
-          text: `Tu camino:\n${recapText}`,
+          font_family: "EB Garamond",
+          font_size: 36,
+          text: recapText,
         },
-        color: "#FFFFFF",
-        background: "rgb:00000099",
-        width: 900,
+        color: INK_COLOR,
+        background: PARCHMENT_BACKGROUND,
+        width: 820,
         crop: "fit",
+        radius: 16,
       },
-      { flags: "layer_apply", gravity: "south", y: 300 },
+      { flags: "layer_apply", gravity: "south", y: 180 },
     ],
   });
 };
