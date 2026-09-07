@@ -5,7 +5,7 @@ const { breadcrumb } = Astro.props;
 
 <ul class="px-4 flex flex-wrap">
   {
-    breadcrumb.map(({ title, slug, current, back }: BreadCrumbProps) => (
+    breadcrumb.map(({ title, slug, current, back }: BreadCrumbProps, index: number) => (
       <li class="inline">
         {
           current ? (
@@ -19,7 +19,7 @@ const { breadcrumb } = Astro.props;
           )
         }
         {
-          !current && (
+          index < breadcrumb.length - 1 && (
             <span> / </span>
           )
         }
