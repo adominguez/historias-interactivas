@@ -16,13 +16,16 @@ interface Props {
 	// sitio, hacían que Google viera un dominio lleno de contenido fino.
 	// El lector sigue navegando por ellas con normalidad desde el cuento.
 	noindex?: boolean;
+	// EB Garamond solo se usa en el texto de los cuentos (font-serif-story):
+	// precargarla en todas las páginas retrasaba el LCP de la portada.
+	preloadStoryFont?: boolean;
 }
 
 const canonical = new URL(Astro.url.pathname === '/' ? '' : Astro.url.pathname, Astro.site);
 
 const canonicalURL = Astro.url.pathname === '/' ? canonical.origin : canonical;
 
-const { title, description, image = '', noindex = false } = Astro.props;
+const { title, description, image = '', noindex = false, preloadStoryFont = false } = Astro.props;
 ---
 
 <!-- Global Metadata -->
@@ -36,7 +39,7 @@ const { title, description, image = '', noindex = false } = Astro.props;
 <link rel="preload" href={ysabeau} as="font" type="font/woff2" crossorigin="anonymous" />
 <link rel="preload" href={ysabeauSC} as="font" type="font/woff2" crossorigin="anonymous" />
 <link rel="preload" href={playfairDisplay} as="font" type="font/woff2" crossorigin="anonymous" />
-<link rel="preload" href={ebGaramond} as="font" type="font/woff2" crossorigin="anonymous" />
+{preloadStoryFont && <link rel="preload" href={ebGaramond} as="font" type="font/woff2" crossorigin="anonymous" />}
 
 
 <!-- Canonical URL -->

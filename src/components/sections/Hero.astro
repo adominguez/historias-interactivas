@@ -37,7 +37,10 @@ import Button from '@components/Button.astro'
       </div>
     </div>
     <div class="absolute z-10 -m-12">
-      <img src="hero/magic-tree.webp" alt="árbol mágico" class="z-10 w-full h-auto mx-auto bottom-0 absolute blur-3xl" width="450" height="412" />
+      {/* El árbol es el elemento LCP de la portada: prioridad alta para que no
+          haga cola detrás de fuentes, portadas de Cloudinary y JS. La copia
+          difuminada comparte URL, así que solo hay una descarga. */}
+      <img src="hero/magic-tree.webp" alt="árbol mágico" class="z-10 w-full h-auto mx-auto bottom-0 absolute blur-3xl" width="450" height="412" fetchpriority="high" />
       <img src="hero/magic-tree.webp" alt="árbol mágico" class="z-20 w-full h-auto mx-auto bottom-0" width="450" height="412" />
     </div>
     <div class="flex justify-between z-20 -mb-12 gap-12">

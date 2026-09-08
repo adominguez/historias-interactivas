@@ -25,7 +25,7 @@ const { slug, title, resume, rating, ratingCount, detailed = false } = Astro.pro
       width={480}
       height={270}
       alt={title}
-      sizes="100vw"
+      sizes="(min-width: 1024px) 400px, (min-width: 640px) 50vw, 100vw"
       class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
     />
   </div>

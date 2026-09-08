@@ -91,7 +91,7 @@ const breadcrumb = [{
 <!doctype html>
 <html lang="es">
   <head>
-    <BaseHead title={`${title} - ${category.title}`} description={description} image={ogImageUrl} noindex={noindex} />
+    <BaseHead title={`${title} - ${category.title}`} description={description} image={ogImageUrl} noindex={noindex} preloadStoryFont />
     <script type="application/ld+json" set:html={JSON.stringify({
       "@context": "https://schema.org",
       "@type": "CreativeWork",
