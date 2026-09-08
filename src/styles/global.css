@@ -82,7 +82,7 @@ main {
    de repetir el mismo bloque de fondo en cada componente. */
 .parchment-surface {
 	background-color: #F6EEDD;
-	background-image: url('/decorative/bg-parchment-texture.png');
+	background-image: url('/decorative/bg-parchment-texture.webp');
 	background-repeat: repeat;
 	background-size: 512px 512px;
 }
