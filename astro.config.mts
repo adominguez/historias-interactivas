@@ -81,13 +81,14 @@ export default defineConfig({
   output: 'server',
   adapter: vercel({
     edgeMiddleware: true,
-    // /api/social-auto-post genera texto con IA y hace varias llamadas
-    // secuenciales a la Graph API (incluida una espera de hasta 20s a que
-    // Instagram procese el contenedor de una Story) — confirmado en vivo
-    // que 60s tampoco basta para la ruta real de publicación (IA + FB +
-    // espera de IG en el peor caso se acerca a ese límite). 120s da
-    // margen real.
-    maxDuration: 120,
+    // El plan de Vercel es Hobby: el límite duro de maxDuration ahí es 60s
+    // (un valor mayor hace que TODO el deploy falle con
+    // "invalid_max_duration", no solo la función afectada). /api/social-auto-post
+    // puede acercarse a ese límite en el peor caso (IA + Facebook + espera
+    // de Instagram), así que un timeout ocasional ahí es un riesgo aceptado
+    // por ahora -- si vuelve a dar problemas, hay que optimizar esa ruta o
+    // pasar a plan Pro (hasta 300s) en vez de subir este número.
+    maxDuration: 60,
   }),
   vite: {
     ssr: {
