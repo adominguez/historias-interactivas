@@ -24,17 +24,6 @@ const getStoriesList = async () => {
   return result.rows;
 }
 
-export const getTotalNodes = async () => {
-  const result = await turso.execute({
-    sql: `
-      SELECT * FROM nodes;
-    `,
-    args: [],
-  });
-
-  return result.rows;
-}
-
 export const getCategories = async () => {
   const result = await turso.execute({
     sql: `
@@ -46,15 +35,17 @@ export const getCategories = async () => {
   return result.rows;
 }
 
+// Solo cuentos (raíz) y categorías. Las páginas de nodo (/{cuento}/{rama})
+// NO van al sitemap: se sirven con noindex,follow (ver BaseHead.astro) porque
+// eran ~1.200 de las ~1.400 URLs del sitio sin ninguna intención de búsqueda
+// propia, y ese volumen de contenido fino lastraba al dominio entero.
 let customPages: string[] = [];
 try {
   const stories = await getStoriesList();
-  const nodes = await getTotalNodes();
   const categories = await getCategories();
   const customStories = stories.map(({ slug }) => `https://elarboldelashistorias.com/${slug}`);
-  const customNodes = nodes.map(({ slug, parent_slug }) => `https://elarboldelashistorias.com/${parent_slug}/${slug}`);
   const customCategories = categories.map(({ slug }) => `https://elarboldelashistorias.com/cuentos/${slug}`);
-  customPages = [...customStories, ...customNodes, ...customCategories];
+  customPages = [...customStories, ...customCategories];
 } catch (error) {
   console.warn("No se pudieron cargar las páginas dinámicas para el sitemap desde Turso, se omitirán en este build:", error);
 }

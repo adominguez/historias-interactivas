@@ -40,9 +40,10 @@ interface Props {
   storyPath?: { text: string; slug: string }[];
   storyTitle?: string;
   endingCount?: number | null;
+  noindex?: boolean;
 }
 
-const { description, transition = 'fade', title, slug, options = [], optionSlug, backUrl, relatedStories, ratingCount, rating, ratingSlug, category, created, modified = created, age, imageVersion, isAdmin, currentNodeSlug, storyPath = [], storyTitle = title, endingCount = null } = Astro.props;
+const { description, transition = 'fade', title, slug, options = [], optionSlug, backUrl, relatedStories, ratingCount, rating, ratingSlug, category, created, modified = created, age, imageVersion, isAdmin, currentNodeSlug, storyPath = [], storyTitle = title, endingCount = null, noindex = false } = Astro.props;
 
 const editHref = `/admin/editar-historia?storySlug=${encodeURIComponent(slug)}${currentNodeSlug ? `&node=${encodeURIComponent(currentNodeSlug)}` : ''}`;
 
@@ -90,7 +91,7 @@ const breadcrumb = [{
 <!doctype html>
 <html lang="es">
   <head>
-    <BaseHead title={`${title} - ${category.title}`} description={description} image={ogImageUrl} />
+    <BaseHead title={`${title} - ${category.title}`} description={description} image={ogImageUrl} noindex={noindex} />
     <script type="application/ld+json" set:html={JSON.stringify({
       "@context": "https://schema.org",
       "@type": "CreativeWork",

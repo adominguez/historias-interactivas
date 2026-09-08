@@ -103,7 +103,7 @@ const description = node.description || story.description;
 const isAdmin = isAuthorized(Astro.request);
 ---
 
-<Layout category={category} title={title} storyTitle={story.title} description={description} slug={node.parentSlug} options={node.options} optionSlug={node.parentSlug} backUrl={backUrl} relatedStories={relatedStories} ratingSlug={node.parentSlug} rating={rating as number} ratingCount={ratingCount as number} created={date} modified={modifiedDate} age={story.age} imageVersion={storyData.image_version} isAdmin={isAdmin} currentNodeSlug={node.slug} storyPath={storyPath} endingCount={endingCount}>
+<Layout category={category} title={title} storyTitle={story.title} description={description} slug={node.parentSlug} options={node.options} optionSlug={node.parentSlug} backUrl={backUrl} relatedStories={relatedStories} ratingSlug={node.parentSlug} rating={rating as number} ratingCount={ratingCount as number} created={date} modified={modifiedDate} age={story.age} imageVersion={storyData.image_version} isAdmin={isAdmin} currentNodeSlug={node.slug} storyPath={storyPath} endingCount={endingCount} noindex>
   {isAdmin ? (
     <InlineEditableContent client:load storySlug={node.parentSlug} target={node.slug} initialTitle={node.title} initialText={node.text} />
   ) : (
