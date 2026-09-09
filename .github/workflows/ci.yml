@@ -1,0 +1,50 @@
+# Comprobaciones automáticas en cada push a main y en cada pull request.
+#
+# Hasta ahora `astro check` solo corría dentro del `build` de Vercel (ver el
+# script "build" de package.json), así que un error de tipos se descubría al
+# desplegar; y los tests de vitest no los ejecutaba nadie más que quien se
+# acordara de hacerlo a mano.
+#
+# Los tests de e2e/ (Playwright) NO se ejecutan aquí a propósito: necesitan un
+# servidor real levantado, credenciales de admin y una base de datos Turso con
+# datos. Meterlos exigiría dar secretos de producción a CI, que es peor
+# negocio que ejecutarlos a mano con `pnpm test:e2e` cuando se toca /admin.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.2.0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      # astro.config.mts crea el cliente de Turso al cargarse (lo necesita
+      # para meter las páginas dinámicas en el sitemap), y createClient lanza
+      # con una URL undefined -- sin estos dos valores la configuración ni
+      # siquiera se carga y `astro check` falla antes de mirar un solo tipo.
+      # Son placeholders deliberadamente inválidos: la consulta al sitemap
+      # falla, el try/catch de la config lo registra como aviso y sigue. No
+      # hace falta ningún secreto de verdad para comprobar tipos.
+      - name: Comprobar tipos
+        run: pnpm exec astro check
+        env:
+          TURSO_DATABASE_URL: libsql://ci-placeholder.invalid
+          TURSO_AUTH_TOKEN: placeholder
+
+      - name: Tests unitarios
+        run: pnpm test
