@@ -143,7 +143,7 @@ const storyCoherenceSchema = z.object({
 // mientras que Instagram nunca convierte enlaces de la descripción en
 // clicables (solo el de la biografía).
 const socialCaptionSchema = z.object({
-  facebookCaption: z.string().min(20).describe("Texto para Facebook: tono narrativo, con gancho inicial y una pregunta que invite a comentar. Puede incluir la URL en texto plano, Facebook la convierte en enlace automáticamente."),
+  facebookCaption: z.string().min(20).describe("Texto para Facebook: tono narrativo, con gancho inicial y una pregunta que invite a comentar. NO incluyas la URL del cuento: el código la añade después en su propia línea, y si la escribes aquí saldría duplicada."),
   instagramCaption: z.string().min(20).describe("Texto para Instagram: corto, visual, gancho inmediato. Instagram NO convierte enlaces de texto en clicables (solo el de la biografía), así que cualquier mención a la web debe leerse como texto normal, nunca como si fuera pulsable."),
   hashtags: z.array(z.string()).min(3).max(8).describe("Hashtags en español derivados ÚNICAMENTE de las categorías y la edad reales de este cuento, dadas más abajo — nunca inventes temas o tramas que no estén ya en esos datos."),
   // max(100) da margen real de sobra frente a la instrucción del prompt de

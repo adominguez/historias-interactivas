@@ -3,6 +3,10 @@
     {
       "path": "/api/social-auto-post",
       "schedule": "0 9 * * *"
+    },
+    {
+      "path": "/api/social-auto-post?surface=story",
+      "schedule": "0 16 * * *"
     }
   ]
 }
