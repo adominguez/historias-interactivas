@@ -1,5 +1,5 @@
-import { getNextStoryToPost, getLastSuccessfulSocialFormat, getStoryOptions, insertSocialPost } from "@src/turso";
-import { SOCIAL_FORMATS, SOCIAL_FORMAT_IDS, COOLDOWN_DAYS, resolveFormatForToday, normalizeHashtags, buildFacebookMessage, buildInstagramMessage, type SocialFormatId, type SocialSurface } from "@src/utils/socialFormats";
+import { getNextStoryToPost, getLastSuccessfulSocialFormat, getStoryOptions, insertSocialPost, hasSuccessfulPostSince } from "@src/turso";
+import { SOCIAL_FORMATS, SOCIAL_FORMAT_IDS, COOLDOWN_DAYS, PLATFORMS_BY_SURFACE, resolveFormatForToday, normalizeHashtags, buildFacebookMessage, buildInstagramMessage, type SocialFormatId, type SocialSurface } from "@src/utils/socialFormats";
 import { WEEKDAY_FORMAT } from "@src/utils/socialSchedule";
 import { generateSocialCaption } from "@src/utils/socialCaption";
 import { getStoryCoverImageUrl } from "@src/utils/functions";
@@ -29,10 +29,13 @@ type PostResult = { ok: boolean; postId?: string; error?: string };
 // base de datos. ?surface=feed|story y ?format=recommendation|decision
 // fuerzan la superficie/formato de hoy (para poder probar el camino de
 // Story sin esperar a un domingo real) — mismo nivel de protección que
-// dryRun, no abren ninguna vía de autenticación nueva.
+// dryRun, no abren ninguna vía de autenticación nueva. ?force=1 salta el
+// freno de "ya se publicó hoy" (ver más abajo), para reintentar a mano un
+// día que se quedó a medias.
 export async function GET(request: Request) {
   const url = new URL(request.url);
   const dryRun = url.searchParams.get("dryRun") === "1";
+  const force = url.searchParams.get("force") === "1";
 
   const surfaceOverride = url.searchParams.get("surface");
   const formatOverride = url.searchParams.get("format");
@@ -54,6 +57,27 @@ export async function GET(request: Request) {
         status: 200,
         headers: { "Content-Type": "application/json" },
       });
+    }
+
+    // Freno de doble publicación. Este endpoint es un GET que gasta dinero
+    // (una generación de IA) y publica de verdad, así que una segunda
+    // invocación el mismo día no puede ser inocua: se corta ANTES de llamar a
+    // la IA o de tocar Cloudinary, no después. dryRun no pasa por aquí porque
+    // no publica nada y su razón de ser es justamente poder probar a mano
+    // cualquier día.
+    if (!dryRun && !force) {
+      const startOfUtcDay = `${new Date().toISOString().slice(0, 10)} 00:00:00`;
+      const alreadyPosted = await hasSuccessfulPostSince(startOfUtcDay, PLATFORMS_BY_SURFACE[surface]);
+      if (alreadyPosted) {
+        return new Response(JSON.stringify({
+          skipped: true,
+          reason: `Ya se publicó hoy con éxito en la superficie "${surface}". Usa ?force=1 para publicar de todos modos.`,
+          surface,
+        }), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
     }
 
     const cooldownCutoffIso = new Date(Date.now() - COOLDOWN_DAYS * 24 * 60 * 60 * 1000).toISOString().slice(0, 19).replace("T", " ");

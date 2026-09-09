@@ -16,6 +16,17 @@ export type SocialFormatId = "recommendation" | "decision";
 // anti-invención/anti-spoiler para cada combinación.
 export type SocialSurface = "feed" | "story";
 
+// Los valores exactos de social_posts.platform que produce cada superficie
+// (ver los insertSocialPost de social-auto-post.ts). Vive aquí, junto a la
+// definición de SocialSurface, para que añadir una superficie nueva obligue
+// a declarar sus plataformas en el mismo sitio en vez de dejarlas dispersas
+// por el endpoint. Se usa para preguntarle a la base de datos "¿ya se
+// publicó hoy en esta superficie?" antes de gastar nada.
+export const PLATFORMS_BY_SURFACE: Record<SocialSurface, string[]> = {
+  feed: ["facebook", "instagram"],
+  story: ["facebook_story", "instagram_story"],
+};
+
 // Orden de rotación: también el orden en que se busca "el siguiente formato
 // distinto" cuando el formato asignado a hoy coincidiría con el último
 // publicado con éxito (ver resolveFormatForToday). Registrar un formato

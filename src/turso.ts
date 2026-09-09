@@ -635,6 +635,31 @@ export const insertSocialPost = async (row: {
   });
 }
 
+// ¿Ya se publicó hoy con éxito en alguna de estas plataformas? Sirve de
+// freno al endpoint del cron (ver social-auto-post.ts): una segunda invocación
+// el mismo día -- el navegador reenviando la petición con el Basic Auth
+// cacheado, un reintento manual, un clic de más -- publicaría otra vez de
+// verdad en Facebook/Instagram y gastaría otra generación de IA.
+//
+// Solo cuentan las filas 'success': si el intento de hoy falló (token de la
+// Graph API caducado, timeout), el freno NO se activa y se puede reintentar,
+// que es justo lo que se quiere. Si fue un éxito parcial (Facebook sí,
+// Instagram no) el freno sí salta -- reintentar volvería a publicar en
+// Facebook -- y para ese caso está ?force=1.
+export const hasSuccessfulPostSince = async (sinceIso: string, platforms: string[]): Promise<boolean> => {
+  if (platforms.length === 0) return false;
+  const placeholders = platforms.map(() => "?").join(", ");
+  const result = await turso.execute({
+    sql: `
+      SELECT 1 FROM social_posts
+      WHERE status = 'success' AND created_at >= ? AND platform IN (${placeholders})
+      LIMIT 1;
+    `,
+    args: [sinceIso, ...platforms],
+  });
+  return result.rows.length > 0;
+}
+
 export const getLastSuccessfulSocialFormat = async (): Promise<string | undefined> => {
   const result = await turso.execute(`
     SELECT format FROM social_posts WHERE status = 'success' ORDER BY created_at DESC LIMIT 1;
