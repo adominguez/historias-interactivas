@@ -71,7 +71,15 @@ export default defineConfig({
   }), tailwind(), react()],
   output: 'server',
   adapter: vercel({
-    edgeMiddleware: true,
+    // El middleware corre en la función de Node, no en el Edge. Con
+    // edgeMiddleware: true, Astro empaqueta es-module-lexer en middleware.mjs,
+    // que compila un .wasm al cargarse; el runtime Edge de Vercel prohíbe
+    // generar WebAssembly ("Wasm code generation disallowed by embedder"), así
+    // que CADA petición del sitio dejaba dos errores en los logs. No rompía
+    // nada -- nadie espera esa promesa -- pero llenaba de ruido rojo el panel
+    // y escondía los fallos de verdad. Nuestro middleware solo hace Basic Auth
+    // y el bypass del cron: no gana nada por estar en el Edge.
+    edgeMiddleware: false,
     // El plan de Vercel es Hobby: el límite duro de maxDuration ahí es 60s
     // (un valor mayor hace que TODO el deploy falle con
     // "invalid_max_duration", no solo la función afectada). /api/social-auto-post
