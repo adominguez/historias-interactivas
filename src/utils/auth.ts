@@ -10,7 +10,20 @@ export const isAuthorized = (request: Request) => {
   const header = request.headers.get("authorization");
   if (!header?.startsWith("Basic ")) return false;
 
-  const decoded = atob(header.slice("Basic ".length));
+  // atob LANZA (InvalidCharacterError) si lo que viene detrás de "Basic " no
+  // es base64 válido, y aquí eso no es una hipótesis: los escáneres que
+  // sondean /admin mandan cabeceras Authorization basura constantemente. Sin
+  // este try, la excepción sube por el middleware y Astro responde 500 en vez
+  // de 401 -- que además le confirma al que sondea que ahí hay algo vivo. Una
+  // cabecera que no se puede decodificar es, simplemente, una credencial
+  // inválida.
+  let decoded: string;
+  try {
+    decoded = atob(header.slice("Basic ".length));
+  } catch {
+    return false;
+  }
+
   const separatorIndex = decoded.indexOf(":");
   if (separatorIndex === -1) return false;
 
