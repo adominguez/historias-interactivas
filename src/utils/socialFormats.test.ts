@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { resolveFormatForToday, normalizeHashtags } from './socialFormats';
+import { resolveFormatForToday, normalizeHashtags, buildFacebookMessage, buildInstagramMessage } from './socialFormats';
 
 describe('resolveFormatForToday', () => {
   it('no publica nada si hoy no tiene formato asignado', () => {
@@ -42,5 +42,29 @@ describe('normalizeHashtags', () => {
 
   it('colapsa dos etiquetas que limpian al mismo texto', () => {
     expect(normalizeHashtags(['#Edad-5-8', '#Edad58'])).toEqual(['#Edad58']);
+  });
+});
+
+describe('buildFacebookMessage', () => {
+  it('añade el enlace real al cuento en su propia línea, entre el texto y los hashtags', () => {
+    const message = buildFacebookMessage('Un gancho.', 'bosque-estrellado', '#Cuentos #Lectura');
+    expect(message).toBe(
+      'Un gancho.\n\n👉 Léelo aquí: https://elarboldelashistorias.com/bosque-estrellado\n\n#Cuentos #Lectura'
+    );
+  });
+
+  it('nunca usa localhost: el dominio sale de la configuración del sitio, no de SITE_URL', () => {
+    expect(buildFacebookMessage('x', 'slug', '#y')).not.toContain('localhost');
+  });
+});
+
+describe('buildInstagramMessage', () => {
+  it('apunta al enlace de la bio, que es la única vía pulsable en Instagram', () => {
+    const message = buildInstagramMessage('Un gancho.', '#Cuentos #Lectura');
+    expect(message).toBe('Un gancho.\n\n🔗 Enlace en la bio para leerlo entero.\n\n#Cuentos #Lectura');
+  });
+
+  it('no incluye ninguna URL, porque Instagram no las hace clicables', () => {
+    expect(buildInstagramMessage('Un gancho.', '#Cuentos')).not.toContain('http');
   });
 });

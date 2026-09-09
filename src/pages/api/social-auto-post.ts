@@ -1,5 +1,5 @@
 import { getNextStoryToPost, getLastSuccessfulSocialFormat, getStoryOptions, insertSocialPost } from "@src/turso";
-import { SOCIAL_FORMATS, SOCIAL_FORMAT_IDS, COOLDOWN_DAYS, resolveFormatForToday, normalizeHashtags, type SocialFormatId, type SocialSurface } from "@src/utils/socialFormats";
+import { SOCIAL_FORMATS, SOCIAL_FORMAT_IDS, COOLDOWN_DAYS, resolveFormatForToday, normalizeHashtags, buildFacebookMessage, buildInstagramMessage, type SocialFormatId, type SocialSurface } from "@src/utils/socialFormats";
 import { WEEKDAY_FORMAT } from "@src/utils/socialSchedule";
 import { generateSocialCaption } from "@src/utils/socialCaption";
 import { getStoryCoverImageUrl } from "@src/utils/functions";
@@ -14,23 +14,6 @@ import { PUBLIC_CLOUDINARY_CLOUD_NAME } from "astro:env/server";
 // que ocupa más pantalla en el feed). g_auto pide a Cloudinary un recorte
 // con detección de contenido en vez de recortar siempre por el centro.
 const INSTAGRAM_IMAGE_TRANSFORMATION = "c_fill,w_1080,h_1350,g_auto";
-
-// Dominio público del sitio para el enlace de Facebook. Se toma de
-// import.meta.env.SITE (la opción 'site' de astro.config.mts, la misma fuente
-// que usan los canonical y el sitemap) y NO de la variable de entorno
-// SITE_URL, que en local vale "http://localhost:4321" y se usa solo para
-// llamadas internas: publicar eso en Facebook sería un enlace roto a la vista
-// de todo el mundo.
-const PUBLIC_SITE_URL = (import.meta.env.SITE ?? "https://elarboldelashistorias.com").replace(/\/$/, "");
-
-// Instagram no convierte en clicable ningún enlace del texto (solo el de la
-// biografía), pero Facebook sí. Desaprovechar eso era regalar el único sitio
-// donde el lector puede llegar al cuento de un toque, así que el enlace se
-// añade siempre por código en su propia línea: pedírselo a la IA daba
-// resultados irregulares (a veces lo escribía, a veces no, y con formatos
-// distintos). El prompt y el schema le dicen expresamente que no lo escriba.
-const buildFacebookMessage = (caption: string, slug: string, hashtagsLine: string) =>
-  `${caption}\n\n👉 Léelo aquí: ${PUBLIC_SITE_URL}/${slug}\n\n${hashtagsLine}`;
 
 type PostResult = { ok: boolean; postId?: string; error?: string };
 
@@ -113,6 +96,7 @@ export async function GET(request: Request) {
     const hashtags = normalizeHashtags(rawHashtags);
     const hashtagsLine = hashtags.join(" ");
     const facebookMessage = buildFacebookMessage(facebookCaption, story.slug as string, hashtagsLine);
+    const instagramMessage = buildInstagramMessage(instagramCaption, hashtagsLine);
 
     const summary = {
       dryRun,
@@ -122,6 +106,7 @@ export async function GET(request: Request) {
       facebookCaption,
       facebookMessage,
       instagramCaption,
+      instagramMessage,
       hashtags,
       storyHook,
       imageUrl: null as string | null,
@@ -179,7 +164,7 @@ export async function GET(request: Request) {
         });
         summary.facebook = fb;
 
-        const ig = await postToInstagram(instagramImageUrl, `${instagramCaption}\n\n${hashtagsLine}`);
+        const ig = await postToInstagram(instagramImageUrl, instagramMessage);
         await insertSocialPost({
           storyId,
           format: generator.id,

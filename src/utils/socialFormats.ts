@@ -124,3 +124,29 @@ export function normalizeHashtags(raw: string[]): string[] {
   }
   return result;
 }
+
+// Dominio público del sitio. Se toma de import.meta.env.SITE (la opción
+// 'site' de astro.config.mts, la misma fuente que usan los canonical y el
+// sitemap) y NO de la variable de entorno SITE_URL, que en local vale
+// "http://localhost:4321" y se usa solo para llamadas internas: publicar eso
+// en Facebook sería un enlace roto a la vista de todo el mundo.
+export const PUBLIC_SITE_URL = (import.meta.env.SITE ?? "https://elarboldelashistorias.com").replace(/\/$/, "");
+
+// Facebook sí convierte en enlace el texto del pie, así que ahí va la URL
+// completa. Se añade por código, en su propia línea: pedírselo a la IA daba
+// resultados irregulares (a veces lo escribía, a veces no, y con formatos
+// distintos). El prompt y el schema le dicen expresamente que no la escriba.
+export function buildFacebookMessage(caption: string, slug: string, hashtagsLine: string): string {
+  return `${caption}\n\n👉 Léelo aquí: ${PUBLIC_SITE_URL}/${slug}\n\n${hashtagsLine}`;
+}
+
+// Instagram no hace clicable ningún enlace del texto -- ni en el pie ni en los
+// comentarios, comprobado: los deja en texto plano a propósito. El único
+// enlace pulsable de la cuenta es el de la biografía, que apunta a
+// /destacados; y esa página se alimenta de social_posts, así que el cuento que
+// se acaba de publicar aparece el primero de la lista. Por eso aquí la
+// llamada a la acción es "enlace en la bio" y no una URL: es la única ruta que
+// de verdad lleva al lector al cuento con un toque.
+export function buildInstagramMessage(caption: string, hashtagsLine: string): string {
+  return `${caption}\n\n🔗 Enlace en la bio para leerlo entero.\n\n${hashtagsLine}`;
+}

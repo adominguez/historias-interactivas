@@ -144,7 +144,7 @@ const storyCoherenceSchema = z.object({
 // clicables (solo el de la biografía).
 const socialCaptionSchema = z.object({
   facebookCaption: z.string().min(20).describe("Texto para Facebook: tono narrativo, con gancho inicial y una pregunta que invite a comentar. NO incluyas la URL del cuento: el código la añade después en su propia línea, y si la escribes aquí saldría duplicada."),
-  instagramCaption: z.string().min(20).describe("Texto para Instagram: corto, visual, gancho inmediato. Instagram NO convierte enlaces de texto en clicables (solo el de la biografía), así que cualquier mención a la web debe leerse como texto normal, nunca como si fuera pulsable."),
+  instagramCaption: z.string().min(20).describe("Texto para Instagram: corto, visual, gancho inmediato. Solo el gancho: no indiques dónde encontrar el cuento ni incluyas URLs — el código añade después la llamada a la acción ('Enlace en la bio'), que es la única vía pulsable en Instagram."),
   hashtags: z.array(z.string()).min(3).max(8).describe("Hashtags en español derivados ÚNICAMENTE de las categorías y la edad reales de este cuento, dadas más abajo — nunca inventes temas o tramas que no estén ya en esos datos."),
   // max(100) da margen real de sobra frente a la instrucción del prompt de
   // "no más de ~70 caracteres, SIEMPRE una frase completa": un límite duro
