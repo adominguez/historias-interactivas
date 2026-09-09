@@ -93,3 +93,34 @@ export function resolveFormatForToday(scheduled: SocialFormatId | null, lastSucc
   const index = SOCIAL_FORMAT_IDS.indexOf(scheduled);
   return SOCIAL_FORMAT_IDS[(index + 1) % SOCIAL_FORMAT_IDS.length];
 }
+
+// Facebook e Instagram terminan un hashtag en el primer carácter que no sea
+// letra, número o guion bajo: "#Edad5-8" no se publica como una etiqueta, se
+// publica como la etiqueta "#Edad5" seguida del texto suelto "-8". La IA
+// acierta casi siempre (escribe "#Edad5a8"), pero en una prueba real generó
+// justo la versión con guion, así que no puede depender de la suerte: se
+// limpian aquí por código, además de pedírselo en el prompt.
+//
+// Se conservan tildes y ñ a propósito: esos sí funcionan en ambas redes
+// ("#CuentosDeFantasía" es una etiqueta válida y es la que queremos).
+export function normalizeHashtag(raw: string): string {
+  const body = raw.trim().replace(/^#+/, "").replace(/[^\p{L}\p{N}_]/gu, "");
+  return body ? `#${body}` : "";
+}
+
+// Además de limpiar cada etiqueta, quita las que se quedan vacías y las
+// repetidas (dos hashtags distintos pueden colapsar en el mismo al limpiarlos,
+// p. ej. "#Edad-5-8" y "#Edad58"), sin alterar el orden.
+export function normalizeHashtags(raw: string[]): string[] {
+  const seen = new Set<string>();
+  const result: string[] = [];
+  for (const tag of raw) {
+    const normalized = normalizeHashtag(tag);
+    if (!normalized) continue;
+    const key = normalized.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    result.push(normalized);
+  }
+  return result;
+}

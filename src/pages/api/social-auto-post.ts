@@ -1,5 +1,5 @@
 import { getNextStoryToPost, getLastSuccessfulSocialFormat, getStoryOptions, insertSocialPost } from "@src/turso";
-import { SOCIAL_FORMATS, SOCIAL_FORMAT_IDS, COOLDOWN_DAYS, resolveFormatForToday, type SocialFormatId, type SocialSurface } from "@src/utils/socialFormats";
+import { SOCIAL_FORMATS, SOCIAL_FORMAT_IDS, COOLDOWN_DAYS, resolveFormatForToday, normalizeHashtags, type SocialFormatId, type SocialSurface } from "@src/utils/socialFormats";
 import { WEEKDAY_FORMAT } from "@src/utils/socialSchedule";
 import { generateSocialCaption } from "@src/utils/socialCaption";
 import { getStoryCoverImageUrl } from "@src/utils/functions";
@@ -109,7 +109,8 @@ export async function GET(request: Request) {
       rootOptions
     );
 
-    const { facebookCaption, instagramCaption, hashtags, storyHook } = await generateSocialCaption(promptInput);
+    const { facebookCaption, instagramCaption, hashtags: rawHashtags, storyHook } = await generateSocialCaption(promptInput);
+    const hashtags = normalizeHashtags(rawHashtags);
     const hashtagsLine = hashtags.join(" ");
     const facebookMessage = buildFacebookMessage(facebookCaption, story.slug as string, hashtagsLine);
 
