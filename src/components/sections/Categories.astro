@@ -27,7 +27,7 @@ const categories = await getCategoriesByType(type);
       {
         categories.map(({name, slug, title}) => (
           <article class="w-full">
-            <a href={`cuentos/${slug}`} class="group block w-full max-w-[160px] mx-auto">
+            <a href={`/cuentos/${slug}`} class="group block w-full max-w-[160px] mx-auto">
               <div class="aspect-[300/400] w-full rounded-lg overflow-hidden shadow-lg shadow-black/40">
                 <CldImage
                   src={`cuentos-interactivos/categories/${name}_cat`}
