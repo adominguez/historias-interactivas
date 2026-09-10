@@ -13,7 +13,15 @@ import { PUBLIC_CLOUDINARY_CLOUD_NAME } from "astro:env/server";
 // válido es 4:5 a 1.91:1) pero no es su formato recomendado (4:5 vertical,
 // que ocupa más pantalla en el feed). g_auto pide a Cloudinary un recorte
 // con detección de contenido en vez de recortar siempre por el centro.
-const INSTAGRAM_IMAGE_TRANSFORMATION = "c_fill,w_1080,h_1350,g_auto";
+//
+// f_jpg no es cosmético: las portadas son PNG y la API de publicación de
+// Instagram solo acepta JPEG ("Format: JPEG" en su documentación). El PNG
+// coló durante días hasta que un post falló al crear el contenedor con
+// "Only photo or video can be accepted as media type" (código 9004 /
+// subcódigo 2207052) — el error que da Instagram cuando no consigue
+// descargar el contenido de la URL. Convertir además baja la imagen de
+// ~2,3 MB a ~235 KB, con lo que su descarga tiene mucho menos que fallar.
+const INSTAGRAM_IMAGE_TRANSFORMATION = "c_fill,w_1080,h_1350,g_auto,f_jpg,q_auto";
 
 type PostResult = { ok: boolean; postId?: string; error?: string };
 

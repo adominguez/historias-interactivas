@@ -37,6 +37,14 @@ cloudinary.config({
 export const buildStoryImageUrl = ({ slug, imageVersion, hookText }: { slug: string; imageVersion: number | null; hookText: string }) =>
   cloudinary.url(`cuentos-interactivos/${slug}/${slug}`, {
     version: imageVersion ?? undefined,
+    // Las portadas son PNG y la API de publicación de Instagram solo acepta
+    // JPEG (ver la nota de INSTAGRAM_IMAGE_TRANSFORMATION en
+    // pages/api/social-auto-post.ts, donde un post de feed llegó a fallar
+    // por esto). Puestos aquí arriba y no dentro de "transformation", el
+    // builder los aplica al final de la cadena: la extensión .jpg en la URL
+    // y q_auto como último componente, ya con las capas de texto pegadas.
+    format: "jpg",
+    quality: "auto",
     transformation: [
       { width: 1080, height: 1920, crop: "fill", gravity: "auto" },
       {
