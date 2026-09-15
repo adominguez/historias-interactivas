@@ -41,7 +41,7 @@ const waitForMediaReady = async (containerId: string): Promise<{ ok: true } | { 
 // un post de feed y una Story, solo cambian los parámetros del contenedor
 // (caption vs. media_type=STORIES), así que ambas funciones de abajo llaman
 // a este único helper en vez de duplicar el flujo.
-const createAndPublishMedia = async (containerParams: Record<string, string>): Promise<{ ok: true; postId: string } | { ok: false; error: string }> => {
+const createContainer = async (containerParams: Record<string, string>) => {
   const mediaResponse = await fetch(containerUrl, {
     method: "POST",
     headers: {
@@ -54,7 +54,30 @@ const createAndPublishMedia = async (containerParams: Record<string, string>): P
     signal: AbortSignal.timeout(GRAPH_API_TIMEOUT_MS)
   });
 
-  const mediaData = await mediaResponse.json();
+  return mediaResponse.json();
+};
+
+// Instagram descarga la imagen al crear el contenedor, y a veces falla al
+// hacerlo con una URL perfectamente válida: "Only photo or video can be
+// accepted as media type" (subcódigo 2207052). Confirmado en vivo 2 veces en
+// ~20 publicaciones, la segunda con un JPEG de 221 KB que Cloudinary ya tenía
+// generado y en caché 7s antes de que Instagram lo pidiera — no es la imagen
+// (el paso a JPEG no lo evitó), es la descarga de Instagram. Pese a que la
+// respuesta dice is_transient:false, un segundo intento es lo razonable.
+// Solo UNO y solo para este subcódigo: cualquier otro error (token caducado,
+// permisos) no se arregla reintentando, y cada reintento consume presupuesto
+// del límite de 60s de la función.
+export const MEDIA_FETCH_ERROR_SUBCODE = 2207052;
+export const MEDIA_FETCH_RETRY_DELAY_MS = 5000;
+
+const createAndPublishMedia = async (containerParams: Record<string, string>): Promise<{ ok: true; postId: string } | { ok: false; error: string }> => {
+  let mediaData = await createContainer(containerParams);
+
+  if (!mediaData.id && mediaData.error?.error_subcode === MEDIA_FETCH_ERROR_SUBCODE) {
+    console.warn("Instagram no pudo descargar la imagen, reintentando una vez:", JSON.stringify(mediaData));
+    await sleep(MEDIA_FETCH_RETRY_DELAY_MS);
+    mediaData = await createContainer(containerParams);
+  }
 
   if (!mediaData.id) {
     return { ok: false, error: JSON.stringify(mediaData) };
