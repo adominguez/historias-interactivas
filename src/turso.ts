@@ -694,6 +694,33 @@ export const getNextStoryToPost = async (cooldownCutoffIso: string) => {
   return result.rows[0];
 }
 
+// Cuento nuevo pendiente de salir en Stories: creado desde `sinceIso` y sin
+// ninguna publicación con éxito en ninguna de `platforms` (las de Story). Si
+// ya salió en una sola de ellas (Facebook bien, Instagram falló) NO vuelve a
+// elegirse: republicarlo duplicaría la Story de Facebook. Del más antiguo al
+// más nuevo, para que un lote creado de golpe salga en el orden en que se
+// creó y ninguno se quede fuera de la ventana esperando detrás de los demás.
+// Solo lo usa el cron de Stories (ver social-auto-post.ts); el feed sigue
+// tirando únicamente de getNextStoryToPost.
+export const getNewStoryForStories = async (sinceIso: string, platforms: string[]) => {
+  const placeholders = platforms.map(() => "?").join(", ");
+  const result = await turso.execute({
+    sql: `
+      SELECT s.*
+      FROM stories s
+      WHERE s.created_at >= ?
+        AND NOT EXISTS (
+          SELECT 1 FROM social_posts sp
+          WHERE sp.story_id = s.id AND sp.status = 'success' AND sp.platform IN (${placeholders})
+        )
+      ORDER BY s.created_at ASC
+      LIMIT 1;
+    `,
+    args: [sinceIso, ...platforms],
+  });
+  return result.rows[0];
+}
+
 // Cuentos publicados con éxito en redes (feed o Story, cualquier
 // plataforma) desde `sinceIso`, uno por cuento (GROUP BY story_id: el mismo
 // cuento publicado varias veces esta semana en distintos sitios cuenta una

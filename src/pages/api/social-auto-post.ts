@@ -1,5 +1,5 @@
-import { getNextStoryToPost, getLastSuccessfulSocialFormat, getStoryOptions, insertSocialPost, hasSuccessfulPostSince } from "@src/turso";
-import { SOCIAL_FORMATS, SOCIAL_FORMAT_IDS, COOLDOWN_DAYS, PLATFORMS_BY_SURFACE, resolveFormatForToday, normalizeHashtags, buildFacebookMessage, buildInstagramMessage, type SocialFormatId, type SocialSurface } from "@src/utils/socialFormats";
+import { getNextStoryToPost, getNewStoryForStories, getLastSuccessfulSocialFormat, getStoryOptions, insertSocialPost, hasSuccessfulPostSince } from "@src/turso";
+import { SOCIAL_FORMATS, SOCIAL_FORMAT_IDS, COOLDOWN_DAYS, NEW_STORY_WINDOW_DAYS, PLATFORMS_BY_SURFACE, resolveFormatForToday, normalizeHashtags, buildFacebookMessage, buildInstagramMessage, type SocialFormatId, type SocialSurface } from "@src/utils/socialFormats";
 import { WEEKDAY_FORMAT } from "@src/utils/socialSchedule";
 import { generateSocialCaption } from "@src/utils/socialCaption";
 import { getStoryCoverImageUrl } from "@src/utils/functions";
@@ -88,8 +88,14 @@ export async function GET(request: Request) {
       }
     }
 
-    const cooldownCutoffIso = new Date(Date.now() - COOLDOWN_DAYS * 24 * 60 * 60 * 1000).toISOString().slice(0, 19).replace("T", " ");
-    const story = await getNextStoryToPost(cooldownCutoffIso);
+    const daysAgoIso = (days: number) => new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString().slice(0, 19).replace("T", " ");
+
+    // En Stories, un cuento recién creado que aún no ha salido pasa por
+    // delante de la cola (ver NEW_STORY_WINDOW_DAYS). Solo en Stories: el
+    // feed sigue su rotación normal.
+    const newStory = surface === "story" ? await getNewStoryForStories(daysAgoIso(NEW_STORY_WINDOW_DAYS), PLATFORMS_BY_SURFACE.story) : undefined;
+    const isNewStory = Boolean(newStory);
+    const story = newStory ?? await getNextStoryToPost(daysAgoIso(COOLDOWN_DAYS));
 
     if (!story) {
       return new Response(JSON.stringify({ skipped: true, reason: "No hay ningún cuento en la base de datos" }), {
@@ -135,6 +141,7 @@ export async function GET(request: Request) {
       format: generator.id,
       surface,
       story: { id: storyId, slug: story.slug, title: story.title },
+      isNewStory,
       facebookCaption,
       facebookMessage,
       instagramCaption,
@@ -149,7 +156,7 @@ export async function GET(request: Request) {
     };
 
     if (surface === "story") {
-      const storyImageUrl = buildStoryImageUrl({ slug: story.slug as string, imageVersion: story.image_version as number | null, hookText: storyHook });
+      const storyImageUrl = buildStoryImageUrl({ slug: story.slug as string, imageVersion: story.image_version as number | null, hookText: storyHook, isNew: isNewStory });
       summary.storyImageUrl = storyImageUrl;
 
       if (!dryRun) {

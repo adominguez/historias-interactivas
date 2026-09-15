@@ -6,6 +6,15 @@ import type { Option } from "@types";
 // aproximadamente 30-45 días".
 export const COOLDOWN_DAYS = 35;
 
+// Un cuento creado hace menos de estos días y que aún no ha salido en
+// Stories se publica en la Story del día antes que cualquier otro de la cola
+// (ver getNewStoryForStories en turso.ts). Sin esto un cuento recién creado
+// quedaba el último de la cola — id más alto entre ~160 nunca publicados —
+// y tardaba meses en salir. 14 días y no menos: generar un lote con
+// bulk-stories crea ~10 de golpe y salen a uno por día; una ventana más
+// corta dejaría a los últimos del lote fuera antes de que les tocara.
+export const NEW_STORY_WINDOW_DAYS = 14;
+
 export type SocialFormatId = "recommendation" | "decision";
 
 // Superficie donde se publica ese contenido (Fase 2 añade "story"; un futuro
