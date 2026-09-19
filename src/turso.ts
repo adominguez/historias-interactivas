@@ -625,14 +625,20 @@ export const insertSocialPost = async (row: {
   caption: string | null;
   externalPostId: string | null;
   errorMessage: string | null;
+  theme?: string | null;
 }) => {
   await turso.execute({
     sql: `
-      INSERT INTO social_posts (story_id, format, platform, status, caption, external_post_id, error_message)
-      VALUES (?, ?, ?, ?, ?, ?, ?);
+      INSERT INTO social_posts (story_id, format, platform, status, caption, external_post_id, error_message, theme)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?);
     `,
-    args: [row.storyId, row.format, row.platform, row.status, row.caption, row.externalPostId, row.errorMessage],
+    args: [row.storyId, row.format, row.platform, row.status, row.caption, row.externalPostId, row.errorMessage, row.theme ?? null],
   });
+}
+
+export const getStoryById = async (id: number) => {
+  const result = await turso.execute({ sql: `SELECT * FROM stories WHERE id = ?;`, args: [id] });
+  return result.rows[0];
 }
 
 // ¿Ya se publicó hoy con éxito en alguna de estas plataformas? Sirve de
@@ -984,4 +990,176 @@ export const getWeekPlanWithDays = async (weekStart: string) => {
       published: Boolean(row.published),
     })),
   };
+}
+
+// ---------------------------------------------------------------------------
+// Estadísticas de redes y panel /admin/redes-sociales (migración 0010).
+// ---------------------------------------------------------------------------
+
+// Publicaciones con éxito desde `sinceIso` a las que se les pueden leer
+// métricas (tienen id externo), para la recogida diaria.
+export const getPostsForMetrics = async (sinceIso: string) => {
+  const result = await turso.execute({
+    sql: `
+      SELECT id, platform, external_post_id, created_at
+      FROM social_posts
+      WHERE status = 'success' AND external_post_id IS NOT NULL AND created_at >= ?
+      ORDER BY created_at DESC;
+    `,
+    args: [sinceIso],
+  });
+  return result.rows.map((row) => ({
+    id: Number(row.id),
+    platform: row.platform as string,
+    externalPostId: row.external_post_id as string,
+    createdAt: row.created_at as string,
+  }));
+}
+
+export type PostMetrics = {
+  reach: number | null;
+  views: number | null;
+  likes: number | null;
+  comments: number | null;
+  saved: number | null;
+  shares: number | null;
+  permalink: string | null;
+  note: string | null;
+};
+
+export const upsertPostMetrics = async (socialPostId: number, m: PostMetrics) => {
+  await turso.execute({
+    sql: `
+      INSERT INTO social_post_metrics (social_post_id, reach, views, likes, comments, saved, shares, permalink, note, collected_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+      ON CONFLICT (social_post_id) DO UPDATE SET
+        reach = excluded.reach, views = excluded.views, likes = excluded.likes, comments = excluded.comments,
+        saved = excluded.saved, shares = excluded.shares, permalink = COALESCE(excluded.permalink, permalink),
+        note = excluded.note, collected_at = CURRENT_TIMESTAMP;
+    `,
+    args: [socialPostId, m.reach, m.views, m.likes, m.comments, m.saved, m.shares, m.permalink, m.note],
+  });
+}
+
+// Guarda solo las columnas que vienen con valor: los seguidores se recogen
+// para hoy y el resto de métricas para días ya cerrados, y ninguna de las
+// dos escrituras debe borrar lo que puso la otra.
+export const upsertAccountDaily = async (row: {
+  date: string;
+  platform: string;
+  followers?: number | null;
+  reach?: number | null;
+  profileViews?: number | null;
+  websiteClicks?: number | null;
+  accountsEngaged?: number | null;
+}) => {
+  await turso.execute({
+    sql: `
+      INSERT INTO social_account_daily (date, platform, followers, reach, profile_views, website_clicks, accounts_engaged, collected_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+      ON CONFLICT (date, platform) DO UPDATE SET
+        followers = COALESCE(excluded.followers, followers),
+        reach = COALESCE(excluded.reach, reach),
+        profile_views = COALESCE(excluded.profile_views, profile_views),
+        website_clicks = COALESCE(excluded.website_clicks, website_clicks),
+        accounts_engaged = COALESCE(excluded.accounts_engaged, accounts_engaged),
+        collected_at = CURRENT_TIMESTAMP;
+    `,
+    args: [row.date, row.platform, row.followers ?? null, row.reach ?? null, row.profileViews ?? null, row.websiteClicks ?? null, row.accountsEngaged ?? null],
+  });
+}
+
+// Días (YYYY-MM-DD) desde `sinceDate` que ya tienen el alcance de la cuenta
+// guardado, para no volver a pedirlos en cada recogida.
+export const getAccountDaysWithReach = async (platform: string, sinceDate: string) => {
+  const result = await turso.execute({
+    sql: `SELECT date FROM social_account_daily WHERE platform = ? AND date >= ? AND reach IS NOT NULL;`,
+    args: [platform, sinceDate],
+  });
+  return new Set(result.rows.map((row) => row.date as string));
+}
+
+export const getAccountDaily = async (sinceDate: string) => {
+  const result = await turso.execute({
+    sql: `SELECT * FROM social_account_daily WHERE date >= ? ORDER BY date;`,
+    args: [sinceDate],
+  });
+  return result.rows.map((row) => ({
+    date: row.date as string,
+    platform: row.platform as string,
+    followers: row.followers as number | null,
+    reach: row.reach as number | null,
+    profileViews: row.profile_views as number | null,
+    websiteClicks: row.website_clicks as number | null,
+    accountsEngaged: row.accounts_engaged as number | null,
+  }));
+}
+
+// Publicaciones (con éxito o no) desde `sinceIso`, con su cuento y sus
+// últimas métricas, de la más reciente a la más antigua.
+export const getSocialPostsWithMetrics = async (sinceIso: string) => {
+  const result = await turso.execute({
+    sql: `
+      SELECT sp.id, sp.story_id, sp.format, sp.platform, sp.status, sp.caption, sp.external_post_id,
+        sp.error_message, sp.created_at, sp.theme, s.title, s.slug,
+        m.reach, m.views, m.likes, m.comments, m.saved, m.shares, m.permalink, m.note, m.collected_at
+      FROM social_posts sp
+      LEFT JOIN stories s ON s.id = sp.story_id
+      LEFT JOIN social_post_metrics m ON m.social_post_id = sp.id
+      WHERE sp.created_at >= ?
+      ORDER BY sp.created_at DESC, sp.id DESC;
+    `,
+    args: [sinceIso],
+  });
+  return result.rows.map((row) => ({
+    id: Number(row.id),
+    storyId: Number(row.story_id),
+    format: row.format as string,
+    platform: row.platform as string,
+    status: row.status as string,
+    caption: row.caption as string | null,
+    externalPostId: row.external_post_id as string | null,
+    errorMessage: row.error_message as string | null,
+    createdAt: row.created_at as string,
+    theme: row.theme as string | null,
+    title: row.title as string | null,
+    slug: row.slug as string | null,
+    reach: row.reach as number | null,
+    views: row.views as number | null,
+    likes: row.likes as number | null,
+    comments: row.comments as number | null,
+    saved: row.saved as number | null,
+    shares: row.shares as number | null,
+    permalink: row.permalink as string | null,
+    note: row.note as string | null,
+    metricsCollectedAt: row.collected_at as string | null,
+  }));
+}
+
+// Cuentos que se pueden publicar en redes (edades de SOCIAL_AGES), para el
+// selector del editor del plan.
+export const getSocialEligibleStories = async (ages: string[]) => {
+  const agePlaceholders = ages.map(() => "?").join(", ");
+  const result = await turso.execute({
+    sql: `SELECT id, title, age, categories FROM stories WHERE age IN (${agePlaceholders}) ORDER BY title;`,
+    args: ages,
+  });
+  return result.rows.map((row) => ({
+    id: Number(row.id),
+    title: row.title as string,
+    age: row.age as string,
+    categories: JSON.parse((row.categories as string | null) ?? "[]") as string[],
+  }));
+}
+
+// Cambia (o crea, si la IA lo había dejado sin plan) un día del plan
+// semanal desde el panel. La semana tiene que existir.
+export const upsertPlanDay = async (day: { date: string; weekStart: string; storyId: number; format: string; angle: string }) => {
+  await turso.execute({
+    sql: `
+      INSERT INTO social_plan_days (date, week_start, story_id, format, angle) VALUES (?, ?, ?, ?, ?)
+      ON CONFLICT (date) DO UPDATE SET story_id = excluded.story_id, format = excluded.format, angle = excluded.angle;
+    `,
+    args: [day.date, day.weekStart, day.storyId, day.format, day.angle],
+  });
 }

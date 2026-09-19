@@ -1,4 +1,4 @@
-import { getNextStoryToPost, getNewStoryForStories, getThemedStoryToPost, getStoryPostedSince, getPlannedDay, getWeekPlanTheme, getLastSuccessfulSocialFormat, getStoryOptions, insertSocialPost, hasSuccessfulPostSince } from "@src/turso";
+import { getNextStoryToPost, getNewStoryForStories, getThemedStoryToPost, getStoryPostedSince, getPlannedDay, getWeekPlanTheme, getStoryById, getLastSuccessfulSocialFormat, getStoryOptions, insertSocialPost, hasSuccessfulPostSince } from "@src/turso";
 import { SOCIAL_FORMATS, SOCIAL_FORMAT_IDS, COOLDOWN_DAYS, NEW_STORY_WINDOW_DAYS, SOCIAL_AGES, PLATFORMS_BY_SURFACE, resolveFormatForToday, normalizeHashtags, buildFacebookMessage, buildInstagramMessage, type SocialFormatId, type SocialSurface } from "@src/utils/socialFormats";
 import { WEEKDAY_FORMAT } from "@src/utils/socialSchedule";
 import { generateSocialCaption } from "@src/utils/socialCaption";
@@ -44,6 +44,13 @@ type PostResult = { ok: boolean; postId?: string; error?: string };
 // dryRun, no abren ninguna vía de autenticación nueva. ?force=1 salta el
 // freno de "ya se publicó hoy" (ver más abajo), para reintentar a mano un
 // día que se quedó a medias.
+//
+// Para los reintentos desde el panel /admin/redes-sociales: ?only=facebook|
+// instagram publica solo en esa red (si Facebook salió bien y falló
+// Instagram, reintentar las dos duplicaría el post de Facebook), y
+// ?storyId=N publica ese cuento en vez de elegir uno (un reintento tiene que
+// ser del mismo cuento que falló, y la elección normal ya no lo daría: al
+// haber salido en la otra red, cuenta como publicado).
 export async function GET(request: Request) {
   const url = new URL(request.url);
   const dryRun = url.searchParams.get("dryRun") === "1";
@@ -51,6 +58,10 @@ export async function GET(request: Request) {
 
   const surfaceOverride = url.searchParams.get("surface");
   const formatOverride = url.searchParams.get("format");
+  const only = url.searchParams.get("only");
+  const publishFacebook = only !== "instagram";
+  const publishInstagram = only !== "facebook";
+  const storyIdOverride = Number(url.searchParams.get("storyId")) || null;
   // Para el aviso por WhatsApp si la ejecución revienta antes de saber la
   // superficie: los crons de vercel.json solo pasan ?surface=story al de la
   // tarde, así que sin él es el post del feed.
@@ -121,8 +132,16 @@ export async function GET(request: Request) {
     //    cuento de la rotación no pinta nada en la semana del plan.
     // 5. La cola general.
     const newStory = surface === "story" ? await getNewStoryForStories(daysAgoIso(NEW_STORY_WINDOW_DAYS), PLATFORMS_BY_SURFACE.story, SOCIAL_AGES) : undefined;
-    const isNewStory = Boolean(newStory);
-    const story = newStory
+    const isNewStory = Boolean(newStory) && !storyIdOverride;
+    const forcedStory = storyIdOverride ? await getStoryById(storyIdOverride) : undefined;
+    if (storyIdOverride && !forcedStory) {
+      return new Response(JSON.stringify({ error: `No existe el cuento ${storyIdOverride}` }), {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+    const story = forcedStory
+      ?? newStory
       ?? (surface === "story" ? await getStoryPostedSince(startOfUtcDay, PLATFORMS_BY_SURFACE.feed) : undefined)
       ?? plannedDay
       ?? (weekPlanTheme ? undefined : await getThemedStoryToPost(daysAgoIso(COOLDOWN_DAYS), SOCIAL_AGES, rotationTheme.categories))
@@ -212,29 +231,35 @@ export async function GET(request: Request) {
       summary.storyImageUrl = storyImageUrl;
 
       if (!dryRun) {
-        const fb = await postFacebookStory(storyImageUrl);
-        await insertSocialPost({
-          storyId,
-          format: generator.id,
-          platform: "facebook_story",
-          status: fb.ok ? "success" : "failure",
-          caption: storyHook,
-          externalPostId: fb.ok ? fb.postId : null,
-          errorMessage: fb.ok ? null : fb.error,
-        });
-        summary.facebook = fb;
+        if (publishFacebook) {
+          const fb = await postFacebookStory(storyImageUrl);
+          await insertSocialPost({
+            storyId,
+            format: generator.id,
+            platform: "facebook_story",
+            status: fb.ok ? "success" : "failure",
+            caption: storyHook,
+            externalPostId: fb.ok ? fb.postId : null,
+            errorMessage: fb.ok ? null : fb.error,
+            theme: postTheme?.label ?? null,
+          });
+          summary.facebook = fb;
+        }
 
-        const ig = await postInstagramStory(storyImageUrl);
-        await insertSocialPost({
-          storyId,
-          format: generator.id,
-          platform: "instagram_story",
-          status: ig.ok ? "success" : "failure",
-          caption: storyHook,
-          externalPostId: ig.ok ? ig.postId : null,
-          errorMessage: ig.ok ? null : ig.error,
-        });
-        summary.instagram = ig;
+        if (publishInstagram) {
+          const ig = await postInstagramStory(storyImageUrl);
+          await insertSocialPost({
+            storyId,
+            format: generator.id,
+            platform: "instagram_story",
+            status: ig.ok ? "success" : "failure",
+            caption: storyHook,
+            externalPostId: ig.ok ? ig.postId : null,
+            errorMessage: ig.ok ? null : ig.error,
+            theme: postTheme?.label ?? null,
+          });
+          summary.instagram = ig;
+        }
       }
     } else {
       const imageUrl = getStoryCoverImageUrl(PUBLIC_CLOUDINARY_CLOUD_NAME, story.slug as string, story.image_version as number | null);
@@ -243,29 +268,35 @@ export async function GET(request: Request) {
       summary.instagramImageUrl = instagramImageUrl;
 
       if (!dryRun) {
-        const fb = await postToFacebook(imageUrl, facebookMessage);
-        await insertSocialPost({
-          storyId,
-          format: generator.id,
-          platform: "facebook",
-          status: fb.ok ? "success" : "failure",
-          caption: facebookCaption,
-          externalPostId: fb.ok ? fb.postId : null,
-          errorMessage: fb.ok ? null : fb.error,
-        });
-        summary.facebook = fb;
+        if (publishFacebook) {
+          const fb = await postToFacebook(imageUrl, facebookMessage);
+          await insertSocialPost({
+            storyId,
+            format: generator.id,
+            platform: "facebook",
+            status: fb.ok ? "success" : "failure",
+            caption: facebookCaption,
+            externalPostId: fb.ok ? fb.postId : null,
+            errorMessage: fb.ok ? null : fb.error,
+            theme: postTheme?.label ?? null,
+          });
+          summary.facebook = fb;
+        }
 
-        const ig = await postToInstagram(instagramImageUrl, instagramMessage);
-        await insertSocialPost({
-          storyId,
-          format: generator.id,
-          platform: "instagram",
-          status: ig.ok ? "success" : "failure",
-          caption: instagramCaption,
-          externalPostId: ig.ok ? ig.postId : null,
-          errorMessage: ig.ok ? null : ig.error,
-        });
-        summary.instagram = ig;
+        if (publishInstagram) {
+          const ig = await postToInstagram(instagramImageUrl, instagramMessage);
+          await insertSocialPost({
+            storyId,
+            format: generator.id,
+            platform: "instagram",
+            status: ig.ok ? "success" : "failure",
+            caption: instagramCaption,
+            externalPostId: ig.ok ? ig.postId : null,
+            errorMessage: ig.ok ? null : ig.error,
+            theme: postTheme?.label ?? null,
+          });
+          summary.instagram = ig;
+        }
       }
     }
 

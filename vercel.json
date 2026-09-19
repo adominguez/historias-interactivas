@@ -15,6 +15,10 @@
     {
       "path": "/api/social-health-check",
       "schedule": "0 20 * * *"
+    },
+    {
+      "path": "/api/social-insights-collect",
+      "schedule": "0 15 * * *"
     }
   ]
 }

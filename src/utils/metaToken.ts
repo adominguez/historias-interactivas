@@ -43,12 +43,22 @@ export function metaTokenProblemFrom(data: DebugTokenData, now: Date): string | 
   return null;
 }
 
+// Permisos que usa el sistema además de los de publicar: sin ellos todo
+// sigue publicándose, pero el panel se queda sin estadísticas.
+export const INSIGHTS_SCOPES = ["instagram_manage_insights", "read_insights"];
+
+// Lo que devuelve Meta sobre el token, tal cual (para el panel
+// /admin/redes-sociales). Lanza si Meta no responde.
+export async function getMetaTokenInfo(): Promise<DebugTokenData & { type?: string; expires_at?: number }> {
+  const url = `https://graph.facebook.com/${FACEBOOK_API_VERSION}/debug_token?input_token=${FACEBOOK_API_TOKEN}&access_token=${FACEBOOK_API_TOKEN}`;
+  const response = await fetch(url, { signal: AbortSignal.timeout(15000) });
+  const body = await response.json() as { data?: DebugTokenData & { type?: string; expires_at?: number }; error?: { message?: string } };
+  return body.data ?? { is_valid: false, error: body.error };
+}
+
 export async function getMetaTokenProblem(now: Date): Promise<string | null> {
   try {
-    const url = `https://graph.facebook.com/${FACEBOOK_API_VERSION}/debug_token?input_token=${FACEBOOK_API_TOKEN}&access_token=${FACEBOOK_API_TOKEN}`;
-    const response = await fetch(url, { signal: AbortSignal.timeout(15000) });
-    const body = await response.json() as { data?: DebugTokenData; error?: { message?: string } };
-    return metaTokenProblemFrom(body.data ?? { is_valid: false, error: body.error }, now);
+    return metaTokenProblemFrom(await getMetaTokenInfo(), now);
   } catch (error) {
     // Que Meta no responda a esta consulta no es motivo para dar la alarma
     // del token: si el token falla de verdad, lo dirá la publicación.

@@ -1,0 +1,449 @@
+---
+import BaseHead from '@components/BaseHead.astro';
+import SocialActions from '@components/social/SocialActions';
+import PlanEditor from '@components/social/PlanEditor';
+import PostsTable, { type PostRow } from '@components/social/PostsTable';
+import { ColumnChart, LineChart, type Point } from '@components/social/Charts';
+import { getSocialPostsWithMetrics, getAccountDaily, getWeekPlanWithDays, getSocialEligibleStories, getPlanCandidates } from '@src/turso';
+import { SOCIAL_AGES, COOLDOWN_DAYS } from '@src/utils/socialFormats';
+import { mondayOf, nextMondayOf, weekdayOf, weekDatesFrom } from '@src/utils/socialPlanner';
+import { ROTATING_THEMES, SEASONAL_THEMES } from '@src/utils/socialThemes';
+import { specialDatesBetween } from '@src/utils/socialCalendar';
+import { getMetaTokenInfo, INSIGHTS_SCOPES } from '@src/utils/metaToken';
+import { describeFailure } from '@src/utils/notify';
+import { CALLMEBOT_PHONE, CALLMEBOT_APIKEY } from 'astro:env/server';
+import vercelConfig from '../../../vercel.json';
+
+// Panel de redes sociales: estado de hoy, avisos, evolución de la cuenta,
+// qué funciona mejor, el plan semanal (editable), el historial de
+// publicaciones y cómo está configurado todo. Solo lectura salvo las
+// acciones de los componentes interactivos, que llaman a los mismos
+// endpoints que los crons.
+export const prerender = false;
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+const now = new Date();
+const isoDate = (ms: number) => new Date(ms).toISOString().slice(0, 10);
+const sqlDateTime = (ms: number) => new Date(ms).toISOString().slice(0, 19).replace('T', ' ');
+const today = isoDate(now.getTime());
+const utcFromSql = (sql: string) => new Date(`${sql.replace(' ', 'T')}Z`);
+const madridDateTime = new Intl.DateTimeFormat('es-ES', { timeZone: 'Europe/Madrid', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+const madridTime = new Intl.DateTimeFormat('es-ES', { timeZone: 'Europe/Madrid', hour: '2-digit', minute: '2-digit' });
+const shortDay = (iso: string) => `${iso.slice(8)}/${iso.slice(5, 7)}`;
+const fmt = (value: number | null | undefined) => (value === null || value === undefined ? '—' : value.toLocaleString('es-ES'));
+
+const thisMonday = mondayOf(now);
+const nextMonday = nextMondayOf(now);
+
+const [posts, daily, currentPlan, nextPlan, eligibleStories, availableStories, token] = await Promise.all([
+  getSocialPostsWithMetrics(sqlDateTime(now.getTime() - 45 * DAY_MS)),
+  getAccountDaily(isoDate(now.getTime() - 60 * DAY_MS)),
+  getWeekPlanWithDays(thisMonday),
+  getWeekPlanWithDays(nextMonday),
+  getSocialEligibleStories(SOCIAL_AGES),
+  getPlanCandidates(sqlDateTime(now.getTime() - COOLDOWN_DAYS * DAY_MS), SOCIAL_AGES, 1000),
+  getMetaTokenInfo().then((info) => ({ info, error: null })).catch((error) => ({ info: null, error: String(error) })),
+]);
+
+// ---------- Estado de hoy ----------
+const PLATFORM_LABEL: Record<string, string> = {
+  facebook: 'Facebook · post',
+  instagram: 'Instagram · post',
+  facebook_story: 'Facebook · Story',
+  instagram_story: 'Instagram · Story',
+};
+// Hora UTC del cron de cada publicación (vercel.json). En el plan Hobby
+// Vercel puede lanzarlo hasta 59 minutos tarde: hasta la hora siguiente no
+// se da por perdida.
+const todaySlots = [
+  { platform: 'facebook', hourUtc: 9 },
+  { platform: 'instagram', hourUtc: 9 },
+  { platform: 'facebook_story', hourUtc: 16 },
+  { platform: 'instagram_story', hourUtc: 16 },
+].map(({ platform, hourUtc }) => {
+  const attempts = posts.filter((p) => p.platform === platform && p.createdAt.startsWith(today));
+  const success = attempts.find((p) => p.status === 'success');
+  const failure = attempts.find((p) => p.status !== 'success');
+  if (success) return { platform, state: 'ok', text: `Publicado a las ${madridTime.format(utcFromSql(success.createdAt))}` };
+  if (failure) return { platform, state: 'failed', text: describeFailure(failure.errorMessage ?? '') };
+  if (now.getUTCHours() >= hourUtc + 1) return { platform, state: 'failed', text: 'No ha salido y ya debería.' };
+  return { platform, state: 'pending', text: `Se publica hacia las ${String(hourUtc).padStart(2, '0')}:00 UTC.` };
+});
+const STATE_ICON: Record<string, string> = { ok: '✅', failed: '❌', pending: '🕒' };
+
+// ---------- Avisos ----------
+const tokenInfo = token.info;
+const scopes = tokenInfo?.scopes ?? [];
+const dataAccessMs = tokenInfo?.data_access_expires_at ? tokenInfo.data_access_expires_at * 1000 : null;
+const dataAccessDaysLeft = dataAccessMs ? Math.ceil((dataAccessMs - now.getTime()) / DAY_MS) : null;
+const whatsappConfigured = Boolean(CALLMEBOT_PHONE && CALLMEBOT_APIKEY);
+const missingInsightsScopes = INSIGHTS_SCOPES.filter((scope) => !scopes.includes(scope));
+
+const alerts: { level: 'critical' | 'warning' | 'info'; text: string }[] = [];
+if (token.error || !tokenInfo?.is_valid) alerts.push({ level: 'critical', text: `El token de Meta no es válido${token.error ? ` (${token.error})` : ''}: no se puede publicar. Hay que regenerarlo.` });
+for (const scope of ['pages_manage_posts', 'instagram_content_publish']) {
+  if (tokenInfo?.is_valid && !scopes.includes(scope)) alerts.push({ level: 'critical', text: `Al token de Meta le falta ${scope}: no se puede publicar.` });
+}
+if (dataAccessDaysLeft !== null && dataAccessDaysLeft <= 21) alerts.push({ level: dataAccessDaysLeft <= 7 ? 'critical' : 'warning', text: `Quedan ${dataAccessDaysLeft} días para que Meta corte el acceso del token. Regenéralo antes.` });
+if (!whatsappConfigured) alerts.push({ level: 'warning', text: 'Los avisos por WhatsApp no están configurados en este entorno (faltan CALLMEBOT_PHONE / CALLMEBOT_APIKEY).' });
+if (todaySlots.some((slot) => slot.state === 'failed')) alerts.push({ level: 'warning', text: 'Hoy ha fallado o no ha salido alguna publicación: mira "Hoy" más abajo o el historial para reintentarla.' });
+if (!nextPlan && (now.getUTCDay() === 0 || now.getUTCDay() >= 5 || (now.getUTCDay() === 4 && now.getUTCHours() >= 9))) {
+  alerts.push({ level: 'warning', text: 'La semana siguiente no tiene plan y el cron del jueves ya debería haberlo hecho: se publicará con la rotación de temas. Puedes generarlo con el botón de abajo.' });
+}
+if (missingInsightsScopes.length > 0) alerts.push({ level: 'info', text: `Al token le falta ${missingInsightsScopes.join(' y ')}: ${missingInsightsScopes.includes('read_insights') ? 'sin el alcance de Facebook' : 'sin estadísticas de Instagram'}. Todo lo demás funciona.` });
+const ALERT_ICON = { critical: '❌', warning: '⚠️', info: 'ℹ️' };
+
+// ---------- Cifras de la cuenta ----------
+const igDaily = daily.filter((row) => row.platform === 'instagram');
+const igByDate = new Map(igDaily.map((row) => [row.date, row]));
+const dayList = (fromDaysAgo: number, count: number) => Array.from({ length: count }, (_, i) => isoDate(now.getTime() - (fromDaysAgo + i) * DAY_MS));
+const last7 = dayList(1, 7);
+const prev7 = dayList(8, 7);
+const sumOf = (dates: string[], key: 'reach' | 'profileViews' | 'websiteClicks') => {
+  const values = dates.map((date) => igByDate.get(date)?.[key]).filter((v): v is number => v !== null && v !== undefined);
+  return values.length ? values.reduce((a, b) => a + b, 0) : null;
+};
+const followerSnapshots = igDaily.filter((row) => row.followers !== null);
+const followersNow = followerSnapshots.at(-1)?.followers ?? null;
+const followersWeekAgo = followerSnapshots.find((row) => row.date === isoDate(now.getTime() - 7 * DAY_MS))?.followers ?? null;
+
+const feedPosts = posts.filter((p) => p.status === 'success' && (p.platform === 'instagram' || p.platform === 'facebook'));
+const igFeedWithReach = posts.filter((p) => p.status === 'success' && p.platform === 'instagram' && p.reach !== null);
+const interactions = (p: (typeof posts)[number]) => (p.likes ?? 0) + (p.comments ?? 0) + (p.saved ?? 0) + (p.shares ?? 0);
+const inLast = (p: { createdAt: string }, days: number) => utcFromSql(p.createdAt).getTime() >= now.getTime() - days * DAY_MS;
+
+const kpis = [
+  { label: 'Seguidores en Instagram', value: followersNow, previous: followersWeekAgo, note: followersWeekAgo === null ? 'se guardan desde el 19 sept' : 'frente a hace 7 días' },
+  { label: 'Alcance de la cuenta, 7 días', value: sumOf(last7, 'reach'), previous: sumOf(prev7, 'reach'), note: 'suma diaria · vs 7 días antes' },
+  { label: 'Visitas al perfil, 7 días', value: sumOf(last7, 'profileViews'), previous: sumOf(prev7, 'profileViews'), note: 'vs 7 días antes' },
+  { label: 'Clics en el enlace de la bio, 7 días', value: sumOf(last7, 'websiteClicks'), previous: sumOf(prev7, 'websiteClicks'), note: 'visitas a la web desde Instagram' },
+  { label: 'Posts publicados, 7 días', value: feedPosts.filter((p) => p.platform === 'instagram' && inLast(p, 7)).length, previous: null, note: 'en el feed de Instagram' },
+];
+const delta = (value: number | null, previous: number | null) => {
+  if (value === null || previous === null) return null;
+  const diff = value - previous;
+  return { diff, text: `${diff > 0 ? '+' : ''}${diff.toLocaleString('es-ES')}` };
+};
+
+// ---------- Gráficas (últimos 30 días) ----------
+const chartDays = dayList(0, 31).reverse();
+const pointsFor = (key: 'followers' | 'reach' | 'websiteClicks', days: string[]): Point[] =>
+  days.map((date) => ({ label: shortDay(date), value: igByDate.get(date)?.[key] ?? null }));
+const closedDays = chartDays.slice(0, -1); // hoy aún no tiene totales
+
+// ---------- Qué funciona ----------
+type Group = { key: string; posts: number; avgReach: number; avgInteractions: number };
+const groupBy = (keyOf: (p: (typeof posts)[number]) => string): Group[] => {
+  const groups = new Map<string, (typeof posts)[number][]>();
+  for (const post of igFeedWithReach) groups.set(keyOf(post), [...(groups.get(keyOf(post)) ?? []), post]);
+  return [...groups].map(([key, list]) => ({
+    key,
+    posts: list.length,
+    avgReach: list.reduce((a, p) => a + (p.reach ?? 0), 0) / list.length,
+    avgInteractions: list.reduce((a, p) => a + interactions(p), 0) / list.length,
+  })).sort((a, b) => b.avgReach - a.avgReach);
+};
+const byFormat = groupBy((p) => (p.format === 'decision' ? '¿Qué elegirías?' : 'Recomendación'));
+const byTheme = groupBy((p) => p.theme ?? 'Sin hilo (antes del 19 sept o fuera de hilo)');
+const topPosts = [...igFeedWithReach].sort((a, b) => (b.reach ?? 0) - (a.reach ?? 0) || interactions(b) - interactions(a)).slice(0, 5);
+const avg = (value: number) => value.toLocaleString('es-ES', { maximumFractionDigits: 1 });
+
+// ---------- Plan ----------
+const planWeeks = [
+  currentPlan && { label: 'Esta semana', plan: currentPlan },
+  nextPlan && { label: 'Semana siguiente', plan: nextPlan },
+].filter(Boolean).map((entry) => {
+  const { label, plan } = entry as { label: string; plan: NonNullable<typeof currentPlan> };
+  const byDate = new Map(plan.days.map((day) => [day.date, day]));
+  return {
+    label,
+    weekStart: plan.weekStart,
+    themeLabel: plan.themeLabel,
+    themeHashtag: plan.themeHashtag,
+    rationale: plan.rationale,
+    days: weekDatesFrom(plan.weekStart).map((date) => {
+      const day = byDate.get(date);
+      return { date, weekday: weekdayOf(date), format: day?.format ?? null, angle: day?.angle ?? null, story: day?.story ?? null, published: day?.published ?? false };
+    }),
+  };
+});
+const needs = [...new Set([...(currentPlan?.needs ?? []), ...(nextPlan?.needs ?? [])])];
+
+// ---------- Historial ----------
+const postRows: PostRow[] = posts.map((p) => {
+  const network = p.platform.startsWith('instagram') ? 'instagram' : 'facebook';
+  const recoveredLater = posts.some((other) => other.status === 'success' && other.platform === p.platform && other.storyId === p.storyId && other.createdAt >= p.createdAt);
+  return {
+    id: p.id,
+    when: madridDateTime.format(utcFromSql(p.createdAt)),
+    platform: p.platform,
+    platformLabel: PLATFORM_LABEL[p.platform] ?? p.platform,
+    network,
+    surface: p.platform.endsWith('_story') ? 'story' : 'feed',
+    storyId: p.storyId,
+    title: p.title,
+    slug: p.slug,
+    format: p.format,
+    theme: p.theme,
+    ok: p.status === 'success',
+    errorText: p.status === 'success' ? null : describeFailure(p.errorMessage ?? ''),
+    reach: p.reach,
+    likes: p.likes,
+    comments: p.comments,
+    saved: p.saved,
+    shares: p.shares,
+    permalink: p.permalink,
+    note: p.platform === 'facebook' ? null : p.note,
+    canRetry: p.status !== 'success' && !recoveredLater && inLast(p, 7),
+  };
+});
+
+// ---------- Catálogo ----------
+const availableCategories = availableStories.map((row) => JSON.parse(row.categories as string) as string[]);
+const themeStock = [...ROTATING_THEMES.map((theme) => ({ theme, when: 'rotación' })), ...SEASONAL_THEMES.map(({ theme, month, day }) => ({ theme, when: `semana del ${day}/${month}` }))]
+  .map(({ theme, when }) => ({
+    label: theme.label,
+    when,
+    available: availableCategories.filter((cats) => cats.some((c) => theme.categories.includes(c))).length,
+    total: eligibleStories.filter((s) => s.categories.some((c) => theme.categories.includes(c))).length,
+  }));
+const upcomingDates = specialDatesBetween(today, isoDate(now.getTime() + 56 * DAY_MS));
+
+// ---------- Sistema ----------
+const CRON_INFO: Record<string, string> = {
+  '/api/social-auto-post': 'Post del día en el feed',
+  '/api/social-auto-post?surface=story': 'Story de la tarde',
+  '/api/social-plan-generate': 'Plan de la semana siguiente (con IA)',
+  '/api/social-health-check': 'Revisión diaria (avisa por WhatsApp si algo falta)',
+  '/api/social-insights-collect': 'Recogida de estadísticas',
+};
+const WEEKDAY_NAMES = ['domingos', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábados'];
+const scheduleText = (schedule: string) => {
+  const [minute, hour, , , dow] = schedule.split(' ');
+  const time = `${hour.padStart(2, '0')}:${minute.padStart(2, '0')} UTC`;
+  return dow === '*' ? `Cada día, ${time}` : `Los ${WEEKDAY_NAMES[Number(dow)]}, ${time}`;
+};
+const crons = vercelConfig.crons.map(({ path, schedule }) => ({ what: CRON_INFO[path] ?? path, when: scheduleText(schedule) }));
+const tokenRows = [
+  ['Tipo', tokenInfo?.type === 'PAGE' ? 'Token de página ✅' : `${tokenInfo?.type ?? '—'} ⚠️ (debería ser de página)`],
+  ['Válido', tokenInfo?.is_valid ? 'Sí ✅' : 'No ❌'],
+  ['Caduca', tokenInfo?.expires_at ? new Date(tokenInfo.expires_at * 1000).toISOString().slice(0, 10) + ' ⚠️' : 'Nunca ✅'],
+  ['Acceso a los datos hasta', dataAccessMs ? `${new Date(dataAccessMs).toISOString().slice(0, 10)} (quedan ${dataAccessDaysLeft} días)` : '—'],
+  ['Publicar', ['pages_manage_posts', 'instagram_content_publish'].every((s) => scopes.includes(s)) ? 'Sí ✅' : 'No ❌'],
+  ['Estadísticas de Instagram', scopes.includes('instagram_manage_insights') ? 'Sí ✅' : 'No ❌'],
+  ['Alcance de Facebook', scopes.includes('read_insights') ? 'Sí ✅' : 'No (falta read_insights)'],
+];
+---
+
+<!doctype html>
+<html lang="es">
+  <head>
+    <BaseHead title="Redes sociales (interno)" description="Panel interno de las publicaciones automáticas en redes sociales." />
+    <meta name="robots" content="noindex" />
+    <style is:global>
+      .social-admin { max-width: 1100px; margin: 2.5rem auto 4rem; padding: 0 1rem; font-family: system-ui, sans-serif; color: #0b0b0b; }
+      .social-admin h2 { margin: 2.5rem 0 0.5rem; padding-top: 1rem; border-top: 1px solid #e8e7e3; }
+      .social-admin .lead { color: #52514e; margin-top: 0; }
+      .social-admin .table-wrap { overflow-x: auto; }
+      .social-admin table { width: 100%; border-collapse: collapse; font-size: 14px; }
+      .social-admin th, .social-admin td { text-align: left; padding: 0.45rem 0.5rem; border-bottom: 1px solid #e8e7e3; vertical-align: top; }
+      .social-admin th { font-size: 12px; color: #52514e; font-weight: 600; }
+      .social-admin .num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+      .social-admin .grid { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); }
+      .social-admin .tile { border: 1px solid #ddd; border-radius: 8px; padding: 0.75rem 1rem; }
+      .social-admin .tile-label { font-size: 13px; color: #52514e; }
+      .social-admin .tile-value { font-size: 28px; font-weight: 600; margin: 0.15rem 0; }
+      .social-admin .tile-note { font-size: 12px; color: #8a8984; }
+      .social-admin .alerts { list-style: none; padding: 0; margin: 1rem 0 0; display: grid; gap: 0.5rem; }
+      .social-admin .alerts li { border-radius: 8px; padding: 0.6rem 0.8rem; font-size: 14px; }
+      .social-admin .alert-critical { background: #fbeaea; }
+      .social-admin .alert-warning { background: #fdf4e1; }
+      .social-admin .alert-info { background: #f0efec; }
+      .social-admin .charts { display: grid; gap: 2rem; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); }
+      .social-admin .two-col { display: grid; gap: 2rem; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); }
+      /* Los estilos globales de la web (Tailwind) quitan el aspecto de botón,
+         el tamaño de los títulos y las viñetas de las listas: aquí se devuelven. */
+      .social-admin h1 { font-size: 2rem; line-height: 1.2; }
+      .social-admin h2 { font-size: 1.5rem; line-height: 1.3; }
+      .social-admin h3 { font-size: 1.1rem; line-height: 1.3; margin: 1.25rem 0 0.5rem; }
+      .social-admin ul:not(.alerts) { list-style: disc; padding-left: 1.25rem; }
+      .social-admin ul:not(.alerts) li { margin: 0.25rem 0; }
+      .social-admin button {
+        cursor: pointer; font: inherit; font-size: 14px; line-height: 1.2;
+        padding: 0.4rem 0.8rem; border: 1px solid #c3c2b7; border-radius: 6px; background: #fff; color: #0b0b0b;
+      }
+      .social-admin button:hover:not(:disabled) { background: #f0efec; }
+      .social-admin button:disabled { opacity: 0.55; cursor: default; }
+      .social-admin button[aria-pressed="true"] { background: #0b0b0b; border-color: #0b0b0b; color: #fff; }
+      .social-admin input, .social-admin select, .social-admin textarea {
+        font: inherit; font-size: 14px; padding: 0.35rem 0.5rem; border: 1px solid #c3c2b7; border-radius: 6px; background: #fff;
+      }
+      .social-admin .posts td:nth-child(3) { min-width: 200px; }
+      .social-admin .posts td:nth-child(4) { max-width: 280px; }
+    </style>
+  </head>
+  <body>
+    <main class="social-admin">
+      <p><a href="/admin">← Admin</a></p>
+      <h1 style="margin-bottom: 0.25rem;">Redes sociales</h1>
+      <p class="lead">Publicación automática en Facebook e Instagram: qué ha salido, cómo va la cuenta, el plan de la semana y cómo está configurado todo. Las horas están en hora de España salvo donde pone UTC.</p>
+
+      {alerts.length > 0 ? (
+        <ul class="alerts">
+          {alerts.map(({ level, text }) => <li class={`alert-${level}`}>{ALERT_ICON[level]} {text}</li>)}
+        </ul>
+      ) : (
+        <ul class="alerts"><li class="alert-info">✅ Todo en orden: token válido, avisos configurados y sin fallos hoy.</li></ul>
+      )}
+
+      <h2>Hoy</h2>
+      <div class="grid">
+        {todaySlots.map(({ platform, state, text }) => (
+          <div class="tile">
+            <div class="tile-label">{PLATFORM_LABEL[platform]}</div>
+            <div style="font-size: 15px; margin-top: 0.25rem;">{STATE_ICON[state]} {text}</div>
+          </div>
+        ))}
+      </div>
+
+      <h2>Acciones</h2>
+      <SocialActions client:load nextWeekStart={nextMonday} nextWeekHasPlan={Boolean(nextPlan)} />
+
+      <h2>La cuenta</h2>
+      <p class="lead">Instagram, que es donde se pueden medir las cosas. Facebook: {fmt(daily.filter((r) => r.platform === 'facebook' && r.followers !== null).at(-1)?.followers)} seguidores (sin estadísticas de alcance).</p>
+      <div class="grid">
+        {kpis.map(({ label, value, previous, note }) => {
+          const change = delta(value, previous);
+          return (
+            <div class="tile">
+              <div class="tile-label">{label}</div>
+              <div class="tile-value">{fmt(value)}</div>
+              <div class="tile-note">
+                {change && (
+                  <span style={`color: #52514e; font-weight: 600; margin-right: 4px;`}>
+                    <span style={`color: ${change.diff > 0 ? '#0ca30c' : change.diff < 0 ? '#d03b3b' : '#8a8984'};`}>{change.diff > 0 ? '▲' : change.diff < 0 ? '▼' : '='}</span> {change.text}
+                  </span>
+                )}
+                {note}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      <div class="charts" style="margin-top: 1.5rem;">
+        <LineChart client:load title="Seguidores de Instagram" unit="seguidores" points={pointsFor('followers', chartDays)} emptyMessage="Se empezaron a guardar el 19 de septiembre: la gráfica aparece en cuanto haya dos días." />
+        <ColumnChart client:load title="Cuentas alcanzadas por día" unit="cuentas" points={pointsFor('reach', closedDays)} emptyMessage="Aún no hay datos de alcance." />
+        <ColumnChart client:load title="Clics en el enlace de la bio por día" unit="clics" points={pointsFor('websiteClicks', closedDays)} emptyMessage="Ningún clic en el enlace de la bio en los últimos 30 días. Es la cifra que más importa: son visitas que llegan a la web." />
+      </div>
+
+      <details style="margin-top: 1rem;">
+        <summary>Ver los datos diarios en tabla</summary>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Día</th><th class="num">Seguidores</th><th class="num">Alcance</th><th class="num">Visitas al perfil</th><th class="num">Clics en la bio</th><th class="num">Cuentas que interactúan</th></tr></thead>
+            <tbody>
+              {[...chartDays].reverse().map((date) => {
+                const row = igByDate.get(date);
+                return <tr><td>{weekdayOf(date)} {shortDay(date)}</td><td class="num">{fmt(row?.followers)}</td><td class="num">{fmt(row?.reach)}</td><td class="num">{fmt(row?.profileViews)}</td><td class="num">{fmt(row?.websiteClicks)}</td><td class="num">{fmt(row?.accountsEngaged)}</td></tr>;
+              })}
+            </tbody>
+          </table>
+        </div>
+      </details>
+
+      <h2>Qué funciona mejor</h2>
+      <p class="lead">Posts del feed de Instagram de los últimos 45 días ({igFeedWithReach.length} con datos). Con tan pocos seguidores las diferencias aún son ruido: esto empezará a decir algo cuando haya varias semanas de hilos.</p>
+      <div class="two-col">
+        <div>
+          <h3>Por formato</h3>
+          <div class="table-wrap"><table>
+            <thead><tr><th>Formato</th><th class="num">Posts</th><th class="num">Alcance medio</th><th class="num">Interacciones medias</th></tr></thead>
+            <tbody>{byFormat.map((g) => <tr><td>{g.key}</td><td class="num">{g.posts}</td><td class="num">{avg(g.avgReach)}</td><td class="num">{avg(g.avgInteractions)}</td></tr>)}</tbody>
+          </table></div>
+        </div>
+        <div>
+          <h3>Por hilo de la semana</h3>
+          <div class="table-wrap"><table>
+            <thead><tr><th>Hilo</th><th class="num">Posts</th><th class="num">Alcance medio</th><th class="num">Interacciones medias</th></tr></thead>
+            <tbody>{byTheme.map((g) => <tr><td>{g.key}</td><td class="num">{g.posts}</td><td class="num">{avg(g.avgReach)}</td><td class="num">{avg(g.avgInteractions)}</td></tr>)}</tbody>
+          </table></div>
+        </div>
+      </div>
+      <h3>Los 5 posts con más alcance</h3>
+      <div class="table-wrap"><table>
+        <thead><tr><th>Fecha</th><th>Cuento</th><th class="num">Alcance</th><th class="num">Interacciones</th></tr></thead>
+        <tbody>
+          {topPosts.map((p) => (
+            <tr>
+              <td>{madridDateTime.format(utcFromSql(p.createdAt))}</td>
+              <td>{p.permalink ? <a href={p.permalink} target="_blank" rel="noreferrer">{p.title}</a> : p.title}</td>
+              <td class="num">{fmt(p.reach)}</td><td class="num">{fmt(interactions(p))}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table></div>
+
+      <h2>Plan semanal</h2>
+      <p class="lead">Se genera solo cada jueves para la semana siguiente y se publica sin revisión. Aquí puedes cambiar el cuento, el formato o el enfoque de cualquier día que aún no haya salido.</p>
+      <PlanEditor client:load weeks={planWeeks} stories={eligibleStories} today={today} />
+      {needs.length > 0 && (
+        <div style="margin-top: 1rem;">
+          <h3>✍️ Cuentos que conviene crear (según el plan)</h3>
+          <ul>{needs.map((need) => <li>{need}</li>)}</ul>
+        </div>
+      )}
+
+      <h2>Historial de publicaciones</h2>
+      <p class="lead">Últimos 45 días. Las métricas se actualizan cada día a las 15:00 UTC. Las Stories de Instagram solo tienen datos si las vieron 5 personas o más; Facebook no da el alcance.</p>
+      <div class="posts"><PostsTable client:load rows={postRows} /></div>
+
+      <h2>Catálogo y próximas fechas</h2>
+      <div class="two-col">
+        <div>
+          <h3>Cuentos disponibles por tema</h3>
+          <p class="lead" style="font-size: 14px;">Para 3–12 años. "Disponibles": no publicados en los últimos {COOLDOWN_DAYS} días. Una semana temática necesita 7.</p>
+          <div class="table-wrap"><table>
+            <thead><tr><th>Tema</th><th>Cuándo</th><th class="num">Disponibles</th><th class="num">Total</th></tr></thead>
+            <tbody>
+              {themeStock.map(({ label, when, available, total }) => (
+                <tr><td>{label}</td><td>{when}</td><td class="num">{available < 7 ? '⚠️ ' : ''}{available}</td><td class="num">{total}</td></tr>
+              ))}
+            </tbody>
+          </table></div>
+        </div>
+        <div>
+          <h3>Fechas señaladas (8 semanas)</h3>
+          <div class="table-wrap"><table>
+            <thead><tr><th>Fecha</th><th>Qué</th></tr></thead>
+            <tbody>
+              {upcomingDates.map(({ date, name, approximate }) => (
+                <tr><td>{weekdayOf(date)} {shortDay(date)}</td><td>{name}{approximate ? ' (aprox.)' : ''}</td></tr>
+              ))}
+            </tbody>
+          </table></div>
+        </div>
+      </div>
+
+      <h2>Configuración</h2>
+      <div class="two-col">
+        <div>
+          <h3>Tareas automáticas</h3>
+          <div class="table-wrap"><table>
+            <thead><tr><th>Qué</th><th>Cuándo</th></tr></thead>
+            <tbody>{crons.map(({ what, when }) => <tr><td>{what}</td><td>{when}</td></tr>)}</tbody>
+          </table></div>
+          <p style="font-size: 13px; color: #52514e;">En el plan Hobby de Vercel cada tarea puede lanzarse hasta 59 minutos después de su hora. Hora de España = UTC + 2 en verano, + 1 en invierno.</p>
+        </div>
+        <div>
+          <h3>Token de Meta</h3>
+          <div class="table-wrap"><table>
+            <tbody>{tokenRows.map(([label, value]) => <tr><th style="font-size: 14px; color: #0b0b0b;">{label}</th><td>{value}</td></tr>)}</tbody>
+          </table></div>
+          <h3>Avisos por WhatsApp</h3>
+          <p style="font-size: 14px;">{whatsappConfigured ? '✅ Configurados. Usa "WhatsApp de prueba" (en Acciones) para comprobar que llegan.' : '❌ Sin configurar en este entorno: faltan CALLMEBOT_PHONE y CALLMEBOT_APIKEY.'}</p>
+        </div>
+      </div>
+    </main>
+  </body>
+</html>
