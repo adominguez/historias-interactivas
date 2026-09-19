@@ -12,14 +12,15 @@ const PUBLIC_API_PATHS = new Set([
 ]);
 
 // Los endpoints que disparan los crons de Vercel (ver vercel.json): la
-// publicación diaria y la planificación semanal. Siguen exigiendo Basic Auth
-// como cualquier otro endpoint de /api para quien los llame a mano (útil
-// para probar en local con ?dryRun=1) — solo ganan una SEGUNDA vía de
-// entrada válida (el bearer del cron, ver isAuthorizedCron), nunca quedan en
-// PUBLIC_API_PATHS.
+// publicación diaria, la planificación semanal y la revisión diaria. Siguen
+// exigiendo Basic Auth como cualquier otro endpoint de /api para quien los
+// llame a mano (útil para probar en local con ?dryRun=1) — solo ganan una
+// SEGUNDA vía de entrada válida (el bearer del cron, ver isAuthorizedCron),
+// nunca quedan en PUBLIC_API_PATHS.
 const CRON_PATHS = new Set([
   "/api/social-auto-post",
   "/api/social-plan-generate",
+  "/api/social-health-check",
 ]);
 
 const needsAuth = (pathname: string) =>

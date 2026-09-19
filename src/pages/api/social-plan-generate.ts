@@ -1,5 +1,7 @@
 import { hasWeekPlan, saveWeekPlan } from "@src/turso";
 import { generateWeekPlan, nextMondayOf, isMonday, weekdayOf } from "@src/utils/socialPlanner";
+import { sendWhatsApp } from "@src/utils/notify";
+import { buildPlanAlert, buildPlanFailureAlert } from "@src/utils/socialAlerts";
 
 // Genera el plan de redes de una semana (ver utils/socialPlanner.ts). Lo
 // dispara un cron cada jueves (vercel.json) para la semana SIGUIENTE: así
@@ -34,12 +36,22 @@ export async function GET(request: Request) {
     // rotación de temas, igual que si el plan no existiera.
     if (plan.days.length === 0) {
       console.error("Plan semanal sin ningún día válido:", rejected);
+      if (!dryRun) await sendWhatsApp(buildPlanFailureAlert(weekStart, "La IA no propuso ningún día válido."));
       return json({ error: "La IA no propuso ningún día válido", weekStart, rejected }, 500);
     }
 
-    if (!dryRun) await saveWeekPlan(plan);
-
     const titleById = new Map(candidates.map(({ id, title }) => [id, title]));
+
+    if (!dryRun) {
+      await saveWeekPlan(plan);
+      // El resumen del plan llega por WhatsApp: se publica solo, sin
+      // aprobarlo, así que esto es lo que permite echarle un vistazo.
+      await sendWhatsApp(buildPlanAlert({
+        ...plan,
+        days: plan.days.map(({ date, storyId }) => ({ date, title: titleById.get(storyId) })),
+        rejectedCount: rejected.length,
+      }));
+    }
     return json({
       dryRun,
       weekStart,
@@ -53,6 +65,7 @@ export async function GET(request: Request) {
     });
   } catch (error) {
     console.error("Fallo en social-plan-generate:", error);
+    if (!dryRun) await sendWhatsApp(buildPlanFailureAlert(weekStart, error));
     return json({ error: String(error), weekStart }, 500);
   }
 }

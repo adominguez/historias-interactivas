@@ -9,6 +9,8 @@ import { mondayOf } from "@src/utils/socialPlanner";
 import { generalCategories } from "@src/data/categories";
 import { postToFacebook, postFacebookStory } from "@src/pages/api/post-facebook";
 import { postToInstagram, postInstagramStory } from "@src/pages/api/post-instagram";
+import { sendWhatsApp } from "@src/utils/notify";
+import { buildPublishAlert, buildCrashAlert } from "@src/utils/socialAlerts";
 import { PUBLIC_CLOUDINARY_CLOUD_NAME } from "astro:env/server";
 
 // Las portadas se generan en 1536x1024 (3:2) — Instagram lo acepta (su rango
@@ -49,6 +51,10 @@ export async function GET(request: Request) {
 
   const surfaceOverride = url.searchParams.get("surface");
   const formatOverride = url.searchParams.get("format");
+  // Para el aviso por WhatsApp si la ejecución revienta antes de saber la
+  // superficie: los crons de vercel.json solo pasan ?surface=story al de la
+  // tarde, así que sin él es el post del feed.
+  const alertSurface: SocialSurface = surfaceOverride === "story" ? "story" : "feed";
 
   try {
     const weekday = new Date().getUTCDay();
@@ -123,6 +129,7 @@ export async function GET(request: Request) {
       ?? await getNextStoryToPost(daysAgoIso(COOLDOWN_DAYS), SOCIAL_AGES);
 
     if (!story) {
+      if (!dryRun) await sendWhatsApp(buildCrashAlert(surface, "No hay ningún cuento disponible para publicar."));
       return new Response(JSON.stringify({ skipped: true, reason: "No hay ningún cuento en la base de datos" }), {
         status: 500,
         headers: { "Content-Type": "application/json" },
@@ -262,6 +269,12 @@ export async function GET(request: Request) {
       }
     }
 
+    // Aviso por WhatsApp solo si falló alguna red (ver utils/socialAlerts.ts).
+    if (!dryRun) {
+      const alert = buildPublishAlert({ surface, storyTitle: story.title as string, facebook: summary.facebook, instagram: summary.instagram });
+      if (alert) await sendWhatsApp(alert);
+    }
+
     return new Response(JSON.stringify(summary), {
       status: 200,
       headers: { "Content-Type": "application/json" },
@@ -272,6 +285,7 @@ export async function GET(request: Request) {
     // en ninguna plataforma todavía — se registran los logs del propio
     // Vercel Cron, y se responde con detalle en vez de un 500 opaco.
     console.error("Fallo en social-auto-post:", error);
+    if (!dryRun) await sendWhatsApp(buildCrashAlert(alertSurface, error));
     return new Response(JSON.stringify({ error: String(error) }), {
       status: 500,
       headers: { "Content-Type": "application/json" },

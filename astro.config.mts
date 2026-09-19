@@ -119,6 +119,10 @@ export default defineConfig({
       ADMIN_USERNAME: envField.string({ context: "server", access: "secret" }),
       ADMIN_PASSWORD: envField.string({ context: "server", access: "secret" }),
       CRON_SECRET: envField.string({ context: "server", access: "secret" }),
+      // Avisos por WhatsApp (ver src/utils/notify.ts). Opcionales: sin ellos
+      // no se envía ningún aviso, pero todo lo demás funciona igual.
+      CALLMEBOT_PHONE: envField.string({ context: "server", access: "secret", optional: true }),
+      CALLMEBOT_APIKEY: envField.string({ context: "server", access: "secret", optional: true }),
     }
   }
 });

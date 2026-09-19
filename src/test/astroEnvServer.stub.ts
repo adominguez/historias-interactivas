@@ -24,3 +24,5 @@ export const SITE_URL = "https://ejemplo-de-prueba.invalid";
 export const ADMIN_USERNAME = "usuario-de-prueba";
 export const ADMIN_PASSWORD = "contrasena-de-prueba";
 export const CRON_SECRET = "secreto-de-cron-de-prueba";
+export const CALLMEBOT_PHONE = "000000000";
+export const CALLMEBOT_APIKEY = "clave-callmebot-de-prueba";
