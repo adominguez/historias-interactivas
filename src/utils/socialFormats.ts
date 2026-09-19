@@ -15,6 +15,12 @@ export const COOLDOWN_DAYS = 35;
 // corta dejaría a los últimos del lote fuera antes de que les tocara.
 export const NEW_STORY_WINDOW_DAYS = 14;
 
+// Edades que se publican en redes. Quien sigue la cuenta son madres y padres
+// de niños pequeños: un cuento de terror para adultos (se llegaron a publicar
+// tres de 18+) o uno pensado para adolescentes no pinta nada ahí. Los cuentos
+// de esas edades siguen en la web, simplemente no se promocionan.
+export const SOCIAL_AGES = ["3-4", "5-8", "9-12"];
+
 export type SocialFormatId = "recommendation" | "decision";
 
 // Superficie donde se publica ese contenido (Fase 2 añade "story"; un futuro
@@ -52,6 +58,7 @@ export type SocialCaptionPromptInput = {
   age: string;
   slug: string;
   rootOptions?: Option[]; // solo lo necesita el formato 'decision'
+  theme?: { label: string; dayOfWeek: number }; // semana temática, ver socialThemes.ts
 };
 
 type StoryRow = {

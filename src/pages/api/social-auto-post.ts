@@ -1,9 +1,10 @@
-import { getNextStoryToPost, getNewStoryForStories, getLastSuccessfulSocialFormat, getStoryOptions, insertSocialPost, hasSuccessfulPostSince } from "@src/turso";
-import { SOCIAL_FORMATS, SOCIAL_FORMAT_IDS, COOLDOWN_DAYS, NEW_STORY_WINDOW_DAYS, PLATFORMS_BY_SURFACE, resolveFormatForToday, normalizeHashtags, buildFacebookMessage, buildInstagramMessage, type SocialFormatId, type SocialSurface } from "@src/utils/socialFormats";
+import { getNextStoryToPost, getNewStoryForStories, getThemedStoryToPost, getStoryPostedSince, getLastSuccessfulSocialFormat, getStoryOptions, insertSocialPost, hasSuccessfulPostSince } from "@src/turso";
+import { SOCIAL_FORMATS, SOCIAL_FORMAT_IDS, COOLDOWN_DAYS, NEW_STORY_WINDOW_DAYS, SOCIAL_AGES, PLATFORMS_BY_SURFACE, resolveFormatForToday, normalizeHashtags, buildFacebookMessage, buildInstagramMessage, type SocialFormatId, type SocialSurface } from "@src/utils/socialFormats";
 import { WEEKDAY_FORMAT } from "@src/utils/socialSchedule";
 import { generateSocialCaption } from "@src/utils/socialCaption";
 import { getStoryCoverImageUrl } from "@src/utils/functions";
-import { buildStoryImageUrl } from "@src/utils/socialStoryImage";
+import { buildStoryImageUrl, NEW_STORY_LABEL } from "@src/utils/socialStoryImage";
+import { getThemeForDate, storyBelongsToTheme } from "@src/utils/socialThemes";
 import { generalCategories } from "@src/data/categories";
 import { postToFacebook, postFacebookStory } from "@src/pages/api/post-facebook";
 import { postToInstagram, postInstagramStory } from "@src/pages/api/post-instagram";
@@ -73,8 +74,8 @@ export async function GET(request: Request) {
     // la IA o de tocar Cloudinary, no después. dryRun no pasa por aquí porque
     // no publica nada y su razón de ser es justamente poder probar a mano
     // cualquier día.
+    const startOfUtcDay = `${new Date().toISOString().slice(0, 10)} 00:00:00`;
     if (!dryRun && !force) {
-      const startOfUtcDay = `${new Date().toISOString().slice(0, 10)} 00:00:00`;
       const alreadyPosted = await hasSuccessfulPostSince(startOfUtcDay, PLATFORMS_BY_SURFACE[surface]);
       if (alreadyPosted) {
         return new Response(JSON.stringify({
@@ -90,12 +91,22 @@ export async function GET(request: Request) {
 
     const daysAgoIso = (days: number) => new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString().slice(0, 19).replace("T", " ");
 
-    // En Stories, un cuento recién creado que aún no ha salido pasa por
-    // delante de la cola (ver NEW_STORY_WINDOW_DAYS). Solo en Stories: el
-    // feed sigue su rotación normal.
-    const newStory = surface === "story" ? await getNewStoryForStories(daysAgoIso(NEW_STORY_WINDOW_DAYS), PLATFORMS_BY_SURFACE.story) : undefined;
+    const { theme, dayOfWeek } = getThemeForDate(new Date());
+
+    // Qué cuento sale hoy, por orden de preferencia:
+    // 1. Solo en Stories: un cuento recién creado que aún no ha salido (ver
+    //    NEW_STORY_WINDOW_DAYS), con su rótulo de "cuento nuevo".
+    // 2. Solo en Stories: el que salió esta mañana en el feed. La Story lo
+    //    refuerza en vez de gastar otro cuento del tema: así la semana
+    //    temática consume 7 cuentos y no 14, y el catálogo da para ella.
+    // 3. Un cuento del tema de la semana fuera de cooldown.
+    // 4. La cola general, si el tema se quedó sin cuentos disponibles.
+    const newStory = surface === "story" ? await getNewStoryForStories(daysAgoIso(NEW_STORY_WINDOW_DAYS), PLATFORMS_BY_SURFACE.story, SOCIAL_AGES) : undefined;
     const isNewStory = Boolean(newStory);
-    const story = newStory ?? await getNextStoryToPost(daysAgoIso(COOLDOWN_DAYS));
+    const story = newStory
+      ?? (surface === "story" ? await getStoryPostedSince(startOfUtcDay, PLATFORMS_BY_SURFACE.feed) : undefined)
+      ?? await getThemedStoryToPost(daysAgoIso(COOLDOWN_DAYS), SOCIAL_AGES, theme.categories)
+      ?? await getNextStoryToPost(daysAgoIso(COOLDOWN_DAYS), SOCIAL_AGES);
 
     if (!story) {
       return new Response(JSON.stringify({ skipped: true, reason: "No hay ningún cuento en la base de datos" }), {
@@ -120,6 +131,7 @@ export async function GET(request: Request) {
     }
 
     const rawCategories = JSON.parse(story.categories as string) as string[];
+    const postTheme = storyBelongsToTheme(rawCategories, theme) ? theme : null;
     const categoryTitles = rawCategories.map(
       (value) => generalCategories.find((category) => category.name === value)?.title ?? value
     );
@@ -130,8 +142,11 @@ export async function GET(request: Request) {
       rootOptions
     );
 
-    const { facebookCaption, instagramCaption, hashtags: rawHashtags, storyHook } = await generateSocialCaption(promptInput);
-    const hashtags = normalizeHashtags(rawHashtags);
+    const { facebookCaption, instagramCaption, hashtags: rawHashtags, storyHook } = await generateSocialCaption({
+      ...promptInput,
+      theme: postTheme ? { label: postTheme.label, dayOfWeek } : undefined,
+    });
+    const hashtags = normalizeHashtags(postTheme ? [postTheme.hashtag, ...rawHashtags] : rawHashtags);
     const hashtagsLine = hashtags.join(" ");
     const facebookMessage = buildFacebookMessage(facebookCaption, story.slug as string, hashtagsLine);
     const instagramMessage = buildInstagramMessage(instagramCaption, hashtagsLine);
@@ -142,6 +157,7 @@ export async function GET(request: Request) {
       surface,
       story: { id: storyId, slug: story.slug, title: story.title },
       isNewStory,
+      theme: postTheme ? { id: postTheme.id, label: postTheme.label, dayOfWeek } : null,
       facebookCaption,
       facebookMessage,
       instagramCaption,
@@ -156,7 +172,7 @@ export async function GET(request: Request) {
     };
 
     if (surface === "story") {
-      const storyImageUrl = buildStoryImageUrl({ slug: story.slug as string, imageVersion: story.image_version as number | null, hookText: storyHook, isNew: isNewStory });
+      const storyImageUrl = buildStoryImageUrl({ slug: story.slug as string, imageVersion: story.image_version as number | null, hookText: storyHook, label: isNewStory ? NEW_STORY_LABEL : postTheme?.label.toUpperCase() });
       summary.storyImageUrl = storyImageUrl;
 
       if (!dryRun) {

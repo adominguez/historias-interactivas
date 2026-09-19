@@ -354,8 +354,21 @@ No señales nada relacionado con ortografía, palabras inventadas o formato de g
 // concreto de lo que NO hay que hacer, no solo una regla en prosa — aquí es
 // aún más importante, porque el fallo más grave posible no es un texto flojo
 // sino inventar una decisión, personaje o final que el cuento real no tiene.
-function generateSocialCaptionPrompt({ format, title, resume, characters, categoryTitles, age, slug, rootOptions }: SocialCaptionPromptInput) {
+function generateSocialCaptionPrompt({ format, title, resume, characters, categoryTitles, age, slug, rootOptions, theme }: SocialCaptionPromptInput) {
   const charactersText = characters.map(({ name, description }) => `- ${name}: ${description}`).join('\n');
+
+  // Semana temática (ver socialThemes.ts): el post forma parte de una serie,
+  // y decirlo es lo que la convierte en serie para quien lo lee. El lunes y el
+  // domingo cambian el enfoque (arranque y cierre); el resto de días basta con
+  // mencionarlo.
+  const themeMoment = theme?.dayOfWeek === 1
+    ? 'Hoy es lunes, el día que arranca: preséntala como algo que empieza hoy e invita a seguirla los próximos días.'
+    : theme?.dayOfWeek === 7
+      ? 'Hoy es domingo, el último día: presenta este cuento como el que la cierra.'
+      : 'Hoy es un día intermedio: basta con mencionarla.';
+  const themeBlock = theme
+    ? `\n\nContexto (no lo copies tal cual): todos los cuentos que salen esta semana forman la "${theme.label}", uno de esa temática cada día. ${themeMoment} Menciónala de forma natural en el texto de Facebook y en el de Instagram (no hace falta en storyHook), como lo diría una persona: "¡Seguimos con la ${theme.label}!", "Para esta ${theme.label}...". No hables de "la cuenta" ni digas en qué número de día estamos ("día 3 de 7"): suena a robot. No añadas un hashtag de la semana: ese lo pone el código.`
+    : '';
 
   const formatBlock = format === 'decision'
     ? `Formato: "¿QUÉ ELEGIRÍAS?". El gancho de la publicación es una decisión REAL del propio cuento — las opciones que el lector puede elegir nada más empezar a leer, citadas tal cual, son:
@@ -364,7 +377,7 @@ ${(rootOptions ?? []).map(o => `- "${o.text}"`).join('\n')}
 Usa estas opciones EXACTAMENTE como están escritas arriba (puedes adaptarlas ligeramente al tono de cada red, pero sin cambiar lo que dicen ni inventar una tercera opción que no exista). Ejemplo de lo que NO hay que hacer: si las opciones reales son "entrar en la cueva" y "seguir el río", no escribas "¿entrarías en la cueva, seguirías el río, o pedirías ayuda?" — esa tercera opción no existe en el cuento.`
     : `Formato: "CUENTO RECOMENDADO". Es una recomendación/teaser del cuento en general, no de una decisión concreta: usa el resumen para generar curiosidad sobre cómo empieza la historia, sin explicar cómo se desarrolla ni cómo termina.`;
 
-  return `Escribe el texto para promocionar en redes sociales este cuento infantil interactivo ya publicado en la web. ${formatBlock}
+  return `Escribe el texto para promocionar en redes sociales este cuento infantil interactivo ya publicado en la web. ${formatBlock}${themeBlock}
 
 Título: "${title}"
 Edad objetivo: ${age}

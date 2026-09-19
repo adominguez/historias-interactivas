@@ -34,19 +34,21 @@ cloudinary.config({
 // por completo y la capa siempre queda centrada, sin error visible. Van en
 // el componente SIGUIENTE, junto a "flags: layer_apply". Por eso cada capa
 // de texto de abajo son DOS objetos de transformación, no uno.
-// Rótulo de "cuento nuevo" (ver NEW_STORY_WINDOW_DAYS en socialFormats.ts):
-// ocupa el sitio de arriba y el gancho baja debajo. Es de UNA sola línea y
-// tamaño fijo, así que su alto es conocido y el gancho se puede colocar justo
-// debajo con un desplazamiento fijo — al revés no se podría, porque el gancho
-// ocupa un número variable de líneas según su longitud. Sin emoji: Arial en
+// Rótulo opcional — "¡CUENTO NUEVO!" (ver NEW_STORY_WINDOW_DAYS en
+// socialFormats.ts) o el de la semana temática ("SEMANA PIRATA", ver
+// socialThemes.ts) —: ocupa el sitio de arriba y el gancho baja debajo. Es de
+// UNA sola línea y tamaño fijo, así que su alto es conocido y el gancho se
+// puede colocar justo debajo con un desplazamiento fijo — al revés no se
+// podría, porque el gancho ocupa un número variable de líneas según su
+// longitud. Sin emoji: Arial en
 // Cloudinary no los dibuja de forma fiable, y "⤴" de abajo es un símbolo
 // tipográfico, no un emoji. El borde del mismo color que el fondo hace de
 // relleno interior (las capas de texto de Cloudinary no tienen "padding").
-const NEW_STORY_LABEL = "¡CUENTO NUEVO!";
+export const NEW_STORY_LABEL = "¡CUENTO NUEVO!";
 const HOOK_Y = 280;
 const HOOK_Y_BELOW_LABEL = 390;
 
-export const buildStoryImageUrl = ({ slug, imageVersion, hookText, isNew = false }: { slug: string; imageVersion: number | null; hookText: string; isNew?: boolean }) =>
+export const buildStoryImageUrl = ({ slug, imageVersion, hookText, label }: { slug: string; imageVersion: number | null; hookText: string; label?: string }) =>
   cloudinary.url(`cuentos-interactivos/${slug}/${slug}`, {
     version: imageVersion ?? undefined,
     // Las portadas son PNG y la API de publicación de Instagram solo acepta
@@ -59,14 +61,14 @@ export const buildStoryImageUrl = ({ slug, imageVersion, hookText, isNew = false
     quality: "auto",
     transformation: [
       { width: 1080, height: 1920, crop: "fill", gravity: "auto" },
-      ...(isNew
+      ...(label
         ? [
             {
               overlay: {
                 font_family: "arial",
                 font_weight: "bold",
                 font_size: 52,
-                text: NEW_STORY_LABEL,
+                text: label,
               },
               color: "#2B2118",
               background: "rgb:E8C468",
@@ -87,7 +89,7 @@ export const buildStoryImageUrl = ({ slug, imageVersion, hookText, isNew = false
         width: 900,
         crop: "fit",
       },
-      { flags: "layer_apply", gravity: "north", y: isNew ? HOOK_Y_BELOW_LABEL : HOOK_Y },
+      { flags: "layer_apply", gravity: "north", y: label ? HOOK_Y_BELOW_LABEL : HOOK_Y },
       {
         // Ni Instagram ni Facebook ofrecen un enlace pulsable de verdad vía
         // API (confirmado contra la lista completa de parámetros de Meta:

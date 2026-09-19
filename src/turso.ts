@@ -677,19 +677,69 @@ export const getLastSuccessfulSocialFormat = async (): Promise<string | undefine
 // corte) ordenan primero (0 < 1); dentro de cada grupo, last_posted_at
 // ascendente deja primero las nunca publicadas (NULL ordena antes que
 // cualquier valor en SQLite) y luego las más antiguas.
-export const getNextStoryToPost = async (cooldownCutoffIso: string) => {
+//
+// `ages` limita la elección a las edades que encajan con el público de las
+// redes (ver SOCIAL_AGES en socialFormats.ts).
+export const getNextStoryToPost = async (cooldownCutoffIso: string, ages: string[]) => {
+  const agePlaceholders = ages.map(() => "?").join(", ");
   const result = await turso.execute({
     sql: `
       SELECT s.*, MAX(sp.created_at) AS last_posted_at
       FROM stories s
       LEFT JOIN social_posts sp ON sp.story_id = s.id AND sp.status = 'success'
+      WHERE s.age IN (${agePlaceholders})
       GROUP BY s.id
       ORDER BY
         (last_posted_at IS NOT NULL AND last_posted_at >= ?),
         last_posted_at
       LIMIT 1;
     `,
-    args: [cooldownCutoffIso],
+    args: [...ages, cooldownCutoffIso],
+  });
+  return result.rows[0];
+}
+
+// Como getNextStoryToPost, pero solo entre los cuentos de alguna de
+// `categories` (las del tema de la semana, ver socialThemes.ts) y SIN su
+// último recurso: si todos los del tema están en cooldown devuelve undefined
+// en vez de repetir uno, y el endpoint cae a la cola general. Repetir un
+// cuento a las pocas semanas por cuadrar el tema sería peor que un día fuera
+// de tema.
+export const getThemedStoryToPost = async (cooldownCutoffIso: string, ages: string[], categories: string[]) => {
+  const agePlaceholders = ages.map(() => "?").join(", ");
+  const categoryPlaceholders = categories.map(() => "?").join(", ");
+  const result = await turso.execute({
+    sql: `
+      SELECT s.*, MAX(sp.created_at) AS last_posted_at
+      FROM stories s
+      LEFT JOIN social_posts sp ON sp.story_id = s.id AND sp.status = 'success'
+      WHERE s.age IN (${agePlaceholders})
+        AND EXISTS (SELECT 1 FROM json_each(s.categories) c WHERE c.value IN (${categoryPlaceholders}))
+      GROUP BY s.id
+      HAVING last_posted_at IS NULL OR last_posted_at < ?
+      ORDER BY last_posted_at
+      LIMIT 1;
+    `,
+    args: [...ages, ...categories, cooldownCutoffIso],
+  });
+  return result.rows[0];
+}
+
+// El cuento que salió hoy con éxito en el feed, si salió alguno. La Story de
+// la tarde lo reutiliza (ver social-auto-post.ts): refuerza el post de la
+// mañana en vez de gastar un segundo cuento del tema cada día.
+export const getStoryPostedSince = async (sinceIso: string, platforms: string[]) => {
+  const placeholders = platforms.map(() => "?").join(", ");
+  const result = await turso.execute({
+    sql: `
+      SELECT s.*
+      FROM stories s
+      JOIN social_posts sp ON sp.story_id = s.id
+      WHERE sp.status = 'success' AND sp.created_at >= ? AND sp.platform IN (${placeholders})
+      ORDER BY sp.created_at DESC
+      LIMIT 1;
+    `,
+    args: [sinceIso, ...platforms],
   });
   return result.rows[0];
 }
@@ -702,13 +752,15 @@ export const getNextStoryToPost = async (cooldownCutoffIso: string) => {
 // creó y ninguno se quede fuera de la ventana esperando detrás de los demás.
 // Solo lo usa el cron de Stories (ver social-auto-post.ts); el feed sigue
 // tirando únicamente de getNextStoryToPost.
-export const getNewStoryForStories = async (sinceIso: string, platforms: string[]) => {
+export const getNewStoryForStories = async (sinceIso: string, platforms: string[], ages: string[]) => {
   const placeholders = platforms.map(() => "?").join(", ");
+  const agePlaceholders = ages.map(() => "?").join(", ");
   const result = await turso.execute({
     sql: `
       SELECT s.*
       FROM stories s
       WHERE s.created_at >= ?
+        AND s.age IN (${agePlaceholders})
         AND NOT EXISTS (
           SELECT 1 FROM social_posts sp
           WHERE sp.story_id = s.id AND sp.status = 'success' AND sp.platform IN (${placeholders})
@@ -716,7 +768,7 @@ export const getNewStoryForStories = async (sinceIso: string, platforms: string[
       ORDER BY s.created_at ASC
       LIMIT 1;
     `,
-    args: [sinceIso, ...platforms],
+    args: [sinceIso, ...ages, ...platforms],
   });
   return result.rows[0];
 }
