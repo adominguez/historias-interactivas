@@ -34,7 +34,7 @@ describe('sendWhatsApp', () => {
   afterEach(() => vi.unstubAllGlobals());
 
   it('manda el texto codificado en la URL de CallMeBot', async () => {
-    const fetchMock = vi.fn(async () => new Response('Message queued. You will receive it in a few seconds.'));
+    const fetchMock = vi.fn(async (_url: string) => new Response('Message queued. You will receive it in a few seconds.'));
     vi.stubGlobal('fetch', fetchMock);
 
     expect(await sendWhatsApp('Hola & adiós\n¿qué tal?')).toBe(true);
