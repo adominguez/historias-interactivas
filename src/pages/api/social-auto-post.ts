@@ -1,10 +1,11 @@
-import { getNextStoryToPost, getNewStoryForStories, getThemedStoryToPost, getStoryPostedSince, getLastSuccessfulSocialFormat, getStoryOptions, insertSocialPost, hasSuccessfulPostSince } from "@src/turso";
+import { getNextStoryToPost, getNewStoryForStories, getThemedStoryToPost, getStoryPostedSince, getPlannedDay, getWeekPlanTheme, getLastSuccessfulSocialFormat, getStoryOptions, insertSocialPost, hasSuccessfulPostSince } from "@src/turso";
 import { SOCIAL_FORMATS, SOCIAL_FORMAT_IDS, COOLDOWN_DAYS, NEW_STORY_WINDOW_DAYS, SOCIAL_AGES, PLATFORMS_BY_SURFACE, resolveFormatForToday, normalizeHashtags, buildFacebookMessage, buildInstagramMessage, type SocialFormatId, type SocialSurface } from "@src/utils/socialFormats";
 import { WEEKDAY_FORMAT } from "@src/utils/socialSchedule";
 import { generateSocialCaption } from "@src/utils/socialCaption";
 import { getStoryCoverImageUrl } from "@src/utils/functions";
 import { buildStoryImageUrl, NEW_STORY_LABEL } from "@src/utils/socialStoryImage";
 import { getThemeForDate, storyBelongsToTheme } from "@src/utils/socialThemes";
+import { mondayOf } from "@src/utils/socialPlanner";
 import { generalCategories } from "@src/data/categories";
 import { postToFacebook, postFacebookStory } from "@src/pages/api/post-facebook";
 import { postToInstagram, postInstagramStory } from "@src/pages/api/post-instagram";
@@ -91,21 +92,34 @@ export async function GET(request: Request) {
 
     const daysAgoIso = (days: number) => new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString().slice(0, 19).replace("T", " ");
 
-    const { theme, dayOfWeek } = getThemeForDate(new Date());
+    const now = new Date();
+    const { theme: rotationTheme, dayOfWeek } = getThemeForDate(now);
+
+    // Plan semanal (ver utils/socialPlanner.ts): si existe, manda sobre la
+    // rotación de temas. Su hilo vale para toda la semana aunque hoy no
+    // tenga día planificado (se descartó al validarlo).
+    const plannedDay = await getPlannedDay(now.toISOString().slice(0, 10), SOCIAL_AGES);
+    const weekPlanTheme = plannedDay
+      ? { label: plannedDay.theme_label as string, hashtag: plannedDay.theme_hashtag as string }
+      : await getWeekPlanTheme(mondayOf(now));
 
     // Qué cuento sale hoy, por orden de preferencia:
     // 1. Solo en Stories: un cuento recién creado que aún no ha salido (ver
     //    NEW_STORY_WINDOW_DAYS), con su rótulo de "cuento nuevo".
     // 2. Solo en Stories: el que salió esta mañana en el feed. La Story lo
-    //    refuerza en vez de gastar otro cuento del tema: así la semana
-    //    temática consume 7 cuentos y no 14, y el catálogo da para ella.
-    // 3. Un cuento del tema de la semana fuera de cooldown.
-    // 4. La cola general, si el tema se quedó sin cuentos disponibles.
+    //    refuerza en vez de gastar otro cuento: así una semana consume 7
+    //    cuentos y no 14, y el catálogo da para ella.
+    // 3. El cuento que el plan semanal asignó a hoy.
+    // 4. Sin plan esta semana: un cuento del tema de la rotación fuera de
+    //    cooldown. Con plan pero sin día válido hoy, este paso se salta: un
+    //    cuento de la rotación no pinta nada en la semana del plan.
+    // 5. La cola general.
     const newStory = surface === "story" ? await getNewStoryForStories(daysAgoIso(NEW_STORY_WINDOW_DAYS), PLATFORMS_BY_SURFACE.story, SOCIAL_AGES) : undefined;
     const isNewStory = Boolean(newStory);
     const story = newStory
       ?? (surface === "story" ? await getStoryPostedSince(startOfUtcDay, PLATFORMS_BY_SURFACE.feed) : undefined)
-      ?? await getThemedStoryToPost(daysAgoIso(COOLDOWN_DAYS), SOCIAL_AGES, theme.categories)
+      ?? plannedDay
+      ?? (weekPlanTheme ? undefined : await getThemedStoryToPost(daysAgoIso(COOLDOWN_DAYS), SOCIAL_AGES, rotationTheme.categories))
       ?? await getNextStoryToPost(daysAgoIso(COOLDOWN_DAYS), SOCIAL_AGES);
 
     if (!story) {
@@ -116,7 +130,14 @@ export async function GET(request: Request) {
     }
 
     const storyId = story.id as number;
-    let generator = SOCIAL_FORMATS[format];
+    // El formato que eligió el plan manda sobre el del calendario, salvo que
+    // se fuerce uno a mano con ?format=.
+    const isPlannedStory = Boolean(plannedDay) && plannedDay?.id === storyId;
+    const plannedFormat = plannedDay?.plan_format as string | undefined;
+    const effectiveFormat: SocialFormatId = isPlannedStory && !formatOverride && plannedFormat && (SOCIAL_FORMAT_IDS as string[]).includes(plannedFormat)
+      ? (plannedFormat as SocialFormatId)
+      : format;
+    let generator = SOCIAL_FORMATS[effectiveFormat];
     let rootOptions = generator.needsRootOptions ? await getStoryOptions(storyId) : undefined;
 
     // El formato "decision" solo tiene sentido si el cuento presenta un
@@ -125,13 +146,19 @@ export async function GET(request: Request) {
     // Comprobado en vivo: al menos un cuento real tiene una única opción de
     // entrada. En vez de publicar eso, se cae al formato "recommendation"
     // para este cuento.
-    if (format === "decision" && (rootOptions?.length ?? 0) < 2) {
+    if (effectiveFormat === "decision" && (rootOptions?.length ?? 0) < 2) {
       generator = SOCIAL_FORMATS.recommendation;
       rootOptions = undefined;
     }
 
     const rawCategories = JSON.parse(story.categories as string) as string[];
-    const postTheme = storyBelongsToTheme(rawCategories, theme) ? theme : null;
+    // Con plan, el hilo es el del plan y solo se aplica al cuento planificado
+    // (un cuento nuevo en Stories no forma parte de él). Sin plan, el de la
+    // rotación, si el cuento es de sus categorías.
+    const postTheme: { label: string; hashtag: string } | null = weekPlanTheme
+      ? (isPlannedStory ? weekPlanTheme : null)
+      : (storyBelongsToTheme(rawCategories, rotationTheme) ? rotationTheme : null);
+    const angle = isPlannedStory ? ((plannedDay?.plan_angle as string | null) || undefined) : undefined;
     const categoryTitles = rawCategories.map(
       (value) => generalCategories.find((category) => category.name === value)?.title ?? value
     );
@@ -145,6 +172,7 @@ export async function GET(request: Request) {
     const { facebookCaption, instagramCaption, hashtags: rawHashtags, storyHook } = await generateSocialCaption({
       ...promptInput,
       theme: postTheme ? { label: postTheme.label, dayOfWeek } : undefined,
+      angle,
     });
     const hashtags = normalizeHashtags(postTheme ? [postTheme.hashtag, ...rawHashtags] : rawHashtags);
     const hashtagsLine = hashtags.join(" ");
@@ -157,7 +185,8 @@ export async function GET(request: Request) {
       surface,
       story: { id: storyId, slug: story.slug, title: story.title },
       isNewStory,
-      theme: postTheme ? { id: postTheme.id, label: postTheme.label, dayOfWeek } : null,
+      theme: postTheme ? { label: postTheme.label, hashtag: postTheme.hashtag, dayOfWeek } : null,
+      plan: isPlannedStory ? { weekStart: plannedDay?.plan_week_start, format: plannedFormat, angle: angle ?? null } : null,
       facebookCaption,
       facebookMessage,
       instagramCaption,

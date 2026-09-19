@@ -354,7 +354,7 @@ No señales nada relacionado con ortografía, palabras inventadas o formato de g
 // concreto de lo que NO hay que hacer, no solo una regla en prosa — aquí es
 // aún más importante, porque el fallo más grave posible no es un texto flojo
 // sino inventar una decisión, personaje o final que el cuento real no tiene.
-function generateSocialCaptionPrompt({ format, title, resume, characters, categoryTitles, age, slug, rootOptions, theme }: SocialCaptionPromptInput) {
+function generateSocialCaptionPrompt({ format, title, resume, characters, categoryTitles, age, slug, rootOptions, theme, angle }: SocialCaptionPromptInput) {
   const charactersText = characters.map(({ name, description }) => `- ${name}: ${description}`).join('\n');
 
   // Semana temática (ver socialThemes.ts): el post forma parte de una serie,
@@ -369,6 +369,11 @@ function generateSocialCaptionPrompt({ format, title, resume, characters, catego
   const themeBlock = theme
     ? `\n\nContexto (no lo copies tal cual): todos los cuentos que salen esta semana forman la "${theme.label}", uno de esa temática cada día. ${themeMoment} Menciónala de forma natural en el texto de Facebook y en el de Instagram (no hace falta en storyHook), como lo diría una persona: "¡Seguimos con la ${theme.label}!", "Para esta ${theme.label}...". No hables de "la cuenta" ni digas en qué número de día estamos ("día 3 de 7"): suena a robot. No añadas un hashtag de la semana: ese lo pone el código.`
     : '';
+  // Enfoque decidido en la planificación semanal (ver socialPlanner.ts):
+  // p. ej. "Hoy empieza el otoño: un cuento de hojas que viajan con el viento".
+  const angleBlock = angle
+    ? `\n\nEnfoque de hoy, decidido al planificar la semana: "${angle}". Úsalo como gancho del texto de Facebook y del de Instagram. Si menciona un día señalado (el inicio del otoño, el Día del Libro...), puedes nombrarlo tal cual, pero no inventes nada del cuento para forzar la relación.`
+    : '';
 
   const formatBlock = format === 'decision'
     ? `Formato: "¿QUÉ ELEGIRÍAS?". El gancho de la publicación es una decisión REAL del propio cuento — las opciones que el lector puede elegir nada más empezar a leer, citadas tal cual, son:
@@ -377,7 +382,7 @@ ${(rootOptions ?? []).map(o => `- "${o.text}"`).join('\n')}
 Usa estas opciones EXACTAMENTE como están escritas arriba (puedes adaptarlas ligeramente al tono de cada red, pero sin cambiar lo que dicen ni inventar una tercera opción que no exista). Ejemplo de lo que NO hay que hacer: si las opciones reales son "entrar en la cueva" y "seguir el río", no escribas "¿entrarías en la cueva, seguirías el río, o pedirías ayuda?" — esa tercera opción no existe en el cuento.`
     : `Formato: "CUENTO RECOMENDADO". Es una recomendación/teaser del cuento en general, no de una decisión concreta: usa el resumen para generar curiosidad sobre cómo empieza la historia, sin explicar cómo se desarrolla ni cómo termina.`;
 
-  return `Escribe el texto para promocionar en redes sociales este cuento infantil interactivo ya publicado en la web. ${formatBlock}${themeBlock}
+  return `Escribe el texto para promocionar en redes sociales este cuento infantil interactivo ya publicado en la web. ${formatBlock}${themeBlock}${angleBlock}
 
 Título: "${title}"
 Edad objetivo: ${age}
@@ -397,4 +402,51 @@ Reglas que no se pueden romper:
 - Además de los textos anteriores, escribe "storyHook": una frase muy corta (una línea, se lee de un vistazo) pensada para incrustarse sobre la imagen de una Story — las Stories no tienen descripción aparte, así que este texto es lo único que va a leerse ahí. Debe ser una frase COMPLETA de no más de 70 caracteres aproximadamente (nunca la dejes a medias ni termine en una coma o palabra suelta: si no te cabe la idea completa en ese espacio, elige una idea más simple y ciérrala bien, en vez de cortarla). Mismas reglas: nada inventado, sin desvelar el final, sin hashtags ni URL. ${format === 'decision' ? 'Formúlalo como pregunta directa citando o resumiendo brevísimamente la opción real dada arriba (no es una encuesta interactiva de verdad, solo texto sobre la imagen).' : 'Un gancho puro sobre el cuento, sin explicar el desarrollo.'}`;
 }
 
-export { generateBlueprintPrompt, generateSceneContentPrompt, generateRepairPrompt, generateImagePrompt, generateCastCoherencePrompt, generateStoryCoherencePrompt, generateSocialCaptionPrompt, type CoherenceStoryInput };
+type SocialWeekPlanPromptInput = {
+  weekDays: { date: string; weekday: string }[];
+  specialDatesThisWeek: { date: string; weekday: string; name: string; approximate?: boolean; categoryTitles: string[] }[];
+  upcomingSpecialDates: { date: string; name: string; categoryTitles: string[] }[];
+  recentThemes: string[];
+  availableByCategory: { categoryTitle: string; available: number }[];
+  candidates: { id: number; age: string; categoryTitles: string[]; title: string; resume: string }[];
+};
+
+// Planificación semanal de redes (ver src/utils/socialPlanner.ts). Las fechas
+// señaladas llegan ya calculadas por el código (socialCalendar.ts) y se le
+// prohíbe añadir otras: la IA no sabe en qué día está y se inventa fechas.
+function generateSocialWeekPlanPrompt({ weekDays, specialDatesThisWeek, upcomingSpecialDates, recentThemes, availableByCategory, candidates }: SocialWeekPlanPromptInput) {
+  const first = weekDays[0];
+  const last = weekDays[weekDays.length - 1];
+  const specialText = specialDatesThisWeek.length
+    ? specialDatesThisWeek.map(({ date, weekday, name, approximate, categoryTitles }) =>
+        `- ${weekday} ${date}: ${name}${approximate ? ' (fecha aproximada: varía según la comunidad autónoma, no la afirmes como exacta)' : ''}${categoryTitles.length ? ` — categorías afines: ${categoryTitles.join(', ')}` : ''}`).join('\n')
+    : '- Ninguna. Elige un hilo temático para la semana entre los temas del catálogo que tengan cuentos de sobra.';
+
+  return `Llevas las redes sociales (Instagram y Facebook) de "El Árbol de las Historias", una web de cuentos infantiles interactivos en español: en cada cuento el lector elige cómo sigue la historia. Te siguen madres y padres de niños de 3 a 12 años.
+
+Planifica la semana del ${first.weekday} ${first.date} al ${last.weekday} ${last.date}: se publica UN cuento al día en el feed (la Story de la tarde reutiliza ese mismo cuento).
+
+Días de la semana:
+${weekDays.map(({ date, weekday }) => `- ${weekday} ${date}`).join('\n')}
+
+Fechas señaladas de esta semana (datos ya verificados: no añadas ninguna otra fecha ni cambies sus días, aunque creas recordar alguna):
+${specialText}
+
+Qué tienes que decidir:
+1. El hilo de la semana ("themeLabel"). Si hay una fecha señalada con peso (Halloween, Navidad, San Valentín, Día del Libro, el inicio de una estación, Reyes...), el hilo gira en torno a ella. Si no, un tema del catálogo con cuentos de sobra (piratas, animales, fantasía, espacio, mitos, aventuras...). No repitas el hilo de las últimas semanas: ${recentThemes.length ? recentThemes.map(t => `"${t}"`).join(', ') : '(todavía no hay semanas anteriores)'}.
+2. Un cuento para cada uno de los 7 días ("days"), elegido por su id de la lista de candidatos de abajo, sin repetir ninguno. Elige leyendo título, resumen y categorías: el cuento de una fecha señalada tiene que encajar con ella de verdad (para "Empieza el otoño", uno con hojas, bosque, cosecha, viento...). Si ninguno encaja con una fecha, no fuerces la relación: elige uno del hilo de la semana. Mezcla edades a lo largo de la semana.
+3. El enfoque de cada día ("angle"): una frase breve que usará quien redacte el post ("Hoy empieza el otoño: un cuento de hojas que viajan con el viento"). El día de una fecha señalada, el enfoque empieza SIEMPRE nombrándola ("Hoy empieza el otoño: ..."), que es lo que hace que el post de ese día tenga sentido. Los demás días, una frase que conecte el cuento con el hilo de la semana, para que los siete posts se lean como una serie y no como cuentos sueltos. Del cuento solo puede mencionar cosas que estén en su título o su resumen — nada inventado.
+4. El formato de cada día ("format"): alterna "decision" y "recommendation" a lo largo de la semana.
+5. Lo que falta en el catálogo ("needs"): mirando las próximas fechas señaladas y cuántos cuentos quedan disponibles por categoría, di qué cuentos convendría crear y para cuándo, concretando tema, edad y cantidad (p. ej. "4 cuentos de Halloween para 3-4 años antes del 26 de octubre"). Una semana temática consume 7 cuentos. Vacío si no falta nada.
+
+Próximas fechas señaladas (las 8 semanas siguientes):
+${upcomingSpecialDates.map(({ date, name, categoryTitles }) => `- ${date}: ${name}${categoryTitles.length ? ` (${categoryTitles.join(', ')})` : ''}`).join('\n') || '- Ninguna.'}
+
+Cuentos disponibles por categoría (sin contar los publicados hace poco):
+${availableByCategory.map(({ categoryTitle, available }) => `- ${categoryTitle}: ${available}`).join('\n')}
+
+Cuentos candidatos (id | edad | categorías | título | resumen):
+${candidates.map(({ id, age, categoryTitles, title, resume }) => `${id} | ${age} | ${categoryTitles.join(', ')} | ${title} | ${resume}`).join('\n')}`;
+}
+
+export { generateBlueprintPrompt, generateSceneContentPrompt, generateRepairPrompt, generateImagePrompt, generateCastCoherencePrompt, generateStoryCoherencePrompt, generateSocialCaptionPrompt, generateSocialWeekPlanPrompt, type CoherenceStoryInput, type SocialWeekPlanPromptInput };

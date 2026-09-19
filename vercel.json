@@ -7,6 +7,10 @@
     {
       "path": "/api/social-auto-post?surface=story",
       "schedule": "0 16 * * *"
+    },
+    {
+      "path": "/api/social-plan-generate",
+      "schedule": "0 7 * * 4"
     }
   ]
 }

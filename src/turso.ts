@@ -822,3 +822,166 @@ export const getEndingCount = async (storyId: number) => {
   const count = result.rows[0]?.count as number;
   return count > 0 ? count : 1;
 }
+
+// ---------------------------------------------------------------------------
+// Plan semanal de redes (ver src/utils/socialPlanner.ts y la migración 0009).
+// ---------------------------------------------------------------------------
+
+// Cuentos que la IA puede elegir para una semana: de las edades de redes y
+// sin publicarse con éxito desde `cooldownCutoffIso`. Mismo orden que la cola
+// diaria (nunca publicados primero, luego los que llevan más tiempo sin
+// salir); `limit` acota lo que se le manda a la IA.
+export const getPlanCandidates = async (cooldownCutoffIso: string, ages: string[], limit: number) => {
+  const agePlaceholders = ages.map(() => "?").join(", ");
+  const result = await turso.execute({
+    sql: `
+      SELECT s.id, s.title, s.resume, s.categories, s.age, s.created_at, MAX(sp.created_at) AS last_posted_at
+      FROM stories s
+      LEFT JOIN social_posts sp ON sp.story_id = s.id AND sp.status = 'success'
+      WHERE s.age IN (${agePlaceholders})
+      GROUP BY s.id
+      HAVING last_posted_at IS NULL OR last_posted_at < ?
+      ORDER BY last_posted_at
+      LIMIT ?;
+    `,
+    args: [...ages, cooldownCutoffIso, limit],
+  });
+  return result.rows;
+}
+
+// Cuántos cuentos disponibles (mismas condiciones que getPlanCandidates, sin
+// límite) hay de cada categoría. Con esto la IA puede avisar de lo que falta
+// para las próximas fechas señaladas ("para Halloween hay 3 de 3-4 años").
+export const getAvailableStoryCountsByCategory = async (cooldownCutoffIso: string, ages: string[]) => {
+  const agePlaceholders = ages.map(() => "?").join(", ");
+  const result = await turso.execute({
+    sql: `
+      WITH available AS (
+        SELECT s.id, s.categories
+        FROM stories s
+        LEFT JOIN social_posts sp ON sp.story_id = s.id AND sp.status = 'success'
+        WHERE s.age IN (${agePlaceholders})
+        GROUP BY s.id
+        HAVING MAX(sp.created_at) IS NULL OR MAX(sp.created_at) < ?
+      )
+      SELECT c.value AS category, COUNT(*) AS available
+      FROM available, json_each(available.categories) c
+      GROUP BY c.value
+      ORDER BY available DESC;
+    `,
+    args: [...ages, cooldownCutoffIso],
+  });
+  return result.rows.map((row) => ({ category: row.category as string, available: Number(row.available) }));
+}
+
+// Hilos de las últimas semanas planificadas antes de `beforeWeekStart`, para
+// que la IA no repita el mismo tema semana tras semana.
+export const getRecentWeekThemes = async (beforeWeekStart: string, limit: number) => {
+  const result = await turso.execute({
+    sql: `SELECT week_start, theme_label FROM social_week_plans WHERE week_start < ? ORDER BY week_start DESC LIMIT ?;`,
+    args: [beforeWeekStart, limit],
+  });
+  return result.rows.map((row) => ({ weekStart: row.week_start as string, themeLabel: row.theme_label as string }));
+}
+
+// Hilo de la semana planificada, aunque el día de hoy no tenga fila (la IA
+// lo propuso mal y se descartó): ese día sale un cuento de la cola general
+// sin presentarlo como parte del hilo, en vez de mezclar el hilo del plan con
+// el tema de la rotación.
+export const getWeekPlanTheme = async (weekStart: string) => {
+  const result = await turso.execute({ sql: `SELECT theme_label, theme_hashtag FROM social_week_plans WHERE week_start = ?;`, args: [weekStart] });
+  const row = result.rows[0];
+  return row ? { label: row.theme_label as string, hashtag: row.theme_hashtag as string } : undefined;
+}
+
+export const hasWeekPlan = async (weekStart: string) => {
+  const result = await turso.execute({ sql: `SELECT 1 FROM social_week_plans WHERE week_start = ?;`, args: [weekStart] });
+  return result.rows.length > 0;
+}
+
+// Guarda (o sustituye) el plan de una semana en una sola transacción: o
+// queda el plan nuevo entero, o sigue el anterior — nunca media semana de
+// cada uno.
+export const saveWeekPlan = async (plan: {
+  weekStart: string;
+  themeLabel: string;
+  themeHashtag: string;
+  rationale: string;
+  needs: string[];
+  specialDates: unknown;
+  days: { date: string; storyId: number; format: string; angle: string }[];
+}) => {
+  await turso.batch([
+    { sql: `DELETE FROM social_plan_days WHERE week_start = ?;`, args: [plan.weekStart] },
+    { sql: `DELETE FROM social_week_plans WHERE week_start = ?;`, args: [plan.weekStart] },
+    {
+      sql: `INSERT INTO social_week_plans (week_start, theme_label, theme_hashtag, rationale, needs, special_dates) VALUES (?, ?, ?, ?, ?, ?);`,
+      args: [plan.weekStart, plan.themeLabel, plan.themeHashtag, plan.rationale, JSON.stringify(plan.needs), JSON.stringify(plan.specialDates)],
+    },
+    ...plan.days.map((day) => ({
+      sql: `INSERT INTO social_plan_days (date, week_start, story_id, format, angle) VALUES (?, ?, ?, ?, ?);`,
+      args: [day.date, plan.weekStart, day.storyId, day.format, day.angle],
+    })),
+  ], "write");
+}
+
+// Lo planificado para `date`, con la fila completa del cuento (como las demás
+// funciones de selección de cuento) más los datos del plan con prefijo
+// plan_/theme_ para que no choquen con columnas de stories. Vuelve a filtrar
+// por edad: si el cuento cambió de edad (o se borró) después de planificarse,
+// ese día cae a la rotación en vez de publicarlo igual.
+export const getPlannedDay = async (date: string, ages: string[]) => {
+  const agePlaceholders = ages.map(() => "?").join(", ");
+  const result = await turso.execute({
+    sql: `
+      SELECT s.*, d.format AS plan_format, d.angle AS plan_angle, w.theme_label, w.theme_hashtag, w.week_start AS plan_week_start
+      FROM social_plan_days d
+      JOIN social_week_plans w ON w.week_start = d.week_start
+      JOIN stories s ON s.id = d.story_id
+      WHERE d.date = ? AND s.age IN (${agePlaceholders});
+    `,
+    args: [date, ...ages],
+  });
+  return result.rows[0];
+}
+
+// Plan de una semana listo para leer: el hilo, lo que falta en el catálogo y
+// cada día con su cuento y si ya salió en el feed ese día.
+export const getWeekPlanWithDays = async (weekStart: string) => {
+  const weekResult = await turso.execute({ sql: `SELECT * FROM social_week_plans WHERE week_start = ?;`, args: [weekStart] });
+  const week = weekResult.rows[0];
+  if (!week) return undefined;
+
+  const daysResult = await turso.execute({
+    sql: `
+      SELECT d.date, d.format, d.angle, s.id AS story_id, s.slug, s.title, s.age,
+        EXISTS (
+          SELECT 1 FROM social_posts sp
+          WHERE sp.story_id = d.story_id AND sp.status = 'success'
+            AND sp.platform IN ('facebook', 'instagram') AND date(sp.created_at) = d.date
+        ) AS published
+      FROM social_plan_days d
+      LEFT JOIN stories s ON s.id = d.story_id
+      WHERE d.week_start = ?
+      ORDER BY d.date;
+    `,
+    args: [weekStart],
+  });
+
+  return {
+    weekStart: week.week_start as string,
+    themeLabel: week.theme_label as string,
+    themeHashtag: week.theme_hashtag as string,
+    rationale: week.rationale as string | null,
+    needs: JSON.parse((week.needs as string | null) ?? "[]") as string[],
+    specialDates: JSON.parse((week.special_dates as string | null) ?? "[]"),
+    createdAt: week.created_at as string,
+    days: daysResult.rows.map((row) => ({
+      date: row.date as string,
+      format: row.format as string,
+      angle: row.angle as string | null,
+      story: row.story_id ? { id: row.story_id as number, slug: row.slug as string, title: row.title as string, age: row.age as string } : null,
+      published: Boolean(row.published),
+    })),
+  };
+}

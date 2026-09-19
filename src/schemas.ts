@@ -157,4 +157,20 @@ const socialCaptionSchema = z.object({
   storyHook: z.string().min(10).max(100).describe("Frase muy corta para incrustar sobre la imagen de una Story de Instagram/Facebook — debe leerse de un vistazo, sin necesidad de tocar nada (las Stories no llevan descripción aparte, el texto va incrustado en la propia imagen). Para el formato 'decision', formúlala como pregunta directa citando o resumiendo brevísimamente la opción real dada abajo; para 'recommendation', un gancho puro sobre el cuento. Nunca incluyas hashtags ni la URL de la web aquí."),
 });
 
-export { blueprintSchema, sceneContentSchema, storyContentSchema, repairedTextSchema, castCoherenceSchema, storyCoherenceSchema, socialCaptionSchema };
+// Plan semanal de redes (ver src/utils/socialPlanner.ts). El código valida
+// después cada día por separado (cuento de la lista, sin repetir, fecha de la
+// semana): lo que la IA devuelva mal en un día se descarta solo para ese día.
+const socialWeekPlanSchema = z.object({
+  themeLabel: z.string().min(3).max(40).describe('Nombre corto del hilo de la semana, tal como se leerá en los posts: "Llega el otoño", "Semana pirata", "Semana del libro".'),
+  themeHashtag: z.string().min(3).max(40).describe('Un único hashtag para el hilo, en una sola palabra con mayúscula al inicio de cada palabra, sin espacios ni guiones: "#LlegaElOtoño".'),
+  rationale: z.string().min(10).max(400).describe('Por qué este hilo esta semana, en una o dos frases.'),
+  days: z.array(z.object({
+    date: z.string().describe('Fecha del día, YYYY-MM-DD, una de las 7 fechas de la semana dadas.'),
+    storyId: z.number().int().describe('id de uno de los cuentos candidatos de la lista.'),
+    format: z.enum(["recommendation", "decision"]).describe('"decision" plantea la primera decisión del cuento ("¿qué elegirías?"); "recommendation" recomienda el cuento.'),
+    angle: z.string().max(200).describe('Enfoque del día en una frase breve para quien redacte el post: nombra la fecha señalada si la hay y conecta el cuento con el hilo de la semana. Solo puede mencionar cosas que estén en el título o el resumen del cuento.'),
+  })).min(7).max(7),
+  needs: z.array(z.string().max(200)).max(5).describe('Cuentos que convendría crear para las próximas fechas señaladas, concretando tema, edad, cantidad y para cuándo. Vacío si no falta nada.'),
+});
+
+export { blueprintSchema, sceneContentSchema, storyContentSchema, repairedTextSchema, castCoherenceSchema, storyCoherenceSchema, socialCaptionSchema, socialWeekPlanSchema };

@@ -59,6 +59,7 @@ export type SocialCaptionPromptInput = {
   slug: string;
   rootOptions?: Option[]; // solo lo necesita el formato 'decision'
   theme?: { label: string; dayOfWeek: number }; // semana temática, ver socialThemes.ts
+  angle?: string; // enfoque del día según el plan semanal, ver socialPlanner.ts
 };
 
 type StoryRow = {

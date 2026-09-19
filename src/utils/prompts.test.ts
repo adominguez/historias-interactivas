@@ -27,3 +27,14 @@ describe('generateSocialCaptionPrompt (semana temática)', () => {
     expect(generateSocialCaptionPrompt({ ...input, theme: { label: 'Semana pirata', dayOfWeek: 7 } })).toContain('último día');
   });
 });
+
+describe('generateSocialCaptionPrompt (enfoque del plan semanal)', () => {
+  it('incluye el enfoque del día si lo hay', () => {
+    const prompt = generateSocialCaptionPrompt({ ...input, angle: 'Hoy empieza el otoño' });
+    expect(prompt).toContain('"Hoy empieza el otoño"');
+  });
+
+  it('no habla de enfoque si no lo hay', () => {
+    expect(generateSocialCaptionPrompt(input)).not.toContain('Enfoque de hoy');
+  });
+});
