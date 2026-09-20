@@ -66,7 +66,7 @@ function RetryButton({ row }: { row: PostRow }) {
   return (
     <>
       <button onClick={retry} disabled={state.status === 'loading'}>{state.status === 'loading' ? 'Publicando…' : 'Reintentar'}</button>
-      {state.status === 'error' && <div style={{ color: '#b00020', fontSize: 12 }}>{state.message}</div>}
+      {state.status === 'error' && <div className="error-text">{state.message}</div>}
     </>
   );
 }
@@ -78,9 +78,9 @@ export default function PostsTable({ rows }: { rows: PostRow[] }) {
 
   return (
     <div>
-      <div style={{ display: 'flex', gap: 6, marginBottom: 8, flexWrap: 'wrap' }} role="group" aria-label="Filtrar publicaciones">
+      <div className="btn-row" style={{ marginBottom: 12 }} role="group" aria-label="Filtrar publicaciones">
         {FILTERS.map(({ id, label }) => (
-          <button key={id} onClick={() => setFilter(id)} aria-pressed={filter === id} style={{ fontWeight: filter === id ? 700 : 400 }}>
+          <button key={id} onClick={() => setFilter(id)} aria-pressed={filter === id}>
             {label} ({rows.filter((row) => (id === 'all' ? true : id === 'failed' ? !row.ok : row.network === id)).length})
           </button>
         ))}
@@ -102,18 +102,18 @@ export default function PostsTable({ rows }: { rows: PostRow[] }) {
                 </td>
                 <td>
                   {row.slug ? <a href={`/${row.slug}`} target="_blank" rel="noreferrer">{row.title}</a> : (row.title ?? `Cuento ${row.storyId}`)}
-                  <div style={{ fontSize: 12, color: '#8a8984' }}>
+                  <div className="small muted">
                     {row.format === 'decision' ? '¿qué elegirías?' : 'recomendación'}{row.theme ? ` · ${row.theme}` : ''}
                   </div>
                 </td>
                 <td>
-                  {row.ok ? '✅' : (
+                  {row.ok ? <span className="badge badge-ok">✅ Publicado</span> : (
                     <>
-                      <span>❌ {row.errorText}</span>
+                      <div><span className="badge badge-bad">❌ Falló</span> <span className="small">{row.errorText}</span></div>
                       {row.canRetry && <div style={{ marginTop: 4 }}><RetryButton row={row} /></div>}
                     </>
                   )}
-                  {row.ok && row.note && <div style={{ fontSize: 12, color: '#8a8984' }}>{row.note}</div>}
+                  {row.ok && row.note && <div className="small muted">{row.note}</div>}
                 </td>
                 <td className="num">{n(row.reach)}</td>
                 <td className="num">{n(row.likes)}</td>
@@ -122,7 +122,7 @@ export default function PostsTable({ rows }: { rows: PostRow[] }) {
                 <td className="num">{n(row.shares)}</td>
               </tr>
             ))}
-            {visible.length === 0 && <tr><td colSpan={9} style={{ color: '#8a8984' }}>Nada que mostrar con este filtro.</td></tr>}
+            {visible.length === 0 && <tr><td colSpan={9} className="muted">Nada que mostrar con este filtro.</td></tr>}
           </tbody>
         </table>
       </div>

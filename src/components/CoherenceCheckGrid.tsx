@@ -50,7 +50,7 @@ const CoherenceCheckGrid = ({ stories }: CoherenceCheckGridProps) => {
 
   return (
     <div>
-      <p style={{ color: '#666', fontSize: '0.9rem' }}>
+      <p className="small muted">
         Cada comprobación cuesta 2 llamadas a IA (coherencia narrativa + coherencia de reparto), nunca se lanza sola, solo cuento a cuento y a petición.
       </p>
 
@@ -59,26 +59,26 @@ const CoherenceCheckGrid = ({ stories }: CoherenceCheckGridProps) => {
         value={filter}
         onChange={(event) => setFilter(event.target.value)}
         placeholder="Filtrar por título..."
-        style={{ width: '100%', padding: '0.5rem', marginBottom: '0.5rem', boxSizing: 'border-box' }}
+        style={{ width: '100%', marginBottom: '0.5rem' }}
       />
-      <p style={{ color: '#666', fontSize: '0.9rem' }}>{filtered.length} de {stories.length} cuentos</p>
+      <p className="small muted">{filtered.length} de {stories.length} cuentos</p>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1rem' }}>
         {filtered.map((story) => {
           const state = checks[story.slug] ?? { status: 'idle' };
           return (
-            <div key={story.slug} style={{ border: '1px solid #ddd', borderRadius: '8px', padding: '0.75rem' }}>
+            <div key={story.slug} className="card" style={{ padding: '0.75rem' }}>
               <p style={{ margin: '0 0 0.15rem', fontWeight: 'bold', fontSize: '0.9rem', lineHeight: 1.3 }}>
                 {story.title} <a href={`/${story.slug}`} target="_blank" rel="noreferrer">(ver)</a>
               </p>
-              <p style={{ margin: '0 0 0.5rem', fontSize: '0.8rem', color: '#666' }}>{story.age}</p>
+              <p className="small muted" style={{ margin: '0 0 0.5rem' }}>{story.age}</p>
 
-              <button onClick={() => check(story.slug)} disabled={state.status === 'loading'} style={{ width: '100%' }}>
+              <button className="btn-primary" onClick={() => check(story.slug)} disabled={state.status === 'loading'} style={{ width: '100%' }}>
                 {state.status === 'loading' ? 'Comprobando... (puede tardar)' : state.status === 'done' ? 'Volver a comprobar' : 'Comprobar coherencia (IA)'}
               </button>
 
               {state.status === 'error' && (
-                <p style={{ color: '#b00020', fontSize: '0.85rem', marginTop: '0.5rem' }}>{state.message}</p>
+                <p className="error-text" style={{ marginTop: '0.5rem' }}>{state.message}</p>
               )}
 
               {state.status === 'done' && (

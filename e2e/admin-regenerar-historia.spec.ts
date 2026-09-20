@@ -8,7 +8,7 @@ test.describe('/admin/regenerar-historia', () => {
     await page.goto('/admin/regenerar-historia');
 
     await expect(page.locator('main h1')).toHaveText('Regenerar cuento completo');
-    await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', 'noindex');
+    await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', /noindex/);
 
     const buttons = page.getByRole('button', { name: 'Regenerar cuento completo' });
     await expect(buttons.first()).toBeVisible();

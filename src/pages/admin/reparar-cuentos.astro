@@ -1,32 +1,23 @@
 ---
-import BaseHead from '@components/BaseHead.astro';
-import RepairStoriesPanel from '@components/RepairStoriesPanel';
-import CoherenceCheckGrid from '@components/CoherenceCheckGrid';
-import { getLittleStoriesList } from '@src/turso';
+import AdminLayout from "@layouts/AdminLayout.astro";
+import RepairStoriesPanel from "@components/RepairStoriesPanel";
+import CoherenceCheckGrid from "@components/CoherenceCheckGrid";
+import { getLittleStoriesList } from "@src/turso";
 
 export const prerender = false;
 
 const rows = await getLittleStoriesList();
 const stories = rows
   .map((row) => ({ slug: row.slug as string, title: row.title as string, age: row.age as string }))
-  .sort((a, b) => a.title.localeCompare(b.title, 'es'));
+  .sort((a, b) => a.title.localeCompare(b.title, "es"));
 ---
 
-<!doctype html>
-<html lang="es">
-  <head>
-    <BaseHead title="Reparar cuentos (interno)" description="Herramienta interna para diagnosticar y reparar cuentos ya publicados." />
-    <meta name="robots" content="noindex" />
-  </head>
-  <body>
-    <main style="max-width: 720px; margin: 4rem auto; padding: 0 1rem; font-family: system-ui, sans-serif;">
-      <h1>Reparar cuentos</h1>
-      <p>Analiza todos los cuentos publicados en busca de problemas estructurales (grafo roto) y de contenido (diálogo mal formateado, palabras inválidas), y permite reparar los de contenido con IA.</p>
-      <RepairStoriesPanel client:load />
+<AdminLayout title={"Reparar cuentos"} description={"Analiza todos los cuentos publicados en busca de problemas de estructura (grafo roto) y de contenido (diálogo mal formateado, palabras inválidas), y repara los de contenido con IA."} wide>
+  <RepairStoriesPanel client:load />
 
-      <h2>Coherencia narrativa y de reparto</h2>
-      <p>Comprobación semántica (con IA, no determinista) de si un cuento tiene sentido de principio a fin y si su reparto de personajes encaja temáticamente. A diferencia del análisis anterior, no es gratis ni automática: se lanza cuento a cuento.</p>
-      <CoherenceCheckGrid stories={stories} client:load />
-    </main>
-  </body>
-</html>
+  <section class="section">
+    <h2>Coherencia narrativa y de reparto</h2>
+    <p class="section-note">Comprobación semántica (con IA, no determinista) de si un cuento tiene sentido de principio a fin y si su reparto de personajes encaja temáticamente. A diferencia del análisis de arriba, no es gratis ni automática: se lanza cuento a cuento.</p>
+    <CoherenceCheckGrid stories={stories} client:load />
+  </section>
+</AdminLayout>

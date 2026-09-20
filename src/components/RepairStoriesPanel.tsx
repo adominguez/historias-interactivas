@@ -1,7 +1,15 @@
 import { useEffect, useState } from 'react';
 
 type StructureIssue = { scope: 'structure'; type: string; [key: string]: unknown };
-type ContentIssue = { scope: 'content'; type: 'screenplay-dialogue' | 'invalid-words'; slug: string; words?: string[] };
+// Los cinco tipos que produce diagnoseStory (ver src/utils/functions.ts).
+// Aquí solo estaban los dos primeros, así que los otros tres se pintaban con
+// el texto del último caso ("palabras no válidas (undefined)").
+type ContentIssue = {
+  scope: 'content';
+  type: 'screenplay-dialogue' | 'invalid-words' | 'leaked-ending-label' | 'malformed-dashes' | 'quoted-dialogue';
+  slug: string;
+  words?: string[];
+};
 type Issue = StructureIssue | ContentIssue;
 
 type StoryResult = {
@@ -28,10 +36,22 @@ const describeStructureIssue = (issue: StructureIssue) => {
   }
 };
 
-const describeContentIssue = (issue: ContentIssue) =>
-  issue.type === 'screenplay-dialogue'
-    ? 'diálogo con formato de guion'
-    : `palabras no válidas (${issue.words?.join(', ')})`;
+// Cada tipo, con su texto. Antes solo se distinguía 'screenplay-dialogue' y
+// todo lo demás caía en "palabras no válidas (undefined)": los guiones mal
+// cerrados, el diálogo entrecomillado y la etiqueta de final filtrada se
+// mostraban mal, porque esos problemas no traen lista de palabras.
+const CONTENT_ISSUE_LABELS: Record<ContentIssue['type'], string> = {
+  'screenplay-dialogue': 'diálogo con formato de guion',
+  'invalid-words': 'palabras no válidas',
+  'leaked-ending-label': 'etiqueta interna de final filtrada en el texto',
+  'malformed-dashes': 'guiones de diálogo mal cerrados',
+  'quoted-dialogue': 'diálogo marcado con comillas',
+};
+
+const describeContentIssue = (issue: ContentIssue) => {
+  const label = CONTENT_ISSUE_LABELS[issue.type] ?? issue.type;
+  return issue.words?.length ? `${label} (${issue.words.join(', ')})` : label;
+};
 
 const RepairStoriesPanel = () => {
   const [loading, setLoading] = useState(true);
@@ -100,9 +120,12 @@ const RepairStoriesPanel = () => {
 
   return (
     <div>
-      <p>
-        {scanned} cuentos analizados, {results.length} con algún problema detectado.{' '}
-        <button onClick={load}>Reanalizar</button>
+      <p style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
+        <span className="badge badge-neutral">{scanned} cuentos analizados</span>
+        <span className={`badge ${results.length > 0 ? 'badge-warn' : 'badge-ok'}`}>
+          {results.length > 0 ? `⚠️ ${results.length} con problemas` : '✅ Ninguno con problemas'}
+        </span>
+        <button className="btn-primary" onClick={load}>Reanalizar</button>
       </p>
 
       {results.length === 0 && <p>No se ha detectado ningún problema. 🎉</p>}
@@ -112,7 +135,7 @@ const RepairStoriesPanel = () => {
         const contentIssues = result.issues.filter((issue): issue is ContentIssue => issue.scope === 'content');
 
         return (
-          <div key={result.storyId} style={{ border: '1px solid #ddd', borderRadius: '8px', padding: '1rem', marginBottom: '1rem' }}>
+          <div key={result.storyId} className="card" style={{ marginBottom: '1rem' }}>
             <h3 style={{ margin: '0 0 0.5rem' }}>
               {result.storyTitle} <a href={`/${result.storySlug}`} target="_blank" rel="noreferrer">(ver)</a>
             </h3>
@@ -125,7 +148,7 @@ const RepairStoriesPanel = () => {
                     <li key={index}>{describeStructureIssue(issue)}</li>
                   ))}
                 </ul>
-                <button onClick={() => removeStory(result.storySlug)} disabled={deleting[result.storySlug]}>
+                <button className="btn-danger" onClick={() => removeStory(result.storySlug)} disabled={deleting[result.storySlug]}>
                   {deleting[result.storySlug] ? 'Eliminando...' : 'Eliminar este cuento'}
                 </button>
               </div>

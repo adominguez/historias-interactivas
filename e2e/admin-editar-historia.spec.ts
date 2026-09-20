@@ -9,7 +9,7 @@ test.describe('/admin/editar-historia', () => {
     await page.goto('/admin/editar-historia');
 
     await expect(page.locator('main h1')).toHaveText('Editar cuento');
-    await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', 'noindex');
+    await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', /noindex/);
 
     await expect(page.getByPlaceholder('Filtrar por título...')).toBeVisible();
 

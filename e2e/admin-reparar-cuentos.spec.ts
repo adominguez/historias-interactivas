@@ -9,7 +9,7 @@ test.describe('/admin/reparar-cuentos', () => {
     await page.goto('/admin/reparar-cuentos');
 
     await expect(page.locator('main h1')).toHaveText('Reparar cuentos');
-    await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', 'noindex');
+    await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', /noindex/);
 
     await expect(page.getByText(/cuentos analizados/)).toBeVisible({ timeout: 30000 });
   });

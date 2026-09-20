@@ -9,7 +9,7 @@ test.describe('/admin/regenerar-imagen', () => {
     await page.goto('/admin/regenerar-imagen');
 
     await expect(page.locator('main h1')).toHaveText('Regenerar imágenes');
-    await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', 'noindex');
+    await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', /noindex/);
 
     await expect(page.getByPlaceholder('Filtrar por título...')).toBeVisible();
 

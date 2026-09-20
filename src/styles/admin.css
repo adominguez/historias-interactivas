@@ -1,0 +1,188 @@
+/*
+  Aspecto común de todo el panel interno (/admin). Se carga SOLO desde
+  AdminLayout.astro, nunca desde la web pública: el admin no usa global.css
+  ni Tailwind a propósito, porque sus estilos (que quitan el aspecto de los
+  botones, agrandan los títulos y borran las viñetas) estaban peleándose con
+  cada herramienta y había que recolocarlo todo con estilos en línea.
+
+  Los colores son los de la marca (ver tailwind.config.mjs): verde bosque,
+  pergamino, dorado y tinta. Los de estado son aparte y no se usan nunca
+  para nada decorativo: siempre acompañados de un icono y un texto, para que
+  el color no sea la única forma de entender qué pasa.
+*/
+
+:root {
+  --bg: #f7f5ef;
+  --surface: #ffffff;
+  --surface-sunken: #faf8f2;
+  --line: #e4ddce;
+  --line-strong: #d3c9b2;
+
+  --ink: #2b2118;
+  --ink-muted: #6b6259;
+  --ink-faint: #928878;
+
+  --forest: #12231a;
+  --forest-800: #1c3524;
+  --gold: #c9a227;
+  --gold-600: #9c7b1c;
+  --gold-soft: #fbf3dc;
+
+  --good: #0f7a2e;
+  --good-soft: #e8f5ea;
+  --warn: #9a6b00;
+  --warn-soft: #fdf4e1;
+  --bad: #b3261e;
+  --bad-soft: #fbeae9;
+  --info-soft: #eef2f7;
+
+  --radius: 10px;
+  --radius-sm: 7px;
+  --shadow: 0 1px 2px rgba(43, 33, 24, 0.06), 0 4px 12px rgba(43, 33, 24, 0.05);
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+a { color: var(--gold-600); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+a:hover { color: var(--forest-800); }
+
+h1, h2, h3, h4 { line-height: 1.25; margin: 0 0 0.4rem; font-weight: 650; color: var(--forest); }
+h1 { font-size: 1.8rem; }
+h2 { font-size: 1.3rem; }
+h3 { font-size: 1.05rem; }
+p { margin: 0 0 0.75rem; }
+ul, ol { margin: 0 0 0.75rem; padding-left: 1.25rem; }
+li { margin: 0.2rem 0; }
+code { background: var(--surface-sunken); border: 1px solid var(--line); border-radius: 4px; padding: 0.05em 0.3em; font-size: 0.9em; }
+
+/* ---------- Estructura ---------- */
+.admin-top {
+  position: sticky; top: 0; z-index: 10;
+  background: var(--forest); color: #f6eedd;
+  border-bottom: 3px solid var(--gold);
+}
+.admin-top-inner { max-width: 1180px; margin: 0 auto; padding: 0.6rem 1.25rem; display: flex; flex-wrap: wrap; gap: 0.5rem 1.25rem; align-items: center; }
+.admin-brand { font-weight: 700; letter-spacing: 0.01em; color: #fff; text-decoration: none; display: flex; align-items: center; gap: 0.5rem; }
+.admin-brand:hover { color: #fff; }
+.admin-nav { display: flex; flex-wrap: wrap; gap: 0.15rem; margin-left: auto; }
+.admin-nav a {
+  color: #d9d2c0; text-decoration: none; font-size: 14px; padding: 0.35rem 0.6rem; border-radius: var(--radius-sm);
+}
+.admin-nav a:hover { background: rgba(255, 255, 255, 0.09); color: #fff; }
+.admin-nav a[aria-current="page"] { background: var(--gold); color: var(--forest); font-weight: 600; }
+
+.admin-main { max-width: 1180px; margin: 0 auto; padding: 1.75rem 1.25rem 4rem; }
+.page-head { margin-bottom: 1.5rem; }
+.page-head h1 { margin-bottom: 0.25rem; }
+.lead { color: var(--ink-muted); max-width: 70ch; margin: 0; }
+
+.section { margin-top: 2.25rem; }
+.section > h2 { padding-bottom: 0.4rem; border-bottom: 2px solid var(--line); }
+.section-note { color: var(--ink-muted); font-size: 14px; max-width: 75ch; }
+
+/* ---------- Tarjetas y rejillas ---------- */
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 1rem 1.1rem; box-shadow: var(--shadow); }
+.card h3 { margin-top: 0; }
+.grid { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
+.grid-wide { display: grid; gap: 1.5rem; grid-template-columns: repeat(auto-fit, minmax(330px, 1fr)); }
+/* Fila de cifras: más estrecha, para que cinco quepan en una línea. */
+.grid-tight { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); }
+
+/* Tarjeta que es un enlace (portada del admin). */
+.card-link { display: block; text-decoration: none; color: inherit; transition: border-color 0.12s, transform 0.12s; }
+.card-link:hover { border-color: var(--gold); transform: translateY(-1px); color: inherit; }
+.card-link strong { color: var(--forest); font-size: 1.05rem; }
+.card-link p { color: var(--ink-muted); font-size: 14px; margin: 0.3rem 0 0; }
+
+/* Cifra grande (seguidores, alcance...). */
+.tile-label { font-size: 13px; color: var(--ink-muted); }
+.tile-value { font-size: 1.9rem; font-weight: 650; line-height: 1.1; margin: 0.15rem 0; color: var(--forest); }
+.tile-note { font-size: 12px; color: var(--ink-faint); }
+
+/* ---------- Botones y formularios ---------- */
+button, .btn {
+  font: inherit; font-size: 14px; line-height: 1.2; cursor: pointer;
+  padding: 0.45rem 0.85rem; border-radius: var(--radius-sm);
+  border: 1px solid var(--line-strong); background: var(--surface); color: var(--ink);
+  transition: background 0.12s, border-color 0.12s;
+}
+button:hover:not(:disabled), .btn:hover { background: var(--surface-sunken); border-color: var(--ink-faint); }
+button:disabled { opacity: 0.5; cursor: default; }
+button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
+  outline: 2px solid var(--gold); outline-offset: 2px;
+}
+.btn-primary, button.btn-primary { background: var(--forest-800); border-color: var(--forest-800); color: #fff; font-weight: 600; }
+.btn-primary:hover:not(:disabled) { background: var(--forest); border-color: var(--forest); color: #fff; }
+.btn-danger, button.btn-danger { background: var(--bad); border-color: var(--bad); color: #fff; font-weight: 600; }
+.btn-danger:hover:not(:disabled) { background: #8f1d17; border-color: #8f1d17; }
+button[aria-pressed="true"] { background: var(--forest-800); border-color: var(--forest-800); color: #fff; font-weight: 600; }
+.btn-row { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+
+input, select, textarea {
+  font: inherit; font-size: 14px; color: var(--ink); background: var(--surface);
+  padding: 0.45rem 0.6rem; border: 1px solid var(--line-strong); border-radius: var(--radius-sm);
+  max-width: 100%;
+}
+textarea { line-height: 1.45; }
+label { font-size: 14px; font-weight: 600; color: var(--forest); display: block; margin-bottom: 0.2rem; }
+.field { margin-bottom: 0.9rem; }
+.field-hint { font-size: 12px; color: var(--ink-faint); margin-top: 0.15rem; }
+
+/* ---------- Tablas ---------- */
+.table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); }
+table { width: 100%; border-collapse: collapse; font-size: 14px; }
+thead th {
+  position: sticky; top: 0; background: var(--surface-sunken); z-index: 1;
+  text-align: left; font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em;
+  color: var(--ink-muted); font-weight: 700; padding: 0.55rem 0.7rem; border-bottom: 1px solid var(--line);
+}
+tbody td, tbody th { padding: 0.55rem 0.7rem; border-bottom: 1px solid var(--line); vertical-align: top; text-align: left; }
+tbody tr:last-child td { border-bottom: none; }
+tbody tr:nth-child(even) { background: #fcfbf7; }
+tbody tr:hover { background: var(--gold-soft); }
+.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.nowrap { white-space: nowrap; }
+
+/* ---------- Estados y avisos ---------- */
+.badge {
+  display: inline-flex; align-items: center; gap: 0.3rem;
+  font-size: 12.5px; font-weight: 600; padding: 0.15rem 0.5rem; border-radius: 999px;
+  border: 1px solid transparent; white-space: nowrap;
+}
+.badge-ok { background: var(--good-soft); color: var(--good); border-color: #c6e6cd; }
+.badge-warn { background: var(--warn-soft); color: var(--warn); border-color: #f0dfb4; }
+.badge-bad { background: var(--bad-soft); color: var(--bad); border-color: #f0c9c6; }
+.badge-neutral { background: var(--surface-sunken); color: var(--ink-muted); border-color: var(--line); }
+
+.alert { border-radius: var(--radius); padding: 0.7rem 0.9rem; font-size: 14.5px; border-left: 4px solid; }
+.alert + .alert { margin-top: 0.5rem; }
+.alert-critical { background: var(--bad-soft); border-color: var(--bad); }
+.alert-warning { background: var(--warn-soft); border-color: var(--warn); }
+.alert-info { background: var(--info-soft); border-color: #94a3b8; }
+.alert-ok { background: var(--good-soft); border-color: var(--good); }
+.alert-list { list-style: none; padding: 0; margin: 0; }
+
+.muted { color: var(--ink-muted); }
+.small { font-size: 13px; }
+.error-text { color: var(--bad); font-size: 13px; }
+.ok-text { color: var(--good); font-size: 13px; }
+
+/* Aviso de "esto no tiene vuelta atrás" (borrar, regenerar entero). */
+.danger-zone { border-color: #eecfcc; background: linear-gradient(0deg, #fff, var(--bad-soft)); }
+
+@media (max-width: 640px) {
+  .admin-top-inner { padding: 0.5rem 0.9rem; }
+  .admin-nav { margin-left: 0; width: 100%; }
+  .admin-main { padding: 1.25rem 0.9rem 3rem; }
+  h1 { font-size: 1.5rem; }
+}

@@ -55,7 +55,7 @@ const CreateStoryForm = ({ categories, ages }: CreateStoryFormProps) => {
         </select>
       </label>
 
-      <button type="submit" disabled={status === 'loading'}>
+      <button type="submit" className="btn-primary" disabled={status === 'loading'}>
         {status === 'loading' ? 'Generando... (puede tardar 1-2 minutos)' : 'Crear cuento'}
       </button>
 
@@ -69,7 +69,7 @@ const CreateStoryForm = ({ categories, ages }: CreateStoryFormProps) => {
       {status === 'error' && (
         <div>
           <p>Error al crear el cuento:</p>
-          <pre style={{ whiteSpace: 'pre-wrap', background: '#f4f4f4', padding: '0.75rem', borderRadius: '4px', overflowX: 'auto' }}>
+          <pre style={{ whiteSpace: 'pre-wrap', background: 'var(--surface-sunken)', border: '1px solid var(--line)', padding: '0.75rem', borderRadius: 'var(--radius-sm)', overflowX: 'auto' }}>
             {JSON.stringify(result, null, 2)}
           </pre>
         </div>

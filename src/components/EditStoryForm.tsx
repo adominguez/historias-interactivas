@@ -57,7 +57,7 @@ const EditableSection = ({ storySlug, target, initialTitle, initialText }: { sto
   };
 
   return (
-    <div style={{ border: '1px solid #ddd', borderRadius: '8px', padding: '1rem', marginBottom: '1rem' }}>
+    <div className="card" style={{ marginBottom: '1rem' }}>
       <label style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', marginBottom: '0.75rem' }}>
         Título
         <input value={title} onChange={(event) => { setTitle(event.target.value); setStatus('idle'); }} style={{ padding: '0.4rem' }} />
@@ -72,11 +72,11 @@ const EditableSection = ({ storySlug, target, initialTitle, initialText }: { sto
         />
       </label>
       <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginTop: '0.5rem' }}>
-        <button onClick={handleSave} disabled={status === 'saving'}>
+        <button className="btn-primary" onClick={handleSave} disabled={status === 'saving'}>
           {status === 'saving' ? 'Guardando...' : 'Guardar'}
         </button>
         {status === 'saved' && <span style={{ color: '#1a7a1a' }}>{message}</span>}
-        {status === 'error' && <span style={{ color: '#b00020' }}>{message}</span>}
+        {status === 'error' && <span className="error-text">{message}</span>}
       </div>
     </div>
   );
@@ -133,10 +133,10 @@ const EditStoryForm = ({ stories, cloudName, initialSlug, initialNode }: EditSto
     <div>
       <div ref={editorRef}>
         {selectedSlug && loadStatus === 'loading' && <p>Cargando cuento...</p>}
-        {selectedSlug && loadStatus === 'error' && <p style={{ color: '#b00020' }}>{loadError}</p>}
+        {selectedSlug && loadStatus === 'error' && <p className="error-text">{loadError}</p>}
 
         {selectedSlug && storyContent && (
-          <div style={{ border: '2px solid #333', borderRadius: '8px', padding: '1rem', marginBottom: '1.5rem' }}>
+          <div className="card" style={{ borderColor: 'var(--forest)', marginBottom: '1.5rem' }}>
             <p style={{ marginTop: 0 }}>
               Editando: <strong>{storyContent.title}</strong> — <a href={`/${selectedSlug}`} target="_blank" rel="noreferrer">ver el cuento →</a>
             </p>
@@ -179,13 +179,13 @@ const EditStoryForm = ({ stories, cloudName, initialSlug, initialNode }: EditSto
         value={filter}
         onChange={(event) => setFilter(event.target.value)}
         placeholder="Filtrar por título..."
-        style={{ width: '100%', padding: '0.5rem', marginBottom: '0.5rem', boxSizing: 'border-box' }}
+        style={{ width: '100%', marginBottom: '0.5rem' }}
       />
-      <p style={{ color: '#666', fontSize: '0.9rem' }}>{filtered.length} de {stories.length} cuentos</p>
+      <p className="small muted">{filtered.length} de {stories.length} cuentos</p>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '1rem' }}>
         {filtered.map((story) => (
-          <div key={story.slug} style={{ border: story.slug === selectedSlug ? '2px solid #333' : '1px solid #ddd', borderRadius: '8px', padding: '0.75rem' }}>
+          <div key={story.slug} className="card" style={{ padding: '0.75rem', borderColor: story.slug === selectedSlug ? 'var(--gold)' : undefined, borderWidth: story.slug === selectedSlug ? 2 : 1 }}>
             <img
               src={thumbnailUrl(cloudName, story.slug, story.imageVersion)}
               alt=""
@@ -193,7 +193,7 @@ const EditStoryForm = ({ stories, cloudName, initialSlug, initialNode }: EditSto
               style={{ width: '100%', height: '140px', objectFit: 'cover', borderRadius: '4px', display: 'block' }}
             />
             <p style={{ margin: '0.5rem 0 0.15rem', fontWeight: 'bold', fontSize: '0.9rem', lineHeight: 1.3 }}>{story.title}</p>
-            <p style={{ margin: '0 0 0.5rem', fontSize: '0.8rem', color: '#666' }}>{story.age}</p>
+            <p className="small muted" style={{ margin: '0 0 0.5rem' }}>{story.age}</p>
             <button onClick={() => setSelectedSlug(story.slug)} style={{ width: '100%' }}>
               Editar
             </button>

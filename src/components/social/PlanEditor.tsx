@@ -62,7 +62,9 @@ function DayRow({ day, stories, editable }: { day: Day; stories: Story[]; editab
     }
   };
 
-  const status = day.published ? '✅ Publicado' : editable ? '🕒 Pendiente' : '— Pasado';
+  const status = day.published
+    ? <span className="badge badge-ok">✅ Publicado</span>
+    : editable ? <span className="badge badge-neutral">🕒 Pendiente</span> : <span className="badge badge-neutral">— Pasado</span>;
 
   return (
     <tr>
@@ -70,7 +72,7 @@ function DayRow({ day, stories, editable }: { day: Day; stories: Story[]; editab
       <td>
         {editing ? (
           <div style={{ display: 'grid', gap: 6 }}>
-            <input value={filter} onChange={(e) => setFilter(e.target.value)} placeholder="Buscar cuento…" style={{ padding: 4 }} />
+            <input value={filter} onChange={(e) => setFilter(e.target.value)} placeholder="Buscar cuento…" />
             <select value={storyId} onChange={(e) => setStoryId(Number(e.target.value))} style={{ maxWidth: 360 }}>
               <option value="" disabled>Elige un cuento</option>
               {options.map((s) => <option key={s.id} value={s.id}>{s.title} ({s.age})</option>)}
@@ -80,22 +82,22 @@ function DayRow({ day, stories, editable }: { day: Day; stories: Story[]; editab
               <option value="recommendation">Recomendación</option>
             </select>
             <textarea value={angle} onChange={(e) => setAngle(e.target.value)} maxLength={200} rows={2} placeholder="Enfoque del día (opcional)" />
-            <div style={{ display: 'flex', gap: 6 }}>
-              <button onClick={save} disabled={!storyId || state.status === 'saving'}>{state.status === 'saving' ? 'Guardando…' : 'Guardar'}</button>
+            <div className="btn-row">
+              <button className="btn-primary" onClick={save} disabled={!storyId || state.status === 'saving'}>{state.status === 'saving' ? 'Guardando…' : 'Guardar'}</button>
               <button onClick={() => setEditing(false)}>Cancelar</button>
             </div>
           </div>
         ) : saved ? (
           <>
             {saved.slug ? <a href={`/${saved.slug}`} target="_blank" rel="noreferrer">{saved.title}</a> : saved.title}
-            <span style={{ color: '#8a8984', fontSize: 12 }}> · {saved.age} · {format === 'decision' ? '¿qué elegirías?' : 'recomendación'}</span>
-            {angle && <div style={{ fontSize: 13, color: '#52514e', marginTop: 2 }}>{angle}</div>}
+            <span className="small muted"> · {saved.age} · {format === 'decision' ? '¿qué elegirías?' : 'recomendación'}</span>
+            {angle && <div className="small muted" style={{ marginTop: 2 }}>{angle}</div>}
           </>
         ) : (
-          <span style={{ color: '#8a8984' }}>Sin plan: ese día se publica con la rotación de temas.</span>
+          <span className="muted">Sin plan: ese día se publica con la rotación de temas.</span>
         )}
-        {state.status === 'error' && <div style={{ color: '#b00020', fontSize: 12 }}>{state.message}</div>}
-        {state.status === 'saved' && <div style={{ color: '#52514e', fontSize: 12 }}>✅ {state.message}</div>}
+        {state.status === 'error' && <div className="error-text">{state.message}</div>}
+        {state.status === 'saved' && <div className="ok-text">✅ {state.message}</div>}
       </td>
       <td style={{ whiteSpace: 'nowrap' }}>{status}</td>
       <td>{editable && !editing && <button onClick={() => setEditing(true)}>{saved ? 'Cambiar' : 'Rellenar'}</button>}</td>
@@ -105,14 +107,14 @@ function DayRow({ day, stories, editable }: { day: Day; stories: Story[]; editab
 
 export default function PlanEditor({ weeks, stories, today }: { weeks: Week[]; stories: Story[]; today: string }) {
   if (weeks.length === 0) {
-    return <p style={{ color: '#52514e' }}>No hay plan para esta semana ni para la siguiente: se publica con la rotación de temas. El plan de la semana siguiente se genera solo cada jueves (o con el botón "Generar plan" de arriba).</p>;
+    return <p className="muted">No hay plan para esta semana ni para la siguiente: se publica con la rotación de temas. El plan de la semana siguiente se genera solo cada jueves (o con el botón "Generar plan" de arriba).</p>;
   }
   return (
     <div style={{ display: 'grid', gap: '1.5rem' }}>
       {weeks.map((week) => (
         <div key={week.weekStart}>
-          <h3 style={{ margin: '0 0 0.25rem' }}>{week.label}: {week.themeLabel} <span style={{ fontWeight: 400, color: '#52514e' }}>{week.themeHashtag}</span></h3>
-          {week.rationale && <p style={{ margin: '0 0 0.5rem', fontSize: 14, color: '#52514e' }}>{week.rationale}</p>}
+          <h3 style={{ margin: '0 0 0.25rem' }}>{week.label}: {week.themeLabel} <span className="muted" style={{ fontWeight: 400 }}>{week.themeHashtag}</span></h3>
+          {week.rationale && <p className="section-note" style={{ margin: '0 0 0.5rem' }}>{week.rationale}</p>}
           <div className="table-wrap">
             <table>
               <thead><tr><th>Día</th><th>Cuento, formato y enfoque</th><th>Estado</th><th></th></tr></thead>

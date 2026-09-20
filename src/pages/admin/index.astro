@@ -1,66 +1,56 @@
 ---
-import BaseHead from '@components/BaseHead.astro';
+import AdminLayout from '@layouts/AdminLayout.astro';
+import { ADMIN_TOOLS } from '@data/adminTools';
+import { getLittleStoriesList } from '@src/turso';
+import { getSocialPostsWithMetrics } from '@src/turso';
 
 export const prerender = false;
 
-const tools = [
-  {
-    href: '/admin/redes-sociales',
-    title: 'Redes sociales',
-    description: 'Estado de las publicaciones automáticas en Facebook e Instagram, estadísticas de la cuenta, el plan semanal (editable), el historial con reintentos y la configuración.',
-  },
-  {
-    href: '/admin/crear-historia',
-    title: 'Crear cuento',
-    description: 'Genera un cuento nuevo desde cero con IA, eligiendo categoría y edad (o al azar).',
-  },
-  {
-    href: '/admin/editar-historia',
-    title: 'Editar cuento',
-    description: 'Busca un cuento ya publicado y corrige a mano el título o el texto de cualquier escena, sin IA.',
-  },
-  {
-    href: '/admin/reparar-cuentos',
-    title: 'Reparar cuentos',
-    description: 'Diagnostica todos los cuentos (enlaces rotos, diálogo mal formateado, palabras inválidas) y repara con IA los problemas de contenido escena por escena.',
-  },
-  {
-    href: '/admin/regenerar-imagen',
-    title: 'Regenerar imágenes',
-    description: 'Repasa de un vistazo la portada de todos los cuentos y regenera solo las que no encajen con su edad o categoría.',
-  },
-  {
-    href: '/admin/regenerar-historia',
-    title: 'Regenerar cuento completo',
-    description: 'Sustituye TODO el contenido de un cuento (título, grafo, texto, personajes) por uno nuevo — para cuentos con la estructura rota que "Reparar cuentos" no puede arreglar solo.',
-  },
-  {
-    href: '/admin/eliminar-historia',
-    title: 'Eliminar cuento',
-    description: 'Borra un cuento, todos sus nodos y su imagen de Cloudinary. Irreversible.',
-  },
-];
+// Un par de cifras para que la portada diga algo del estado del sitio, no
+// solo enlaces: cuántos cuentos hay y si las redes han publicado hoy.
+const now = new Date();
+const today = now.toISOString().slice(0, 10);
+const [stories, todayPosts] = await Promise.all([
+  getLittleStoriesList(),
+  getSocialPostsWithMetrics(`${today} 00:00:00`),
+]);
+const publishedToday = todayPosts.filter((post) => post.status === 'success').length;
+const failedToday = todayPosts.filter((post) => post.status !== 'success').length;
+const lastStory = [...stories].sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)))[0];
 ---
 
-<!doctype html>
-<html lang="es">
-  <head>
-    <BaseHead title="Admin (interno)" description="Panel interno con las herramientas de administración del sitio." />
-    <meta name="robots" content="noindex" />
-  </head>
-  <body>
-    <main style="max-width: 720px; margin: 4rem auto; padding: 0 1rem; font-family: system-ui, sans-serif;">
-      <h1>Admin</h1>
-      <p>Herramientas internas para gestionar el contenido del sitio.</p>
-
-      <div style="display: flex; flex-direction: column; gap: 1rem; margin-top: 1.5rem;">
-        {tools.map(({ href, title, description }) => (
-          <a href={href} style="display: block; border: 1px solid #ddd; border-radius: 8px; padding: 1rem; text-decoration: none; color: inherit;">
-            <strong>{title}</strong>
-            <p style="margin: 0.25rem 0 0; color: #555; font-size: 0.9rem;">{description}</p>
-          </a>
-        ))}
+<AdminLayout title="Admin" description="Herramientas internas para gestionar los cuentos y las redes sociales de El Árbol de las Historias." wide>
+  <div class="grid" style="margin-bottom: 2rem;">
+    <div class="card">
+      <div class="tile-label">Cuentos publicados</div>
+      <div class="tile-value">{stories.length}</div>
+      <div class="tile-note">El último: {lastStory?.title}</div>
+    </div>
+    <div class="card">
+      <div class="tile-label">Publicaciones en redes hoy</div>
+      <div class="tile-value">{publishedToday} <span style="font-size: 1rem; font-weight: 400;">de 4</span></div>
+      <div class="tile-note">
+        {failedToday > 0
+          ? <span class="badge badge-bad">❌ {failedToday} con fallo</span>
+          : publishedToday === 4
+            ? <span class="badge badge-ok">✅ Todo publicado</span>
+            : <span class="badge badge-neutral">🕒 Quedan por salir</span>}
+        <a href="/admin/redes-sociales" style="margin-left: 0.4rem;">ver detalle</a>
       </div>
-    </main>
-  </body>
-</html>
+    </div>
+  </div>
+
+  <h2>Herramientas</h2>
+  <div class="grid">
+    {ADMIN_TOOLS.map(({ href, title, description, icon }) => (
+      <a href={href} class="card card-link">
+        <strong><span aria-hidden="true">{icon}</span> {title}</strong>
+        <p>{description}</p>
+      </a>
+    ))}
+  </div>
+
+  <p class="small muted" style="margin-top: 2rem;">
+    Todo lo de aquí está protegido con usuario y contraseña y marcado como <code>noindex</code>: no aparece en Google.
+  </p>
+</AdminLayout>

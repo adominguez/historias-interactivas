@@ -13,9 +13,9 @@ export type Point = { label: string; value: number | null };
 
 const SERIES = '#2a78d6';
 const SURFACE = '#ffffff';
-const GRID = '#e8e7e3';
-const TEXT_SECONDARY = '#52514e';
-const TEXT_MUTED = '#8a8984';
+const GRID = '#e4ddce';
+const TEXT_SECONDARY = '#6b6259';
+const TEXT_MUTED = '#928878';
 
 const HEIGHT = 200;
 const PAD = { top: 16, right: 40, bottom: 28, left: 36 };
@@ -88,11 +88,11 @@ function Tooltip({ x, y, label, value, unit, width }: { x: number; y: number; la
       role="status"
       style={{
         position: 'absolute', left: `${(x / width) * 100}%`, top: `${(y / HEIGHT) * 100}%`, transform: 'translate(-50%, -110%)', pointerEvents: 'none',
-        background: '#0b0b0b', color: '#fff', borderRadius: 6, padding: '4px 8px', fontSize: 12, whiteSpace: 'nowrap',
+        background: '#2b2118', color: '#fff', borderRadius: 6, padding: '4px 8px', fontSize: 12, whiteSpace: 'nowrap',
       }}
     >
       <strong style={{ fontSize: 13 }}>{value === null ? 'sin datos' : `${formatNumber(value)} ${unit}`}</strong>
-      <span style={{ color: '#c3c2b7', marginLeft: 6 }}>{label}</span>
+      <span style={{ color: '#d3c9b2', marginLeft: 6 }}>{label}</span>
     </div>
   );
 }

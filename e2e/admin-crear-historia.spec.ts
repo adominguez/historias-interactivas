@@ -12,8 +12,8 @@ test.describe('/admin/crear-historia', () => {
     // Astro inyecta su barra de desarrollo (con sus propios <h1> de
     // accesibilidad/rendimiento) solo en `astro dev`, así que acotamos al
     // contenido real de la página en vez de a cualquier <h1> del documento.
-    await expect(page.locator('main h1')).toHaveText('Crear un nuevo cuento');
-    await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', 'noindex');
+    await expect(page.locator('main h1')).toHaveText('Crear un cuento nuevo');
+    await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', /noindex/);
 
     const categorySelect = page.locator('select').first();
     const ageSelect = page.locator('select').nth(1);

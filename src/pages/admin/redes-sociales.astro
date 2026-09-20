@@ -1,5 +1,5 @@
 ---
-import BaseHead from '@components/BaseHead.astro';
+import AdminLayout from '@layouts/AdminLayout.astro';
 import SocialActions from '@components/social/SocialActions';
 import PlanEditor from '@components/social/PlanEditor';
 import PostsTable, { type PostRow } from '@components/social/PostsTable';
@@ -69,7 +69,12 @@ const todaySlots = [
   if (now.getUTCHours() >= hourUtc + 1) return { platform, state: 'failed', text: 'No ha salido y ya debería.' };
   return { platform, state: 'pending', text: `Se publica hacia las ${String(hourUtc).padStart(2, '0')}:00 UTC.` };
 });
-const STATE_ICON: Record<string, string> = { ok: '✅', failed: '❌', pending: '🕒' };
+// Icono + texto siempre juntos: el color nunca es la única señal.
+const STATE_BADGE: Record<string, { className: string; icon: string; label: string }> = {
+  ok: { className: 'badge-ok', icon: '✅', label: 'Publicado' },
+  failed: { className: 'badge-bad', icon: '❌', label: 'Con fallo' },
+  pending: { className: 'badge-neutral', icon: '🕒', label: 'Pendiente' },
+};
 
 // ---------- Avisos ----------
 const tokenInfo = token.info;
@@ -235,215 +240,186 @@ const tokenRows = [
 ];
 ---
 
-<!doctype html>
-<html lang="es">
-  <head>
-    <BaseHead title="Redes sociales (interno)" description="Panel interno de las publicaciones automáticas en redes sociales." />
-    <meta name="robots" content="noindex" />
-    <style is:global>
-      .social-admin { max-width: 1100px; margin: 2.5rem auto 4rem; padding: 0 1rem; font-family: system-ui, sans-serif; color: #0b0b0b; }
-      .social-admin h2 { margin: 2.5rem 0 0.5rem; padding-top: 1rem; border-top: 1px solid #e8e7e3; }
-      .social-admin .lead { color: #52514e; margin-top: 0; }
-      .social-admin .table-wrap { overflow-x: auto; }
-      .social-admin table { width: 100%; border-collapse: collapse; font-size: 14px; }
-      .social-admin th, .social-admin td { text-align: left; padding: 0.45rem 0.5rem; border-bottom: 1px solid #e8e7e3; vertical-align: top; }
-      .social-admin th { font-size: 12px; color: #52514e; font-weight: 600; }
-      .social-admin .num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
-      .social-admin .grid { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); }
-      .social-admin .tile { border: 1px solid #ddd; border-radius: 8px; padding: 0.75rem 1rem; }
-      .social-admin .tile-label { font-size: 13px; color: #52514e; }
-      .social-admin .tile-value { font-size: 28px; font-weight: 600; margin: 0.15rem 0; }
-      .social-admin .tile-note { font-size: 12px; color: #8a8984; }
-      .social-admin .alerts { list-style: none; padding: 0; margin: 1rem 0 0; display: grid; gap: 0.5rem; }
-      .social-admin .alerts li { border-radius: 8px; padding: 0.6rem 0.8rem; font-size: 14px; }
-      .social-admin .alert-critical { background: #fbeaea; }
-      .social-admin .alert-warning { background: #fdf4e1; }
-      .social-admin .alert-info { background: #f0efec; }
-      .social-admin .charts { display: grid; gap: 2rem; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); }
-      .social-admin .two-col { display: grid; gap: 2rem; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); }
-      /* Los estilos globales de la web (Tailwind) quitan el aspecto de botón,
-         el tamaño de los títulos y las viñetas de las listas: aquí se devuelven. */
-      .social-admin h1 { font-size: 2rem; line-height: 1.2; }
-      .social-admin h2 { font-size: 1.5rem; line-height: 1.3; }
-      .social-admin h3 { font-size: 1.1rem; line-height: 1.3; margin: 1.25rem 0 0.5rem; }
-      .social-admin ul:not(.alerts) { list-style: disc; padding-left: 1.25rem; }
-      .social-admin ul:not(.alerts) li { margin: 0.25rem 0; }
-      .social-admin button {
-        cursor: pointer; font: inherit; font-size: 14px; line-height: 1.2;
-        padding: 0.4rem 0.8rem; border: 1px solid #c3c2b7; border-radius: 6px; background: #fff; color: #0b0b0b;
-      }
-      .social-admin button:hover:not(:disabled) { background: #f0efec; }
-      .social-admin button:disabled { opacity: 0.55; cursor: default; }
-      .social-admin button[aria-pressed="true"] { background: #0b0b0b; border-color: #0b0b0b; color: #fff; }
-      .social-admin input, .social-admin select, .social-admin textarea {
-        font: inherit; font-size: 14px; padding: 0.35rem 0.5rem; border: 1px solid #c3c2b7; border-radius: 6px; background: #fff;
-      }
-      .social-admin .posts td:nth-child(3) { min-width: 200px; }
-      .social-admin .posts td:nth-child(4) { max-width: 280px; }
-    </style>
-  </head>
-  <body>
-    <main class="social-admin">
-      <p><a href="/admin">← Admin</a></p>
-      <h1 style="margin-bottom: 0.25rem;">Redes sociales</h1>
-      <p class="lead">Publicación automática en Facebook e Instagram: qué ha salido, cómo va la cuenta, el plan de la semana y cómo está configurado todo. Las horas están en hora de España salvo donde pone UTC.</p>
+<AdminLayout title="Redes sociales" description="Publicación automática en Facebook e Instagram: qué ha salido, cómo va la cuenta, el plan de la semana y cómo está configurado todo. Las horas están en hora de España salvo donde pone UTC." wide>
+    {alerts.length > 0 ? (
+      <ul class="alert-list">
+        {alerts.map(({ level, text }) => <li class={`alert alert-${level}`}>{ALERT_ICON[level]} {text}</li>)}
+      </ul>
+    ) : (
+      <ul class="alert-list"><li class="alert alert-ok">✅ Todo en orden: token válido, avisos configurados y sin fallos hoy.</li></ul>
+    )}
 
-      {alerts.length > 0 ? (
-        <ul class="alerts">
-          {alerts.map(({ level, text }) => <li class={`alert-${level}`}>{ALERT_ICON[level]} {text}</li>)}
-        </ul>
-      ) : (
-        <ul class="alerts"><li class="alert-info">✅ Todo en orden: token válido, avisos configurados y sin fallos hoy.</li></ul>
-      )}
-
+    <section class="section">
       <h2>Hoy</h2>
-      <div class="grid">
-        {todaySlots.map(({ platform, state, text }) => (
-          <div class="tile">
-            <div class="tile-label">{PLATFORM_LABEL[platform]}</div>
-            <div style="font-size: 15px; margin-top: 0.25rem;">{STATE_ICON[state]} {text}</div>
-          </div>
-        ))}
-      </div>
+    <div class="grid">
+      {todaySlots.map(({ platform, state, text }) => (
+        <div class="card">
+          <div class="tile-label">{PLATFORM_LABEL[platform]}</div>
+          <p style="margin: 0.35rem 0 0.3rem;"><span class={`badge ${STATE_BADGE[state].className}`}>{STATE_BADGE[state].icon} {STATE_BADGE[state].label}</span></p>
+          <div class="small muted">{text}</div>
+        </div>
+      ))}
+    </div>
+  </section>
 
+  <section class="section">
       <h2>Acciones</h2>
-      <SocialActions client:load nextWeekStart={nextMonday} nextWeekHasPlan={Boolean(nextPlan)} />
+    <SocialActions client:load nextWeekStart={nextMonday} nextWeekHasPlan={Boolean(nextPlan)} />
+  </section>
 
+  <section class="section">
       <h2>La cuenta</h2>
-      <p class="lead">Instagram, que es donde se pueden medir las cosas. Facebook: {fmt(daily.filter((r) => r.platform === 'facebook' && r.followers !== null).at(-1)?.followers)} seguidores (sin estadísticas de alcance).</p>
-      <div class="grid">
-        {kpis.map(({ label, value, previous, note }) => {
-          const change = delta(value, previous);
-          return (
-            <div class="tile">
-              <div class="tile-label">{label}</div>
-              <div class="tile-value">{fmt(value)}</div>
-              <div class="tile-note">
-                {change && (
-                  <span style={`color: #52514e; font-weight: 600; margin-right: 4px;`}>
-                    <span style={`color: ${change.diff > 0 ? '#0ca30c' : change.diff < 0 ? '#d03b3b' : '#8a8984'};`}>{change.diff > 0 ? '▲' : change.diff < 0 ? '▼' : '='}</span> {change.text}
-                  </span>
-                )}
-                {note}
-              </div>
+    <p class="lead">Instagram, que es donde se pueden medir las cosas. Facebook: {fmt(daily.filter((r) => r.platform === 'facebook' && r.followers !== null).at(-1)?.followers)} seguidores (sin estadísticas de alcance).</p>
+    <div class="grid-tight">
+      {kpis.map(({ label, value, previous, note }) => {
+        const change = delta(value, previous);
+        return (
+          <div class="card">
+            <div class="tile-label">{label}</div>
+            <div class="tile-value">{fmt(value)}</div>
+            <div class="tile-note">
+              {change && (
+                <span class={`badge ${change.diff > 0 ? 'badge-ok' : change.diff < 0 ? 'badge-bad' : 'badge-neutral'}`} style="margin-right: 0.35rem;">
+                  {change.diff > 0 ? '▲' : change.diff < 0 ? '▼' : '='} {change.text}
+                </span>
+              )}
+              {note}
             </div>
-          );
-        })}
+          </div>
+        );
+      })}
+    </div>
+
+    <div class="grid-wide" style="margin-top: 1.5rem;">
+      <LineChart client:load title="Seguidores de Instagram" unit="seguidores" points={pointsFor('followers', chartDays)} emptyMessage="Se empezaron a guardar el 19 de septiembre: la gráfica aparece en cuanto haya dos días." />
+      <ColumnChart client:load title="Cuentas alcanzadas por día" unit="cuentas" points={pointsFor('reach', closedDays)} emptyMessage="Aún no hay datos de alcance." />
+      <ColumnChart client:load title="Clics en el enlace de la bio por día" unit="clics" points={pointsFor('websiteClicks', closedDays)} emptyMessage="Ningún clic en el enlace de la bio en los últimos 30 días. Es la cifra que más importa: son visitas que llegan a la web." />
+    </div>
+
+    <details style="margin-top: 1rem;">
+      <summary>Ver los datos diarios en tabla</summary>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Día</th><th class="num">Seguidores</th><th class="num">Alcance</th><th class="num">Visitas al perfil</th><th class="num">Clics en la bio</th><th class="num">Cuentas que interactúan</th></tr></thead>
+          <tbody>
+            {[...chartDays].reverse().map((date) => {
+              const row = igByDate.get(date);
+              return <tr><td>{weekdayOf(date)} {shortDay(date)}</td><td class="num">{fmt(row?.followers)}</td><td class="num">{fmt(row?.reach)}</td><td class="num">{fmt(row?.profileViews)}</td><td class="num">{fmt(row?.websiteClicks)}</td><td class="num">{fmt(row?.accountsEngaged)}</td></tr>;
+            })}
+          </tbody>
+        </table>
       </div>
+    </details>
+  </section>
 
-      <div class="charts" style="margin-top: 1.5rem;">
-        <LineChart client:load title="Seguidores de Instagram" unit="seguidores" points={pointsFor('followers', chartDays)} emptyMessage="Se empezaron a guardar el 19 de septiembre: la gráfica aparece en cuanto haya dos días." />
-        <ColumnChart client:load title="Cuentas alcanzadas por día" unit="cuentas" points={pointsFor('reach', closedDays)} emptyMessage="Aún no hay datos de alcance." />
-        <ColumnChart client:load title="Clics en el enlace de la bio por día" unit="clics" points={pointsFor('websiteClicks', closedDays)} emptyMessage="Ningún clic en el enlace de la bio en los últimos 30 días. Es la cifra que más importa: son visitas que llegan a la web." />
-      </div>
-
-      <details style="margin-top: 1rem;">
-        <summary>Ver los datos diarios en tabla</summary>
-        <div class="table-wrap">
-          <table>
-            <thead><tr><th>Día</th><th class="num">Seguidores</th><th class="num">Alcance</th><th class="num">Visitas al perfil</th><th class="num">Clics en la bio</th><th class="num">Cuentas que interactúan</th></tr></thead>
-            <tbody>
-              {[...chartDays].reverse().map((date) => {
-                const row = igByDate.get(date);
-                return <tr><td>{weekdayOf(date)} {shortDay(date)}</td><td class="num">{fmt(row?.followers)}</td><td class="num">{fmt(row?.reach)}</td><td class="num">{fmt(row?.profileViews)}</td><td class="num">{fmt(row?.websiteClicks)}</td><td class="num">{fmt(row?.accountsEngaged)}</td></tr>;
-              })}
-            </tbody>
-          </table>
-        </div>
-      </details>
-
+  <section class="section">
       <h2>Qué funciona mejor</h2>
-      <p class="lead">Posts del feed de Instagram de los últimos 45 días ({igFeedWithReach.length} con datos). Con tan pocos seguidores las diferencias aún son ruido: esto empezará a decir algo cuando haya varias semanas de hilos.</p>
-      <div class="two-col">
-        <div>
-          <h3>Por formato</h3>
-          <div class="table-wrap"><table>
-            <thead><tr><th>Formato</th><th class="num">Posts</th><th class="num">Alcance medio</th><th class="num">Interacciones medias</th></tr></thead>
-            <tbody>{byFormat.map((g) => <tr><td>{g.key}</td><td class="num">{g.posts}</td><td class="num">{avg(g.avgReach)}</td><td class="num">{avg(g.avgInteractions)}</td></tr>)}</tbody>
-          </table></div>
-        </div>
-        <div>
-          <h3>Por hilo de la semana</h3>
-          <div class="table-wrap"><table>
-            <thead><tr><th>Hilo</th><th class="num">Posts</th><th class="num">Alcance medio</th><th class="num">Interacciones medias</th></tr></thead>
-            <tbody>{byTheme.map((g) => <tr><td>{g.key}</td><td class="num">{g.posts}</td><td class="num">{avg(g.avgReach)}</td><td class="num">{avg(g.avgInteractions)}</td></tr>)}</tbody>
-          </table></div>
-        </div>
+    <p class="lead">Posts del feed de Instagram de los últimos 45 días ({igFeedWithReach.length} con datos). Con tan pocos seguidores las diferencias aún son ruido: esto empezará a decir algo cuando haya varias semanas de hilos.</p>
+    <div class="grid-wide">
+      <div>
+        <h3>Por formato</h3>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Formato</th><th class="num">Posts</th><th class="num">Alcance medio</th><th class="num">Interacciones medias</th></tr></thead>
+          <tbody>{byFormat.map((g) => <tr><td>{g.key}</td><td class="num">{g.posts}</td><td class="num">{avg(g.avgReach)}</td><td class="num">{avg(g.avgInteractions)}</td></tr>)}</tbody>
+        </table></div>
       </div>
-      <h3>Los 5 posts con más alcance</h3>
-      <div class="table-wrap"><table>
-        <thead><tr><th>Fecha</th><th>Cuento</th><th class="num">Alcance</th><th class="num">Interacciones</th></tr></thead>
-        <tbody>
-          {topPosts.map((p) => (
-            <tr>
-              <td>{madridDateTime.format(utcFromSql(p.createdAt))}</td>
-              <td>{p.permalink ? <a href={p.permalink} target="_blank" rel="noreferrer">{p.title}</a> : p.title}</td>
-              <td class="num">{fmt(p.reach)}</td><td class="num">{fmt(interactions(p))}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table></div>
+      <div>
+        <h3>Por hilo de la semana</h3>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Hilo</th><th class="num">Posts</th><th class="num">Alcance medio</th><th class="num">Interacciones medias</th></tr></thead>
+          <tbody>{byTheme.map((g) => <tr><td>{g.key}</td><td class="num">{g.posts}</td><td class="num">{avg(g.avgReach)}</td><td class="num">{avg(g.avgInteractions)}</td></tr>)}</tbody>
+        </table></div>
+      </div>
+    </div>
+    <h3>Los 5 posts con más alcance</h3>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Fecha</th><th>Cuento</th><th class="num">Alcance</th><th class="num">Interacciones</th></tr></thead>
+      <tbody>
+        {topPosts.map((p) => (
+          <tr>
+            <td>{madridDateTime.format(utcFromSql(p.createdAt))}</td>
+            <td>{p.permalink ? <a href={p.permalink} target="_blank" rel="noreferrer">{p.title}</a> : p.title}</td>
+            <td class="num">{fmt(p.reach)}</td><td class="num">{fmt(interactions(p))}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table></div>
+  </section>
 
+  <section class="section">
       <h2>Plan semanal</h2>
-      <p class="lead">Se genera solo cada jueves para la semana siguiente y se publica sin revisión. Aquí puedes cambiar el cuento, el formato o el enfoque de cualquier día que aún no haya salido.</p>
-      <PlanEditor client:load weeks={planWeeks} stories={eligibleStories} today={today} />
-      {needs.length > 0 && (
-        <div style="margin-top: 1rem;">
-          <h3>✍️ Cuentos que conviene crear (según el plan)</h3>
-          <ul>{needs.map((need) => <li>{need}</li>)}</ul>
-        </div>
-      )}
+    <p class="lead">Se genera solo cada jueves para la semana siguiente y se publica sin revisión. Aquí puedes cambiar el cuento, el formato o el enfoque de cualquier día que aún no haya salido.</p>
+    <PlanEditor client:load weeks={planWeeks} stories={eligibleStories} today={today} />
+    {needs.length > 0 && (
+      <div style="margin-top: 1rem;">
+        <h3>✍️ Cuentos que conviene crear (según el plan)</h3>
+        <ul>{needs.map((need) => <li>{need}</li>)}</ul>
+      </div>
+    )}
+  </section>
 
+  <section class="section">
       <h2>Historial de publicaciones</h2>
-      <p class="lead">Últimos 45 días. Las métricas se actualizan cada día a las 15:00 UTC. Las Stories de Instagram solo tienen datos si las vieron 5 personas o más; Facebook no da el alcance.</p>
-      <div class="posts"><PostsTable client:load rows={postRows} /></div>
+    <p class="lead">Últimos 45 días. Las métricas se actualizan cada día a las 15:00 UTC. Las Stories de Instagram solo tienen datos si las vieron 5 personas o más; Facebook no da el alcance.</p>
+    <div class="posts"><PostsTable client:load rows={postRows} /></div>
+  </section>
 
+  <section class="section">
       <h2>Catálogo y próximas fechas</h2>
-      <div class="two-col">
-        <div>
-          <h3>Cuentos disponibles por tema</h3>
-          <p class="lead" style="font-size: 14px;">Para 3–12 años. "Disponibles": no publicados en los últimos {COOLDOWN_DAYS} días. Una semana temática necesita 7.</p>
-          <div class="table-wrap"><table>
-            <thead><tr><th>Tema</th><th>Cuándo</th><th class="num">Disponibles</th><th class="num">Total</th></tr></thead>
-            <tbody>
-              {themeStock.map(({ label, when, available, total }) => (
-                <tr><td>{label}</td><td>{when}</td><td class="num">{available < 7 ? '⚠️ ' : ''}{available}</td><td class="num">{total}</td></tr>
-              ))}
-            </tbody>
-          </table></div>
-        </div>
-        <div>
-          <h3>Fechas señaladas (8 semanas)</h3>
-          <div class="table-wrap"><table>
-            <thead><tr><th>Fecha</th><th>Qué</th></tr></thead>
-            <tbody>
-              {upcomingDates.map(({ date, name, approximate }) => (
-                <tr><td>{weekdayOf(date)} {shortDay(date)}</td><td>{name}{approximate ? ' (aprox.)' : ''}</td></tr>
-              ))}
-            </tbody>
-          </table></div>
-        </div>
+    <div class="grid-wide">
+      <div>
+        <h3>Cuentos disponibles por tema</h3>
+        <p class="lead" style="font-size: 14px;">Para 3–12 años. "Disponibles": no publicados en los últimos {COOLDOWN_DAYS} días. Una semana temática necesita 7.</p>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Tema</th><th>Cuándo</th><th class="num">Disponibles</th><th class="num">Total</th></tr></thead>
+          <tbody>
+            {themeStock.map(({ label, when, available, total }) => (
+              <tr><td>{label}</td><td>{when}</td><td class="num">{available < 7 ? '⚠️ ' : ''}{available}</td><td class="num">{total}</td></tr>
+            ))}
+          </tbody>
+        </table></div>
       </div>
+      <div>
+        <h3>Fechas señaladas (8 semanas)</h3>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Fecha</th><th>Qué</th></tr></thead>
+          <tbody>
+            {upcomingDates.map(({ date, name, approximate }) => (
+              <tr><td>{weekdayOf(date)} {shortDay(date)}</td><td>{name}{approximate ? ' (aprox.)' : ''}</td></tr>
+            ))}
+          </tbody>
+        </table></div>
+      </div>
+    </div>
+  </section>
 
+  <section class="section">
       <h2>Configuración</h2>
-      <div class="two-col">
-        <div>
-          <h3>Tareas automáticas</h3>
-          <div class="table-wrap"><table>
-            <thead><tr><th>Qué</th><th>Cuándo</th></tr></thead>
-            <tbody>{crons.map(({ what, when }) => <tr><td>{what}</td><td>{when}</td></tr>)}</tbody>
-          </table></div>
-          <p style="font-size: 13px; color: #52514e;">En el plan Hobby de Vercel cada tarea puede lanzarse hasta 59 minutos después de su hora. Hora de España = UTC + 2 en verano, + 1 en invierno.</p>
-        </div>
-        <div>
-          <h3>Token de Meta</h3>
-          <div class="table-wrap"><table>
-            <tbody>{tokenRows.map(([label, value]) => <tr><th style="font-size: 14px; color: #0b0b0b;">{label}</th><td>{value}</td></tr>)}</tbody>
-          </table></div>
-          <h3>Avisos por WhatsApp</h3>
-          <p style="font-size: 14px;">{whatsappConfigured ? '✅ Configurados. Usa "WhatsApp de prueba" (en Acciones) para comprobar que llegan.' : '❌ Sin configurar en este entorno: faltan CALLMEBOT_PHONE y CALLMEBOT_APIKEY.'}</p>
-        </div>
+    <div class="grid-wide">
+      <div>
+        <h3>Tareas automáticas</h3>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Qué</th><th>Cuándo</th></tr></thead>
+          <tbody>{crons.map(({ what, when }) => <tr><td>{what}</td><td>{when}</td></tr>)}</tbody>
+        </table></div>
+        <p style="font-size: 13px; color: #52514e;">En el plan Hobby de Vercel cada tarea puede lanzarse hasta 59 minutos después de su hora. Hora de España = UTC + 2 en verano, + 1 en invierno.</p>
       </div>
-    </main>
-  </body>
-</html>
+      <div>
+        <h3>Token de Meta</h3>
+        <div class="table-wrap"><table>
+          <tbody>{tokenRows.map(([label, value]) => <tr><th style="font-size: 14px; color: #0b0b0b;">{label}</th><td>{value}</td></tr>)}</tbody>
+        </table></div>
+        <h3>Avisos por WhatsApp</h3>
+        <p style="font-size: 14px;">{whatsappConfigured ? '✅ Configurados. Usa "WhatsApp de prueba" (en Acciones) para comprobar que llegan.' : '❌ Sin configurar en este entorno: faltan CALLMEBOT_PHONE y CALLMEBOT_APIKEY.'}</p>
+      </div>
+    </div>
+  </section>
+</AdminLayout>
+
+<style>
+  /* Lo único propio de esta página: el resto sale de src/styles/admin.css. */
+  .posts td:nth-child(3) { min-width: 200px; }
+  .posts td:nth-child(4) { max-width: 280px; }
+  details summary { cursor: pointer; font-weight: 600; color: var(--forest); }
+  figure { margin: 0; }
+</style>

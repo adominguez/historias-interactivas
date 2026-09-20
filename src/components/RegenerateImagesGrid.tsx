@@ -54,15 +54,15 @@ const RegenerateImagesGrid = ({ stories: initialStories, cloudName }: Regenerate
         value={filter}
         onChange={(event) => setFilter(event.target.value)}
         placeholder="Filtrar por título..."
-        style={{ width: '100%', padding: '0.5rem', marginBottom: '0.5rem', boxSizing: 'border-box' }}
+        style={{ width: '100%', marginBottom: '0.5rem' }}
       />
-      <p style={{ color: '#666', fontSize: '0.9rem' }}>{filtered.length} de {stories.length} cuentos</p>
+      <p className="small muted">{filtered.length} de {stories.length} cuentos</p>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '1rem' }}>
         {filtered.map((story) => {
           const status = statusBySlug[story.slug] ?? 'idle';
           return (
-            <div key={story.slug} style={{ border: '1px solid #ddd', borderRadius: '8px', padding: '0.75rem' }}>
+            <div key={story.slug} className="card" style={{ padding: '0.75rem' }}>
               <img
                 src={thumbnailUrl(cloudName, story.slug, story.imageVersion)}
                 alt=""
@@ -70,13 +70,13 @@ const RegenerateImagesGrid = ({ stories: initialStories, cloudName }: Regenerate
                 style={{ width: '100%', height: '140px', objectFit: 'cover', borderRadius: '4px', display: 'block' }}
               />
               <p style={{ margin: '0.5rem 0 0.15rem', fontWeight: 'bold', fontSize: '0.9rem', lineHeight: 1.3 }}>{story.title}</p>
-              <p style={{ margin: '0 0 0.5rem', fontSize: '0.8rem', color: '#666' }}>
+              <p className="small muted" style={{ margin: '0 0 0.5rem' }}>
                 {story.age} — <a href={`/${story.slug}`} target="_blank" rel="noreferrer">ver cuento</a>
               </p>
-              <button onClick={() => regenerate(story.slug)} disabled={status === 'loading'} style={{ width: '100%' }}>
+              <button className="btn-primary" onClick={() => regenerate(story.slug)} disabled={status === 'loading'} style={{ width: '100%' }}>
                 {status === 'loading' ? 'Regenerando...' : status === 'success' ? 'Regenerada ✓ (repetir)' : 'Regenerar imagen'}
               </button>
-              {status === 'error' && <p style={{ color: '#b00020', fontSize: '0.75rem', marginBottom: 0 }}>{errorBySlug[story.slug]}</p>}
+              {status === 'error' && <p className="error-text" style={{ marginBottom: 0 }}>{errorBySlug[story.slug]}</p>}
             </div>
           );
         })}

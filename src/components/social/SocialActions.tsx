@@ -1,4 +1,4 @@
-import { useState, type CSSProperties } from 'react';
+import { useState } from 'react';
 
 // Acciones manuales del panel /admin/redes-sociales. Todo lo que hacen ya lo
 // hacen los crons solos; esto es para probar, corregir o adelantarse:
@@ -25,8 +25,6 @@ type Preview = {
 
 type ActionState = { status: 'idle' | 'loading' | 'done' | 'error'; message?: string };
 
-const box: CSSProperties = { border: '1px solid #ddd', borderRadius: 8, padding: '1rem' };
-
 async function callApi(url: string, init?: RequestInit) {
   const response = await fetch(url, init);
   const data = await response.json().catch(() => ({}));
@@ -52,9 +50,12 @@ export default function SocialActions({ nextWeekStart, nextWeekHasPlan }: { next
   const Status = ({ id }: { id: string }) => {
     const s = state[id];
     if (!s || s.status === 'idle') return null;
-    const color = s.status === 'error' ? '#b00020' : '#52514e';
     const text = s.status === 'loading' ? 'Trabajando… (puede tardar hasta un minuto)' : s.message;
-    return <p style={{ margin: '0.4rem 0 0', fontSize: 13, color }} role="status">{s.status === 'error' ? '❌ ' : s.status === 'done' ? '✅ ' : '⏳ '}{text}</p>;
+    return (
+      <p className={s.status === 'error' ? 'error-text' : 'small muted'} style={{ margin: '0.5rem 0 0' }} role="status">
+        {s.status === 'error' ? '❌ ' : s.status === 'done' ? '✅ ' : '⏳ '}{text}
+      </p>
+    );
   };
 
   const busy = (id: string) => state[id]?.status === 'loading';
@@ -96,39 +97,39 @@ export default function SocialActions({ nextWeekStart, nextWeekHasPlan }: { next
   return (
     <div style={{ display: 'grid', gap: '1rem' }}>
       <div style={{ display: 'grid', gap: '1rem', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))' }}>
-        <div style={box}>
+        <div className="card">
           <strong>Ver qué se publicaría ahora</strong>
-          <p style={{ margin: '0.25rem 0 0.75rem', fontSize: 13, color: '#52514e' }}>Genera el texto y la imagen como lo haría el cron, sin publicar nada.</p>
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-            <button onClick={() => doPreview('feed')} disabled={busy('preview-feed')}>Post del feed</button>
+          <p className="small muted" style={{ margin: '0.25rem 0 0.75rem' }}>Genera el texto y la imagen como lo haría el cron, sin publicar nada.</p>
+          <div className="btn-row">
+            <button className="btn-primary" onClick={() => doPreview('feed')} disabled={busy('preview-feed')}>Post del feed</button>
             <button onClick={() => doPreview('story')} disabled={busy('preview-story')}>Story</button>
           </div>
           <Status id="preview-feed" /><Status id="preview-story" />
         </div>
 
-        <div style={box}>
+        <div className="card">
           <strong>Publicar ahora</strong>
-          <p style={{ margin: '0.25rem 0 0.75rem', fontSize: 13, color: '#52514e' }}>Por si un día el cron no llegó a publicar. Publica de verdad en las dos redes.</p>
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <p className="small muted" style={{ margin: '0.25rem 0 0.75rem' }}>Por si un día el cron no llegó a publicar. Publica de verdad en las dos redes.</p>
+          <div className="btn-row">
             <button onClick={() => doPublish('feed')} disabled={busy('publish-feed')}>Publicar post</button>
             <button onClick={() => doPublish('story')} disabled={busy('publish-story')}>Publicar Story</button>
           </div>
           <Status id="publish-feed" /><Status id="publish-story" />
         </div>
 
-        <div style={box}>
+        <div className="card">
           <strong>Plan de la semana siguiente</strong>
-          <p style={{ margin: '0.25rem 0 0.75rem', fontSize: 13, color: '#52514e' }}>
+          <p className="small muted" style={{ margin: '0.25rem 0 0.75rem' }}>
             {nextWeekHasPlan ? 'Ya está hecho. Puedes rehacerlo con la IA desde cero.' : 'Aún no existe (se genera solo los jueves). Puedes adelantarlo.'}
           </p>
           <button onClick={doPlan} disabled={busy('plan')}>{nextWeekHasPlan ? 'Rehacer plan' : 'Generar plan'}</button>
           <Status id="plan" />
         </div>
 
-        <div style={box}>
+        <div className="card">
           <strong>Mantenimiento</strong>
-          <p style={{ margin: '0.25rem 0 0.75rem', fontSize: 13, color: '#52514e' }}>Las estadísticas se recogen solas cada día a las 15:00 UTC.</p>
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <p className="small muted" style={{ margin: '0.25rem 0 0.75rem' }}>Las estadísticas se recogen solas cada día a las 15:00 UTC.</p>
+          <div className="btn-row">
             <button onClick={doMetrics} disabled={busy('metrics')}>Actualizar estadísticas</button>
             <button onClick={doWhatsApp} disabled={busy('whatsapp')}>WhatsApp de prueba</button>
           </div>
@@ -137,12 +138,12 @@ export default function SocialActions({ nextWeekStart, nextWeekHasPlan }: { next
       </div>
 
       {preview && (
-        <div style={{ ...box, background: '#fafaf8' }}>
+        <div className="card" style={{ background: 'var(--surface-sunken)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'baseline', flexWrap: 'wrap' }}>
             <strong>Vista previa: {preview.surface === 'story' ? 'Story' : 'post del feed'} — "{preview.story.title}"</strong>
             <button onClick={() => setPreview(null)}>Cerrar</button>
           </div>
-          <p style={{ fontSize: 13, color: '#52514e', margin: '0.25rem 0 0.75rem' }}>
+          <p className="small muted" style={{ margin: '0.25rem 0 0.75rem' }}>
             Formato: {preview.format === 'decision' ? '¿qué elegirías?' : 'recomendación'}
             {preview.theme ? ` · Hilo: ${preview.theme.label}` : ' · Sin hilo'}
             {preview.isNewStory ? ' · Cuento nuevo' : ''}
@@ -156,17 +157,17 @@ export default function SocialActions({ nextWeekStart, nextWeekHasPlan }: { next
                 <div>
                   <p style={{ fontWeight: 600, margin: '0 0 0.25rem' }}>Facebook</p>
                   <img src={preview.imageUrl ?? ''} alt="" style={{ width: '100%', borderRadius: 8 }} />
-                  <p style={{ whiteSpace: 'pre-wrap', fontSize: 14 }}>{preview.facebookMessage}</p>
+                  <p style={{ whiteSpace: 'pre-wrap', fontSize: 14, background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 'var(--radius-sm)', padding: '0.6rem' }}>{preview.facebookMessage}</p>
                 </div>
                 <div>
                   <p style={{ fontWeight: 600, margin: '0 0 0.25rem' }}>Instagram</p>
                   <img src={preview.instagramImageUrl ?? ''} alt="" style={{ width: '100%', maxWidth: 320, borderRadius: 8 }} />
-                  <p style={{ whiteSpace: 'pre-wrap', fontSize: 14 }}>{preview.instagramMessage}</p>
+                  <p style={{ whiteSpace: 'pre-wrap', fontSize: 14, background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 'var(--radius-sm)', padding: '0.6rem' }}>{preview.instagramMessage}</p>
                 </div>
               </>
             )}
           </div>
-          <p style={{ fontSize: 12, color: '#8a8984', marginBottom: 0 }}>El texto lo escribe la IA en cada ejecución: el que salga de verdad será parecido, no idéntico.</p>
+          <p className="small muted" style={{ marginBottom: 0 }}>El texto lo escribe la IA en cada ejecución: el que salga de verdad será parecido, no idéntico.</p>
         </div>
       )}
     </div>

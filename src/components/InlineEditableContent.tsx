@@ -53,7 +53,7 @@ const InlineEditableContent = ({ storySlug, target, initialTitle, initialText }:
       <div>
         <button
           onClick={() => setEditing(true)}
-          style={{ marginBottom: '1rem', fontSize: '0.85rem', padding: '0.25rem 0.75rem', borderRadius: '999px', background: '#1f2937', color: 'white', border: 'none', cursor: 'pointer' }}
+          className="btn-primary" style={{ marginBottom: '1rem' }}
         >
           ✎ Editar esta escena
         </button>
@@ -64,7 +64,7 @@ const InlineEditableContent = ({ storySlug, target, initialTitle, initialText }:
   }
 
   return (
-    <div style={{ border: '2px solid #1f2937', borderRadius: '8px', padding: '1rem' }}>
+    <div className="card" style={{ borderColor: 'var(--forest)' }}>
       <label style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', marginBottom: '0.75rem' }}>
         Título
         <input value={title} onChange={(event) => setTitle(event.target.value)} style={{ padding: '0.4rem' }} />
@@ -79,11 +79,11 @@ const InlineEditableContent = ({ storySlug, target, initialTitle, initialText }:
         />
       </label>
       <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginTop: '0.75rem' }}>
-        <button onClick={handleSave} disabled={status === 'saving'}>
+        <button className="btn-primary" onClick={handleSave} disabled={status === 'saving'}>
           {status === 'saving' ? 'Guardando...' : 'Guardar'}
         </button>
         <button onClick={handleCancel} disabled={status === 'saving'}>Cancelar</button>
-        {status === 'error' && <span style={{ color: '#b00020' }}>{message}</span>}
+        {status === 'error' && <span className="error-text">{message}</span>}
       </div>
     </div>
   );
